@@ -1,0 +1,32 @@
+--- ENV.CORS_ORIGIN --- [ 'http://localhost:3000', 'http://localhost:5173' ]
+Server is running on port 3001 in development mode
+[DEV OTP] Generated OTP for 9999999999: 922186
+[MOCK SMS] OTP 922186 sent to 9999999999
+[Error]: { statusCode: 400, message: 'Invalid OTP' }
+[DEV OTP] Generated OTP for 9999999999: 235485
+[MOCK SMS] OTP 235485 sent to 9999999999
+[Error]: { statusCode: 400, message: 'Invalid OTP' }
+[DEV OTP] Generated OTP for 9999999999: 717003
+[MOCK SMS] OTP 717003 sent to 9999999999
+[DEV OTP] Generated OTP for 9876543210: 900674
+[MOCK SMS] OTP 900674 sent to 9876543210
+[Error]: { statusCode: 400, message: 'Invalid OTP' }
+[DEV OTP] Generated OTP for 9999999999: 815877
+[MOCK SMS] OTP 815877 sent to 9999999999
+[Error]: { statusCode: 400, message: 'Invalid OTP' }
+[DEV OTP] Generated OTP for 9999999999: 993047
+[MOCK SMS] OTP 993047 sent to 9999999999
+[Error]: { statusCode: 400, message: 'Invalid OTP' }
+[Error]: { statusCode: 400, message: 'Invalid OTP' }
+[DEV OTP] Generated OTP for 9999999999: 511804
+[MOCK SMS] OTP 511804 sent to 9999999999
+[Error]: { statusCode: 400, message: 'Invalid OTP' }
+[DEV OTP] Generated OTP for 9999999999: 823860
+[MOCK SMS] OTP 823860 sent to 9999999999
+[Error]: { statusCode: 400, message: 'Invalid OTP' }
+[DEV OTP] Generated OTP for 9999999999: 665170
+[MOCK SMS] OTP 665170 sent to 9999999999
+[Error]: { statusCode: 400, message: 'Invalid OTP' }
+[DEV OTP] Generated OTP for 9999999999: 443230
+[MOCK SMS] OTP 443230 sent to 9999999999
+[Error]: { statusCode: 400, message: 'Invalid OTP' }

@@ -1,0 +1,310 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------------------
+// ENUMS
+// -----------------------------------------
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  PAYMENT_FAILED
+}
+
+enum PaymentStatus {
+  PENDING
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+enum UploadStatus {
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
+  LOW_RESOLUTION
+}
+
+enum FrameMaterialType {
+  FRAME
+  MAT
+  GLASS
+}
+
+enum DiscountType {
+  PERCENT
+  FLAT
+}
+
+// -----------------------------------------
+// MODELS
+// -----------------------------------------
+
+/// Represents a user in the system (either CUSTOMER or ADMIN)
+model User {
+  id            String    @id @default(uuid())
+  phone_number  String    @unique
+  password_hash String?
+  first_name    String?
+  last_name     String?
+  role          UserRole  @default(CUSTOMER)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  addresses     Address[]
+  orders        Order[]
+  uploads       UserUpload[]
+  refresh_tokens RefreshToken[]
+  audit_logs    AuditLog[]
+
+  @@map("users")
+}
+
+/// Stores OTP requests for phone number authentication
+model OtpRequest {
+  id           String   @id @default(uuid())
+  phone_number String
+  otp_hash     String
+  expires_at   DateTime
+  verified     Boolean  @default(false)
+  created_at   DateTime @default(now())
+
+  @@index([phone_number, created_at])
+  @@map("otp_requests")
+}
+
+/// Manages refresh tokens for user authentication sessions
+model RefreshToken {
+  id         String   @id @default(uuid())
+  token_hash String   @unique
+  user_id    String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  expires_at DateTime
+  revoked    Boolean  @default(false)
+  family     String?
+  created_at DateTime @default(now())
+
+  @@index([user_id])
+  @@map("refresh_tokens")
+}
+
+/// Stores user addresses for shipping
+model Address {
+  id          String   @id @default(uuid())
+  user_id     String
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  label       String?
+  street      String
+  city        String
+  state       String
+  postal_code String
+  country     String   @default("India")
+  phone       String?
+  is_default  Boolean  @default(false)
+  created_at  DateTime @default(now())
+
+  @@index([user_id])
+  @@map("addresses")
+}
+
+/// Product categories that can be organized hierarchically
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?
+  parent_id   String?
+  parent      Category? @relation("CategoryHierarchy", fields: [parent_id], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryHierarchy")
+  image_url   String?
+  is_active   Boolean   @default(true)
+  sort_order  Int       @default(0)
+  created_at  DateTime  @default(now())
+
+  products    ProductCategory[]
+
+  @@map("categories")
+}
+
+/// Base product definition
+model Product {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?
+  base_price  Decimal
+  is_active   Boolean   @default(true)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  categories  ProductCategory[]
+  images      ProductImage[]
+  order_items OrderItem[]
+
+  @@map("products")
+}
+
+/// Join table for Product and Category many-to-many relationship
+model ProductCategory {
+  product_id  String
+  category_id String
+  product     Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  category    Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+
+  @@id([product_id, category_id])
+  @@map("product_categories")
+}
+
+/// Images associated with products
+model ProductImage {
+  id         String  @id @default(uuid())
+  product_id String
+  product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  url        String
+  alt_text   String?
+  sort_order Int     @default(0)
+
+  @@index([product_id])
+  @@map("product_images")
+}
+
+/// Materials available for framing (frames, mats, glass types)
+model FrameMaterial {
+  id             String            @id @default(uuid())
+  name           String
+  type           FrameMaterialType
+  description    String?
+  price_modifier Decimal
+  max_width      Decimal?
+  max_height     Decimal?
+  image_url      String?
+  is_active      Boolean           @default(true)
+  created_at     DateTime          @default(now())
+
+  @@map("frame_materials")
+}
+
+/// User orders containing purchased items
+model Order {
+  id                        String      @id @default(uuid())
+  user_id                   String
+  user                      User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  status                    OrderStatus @default(PENDING)
+  total_amount              Decimal
+  shipping_address_snapshot Json
+  razorpay_order_id         String?
+  tracking_awb              String?
+  notes                     String?
+  created_at                DateTime    @default(now())
+  updated_at                DateTime    @updatedAt
+
+  items                     OrderItem[]
+  payments                  Payment[]
+
+  @@index([user_id])
+  @@index([status])
+  @@map("orders")
+}
+
+/// Individual items within an order
+model OrderItem {
+  id                 String  @id @default(uuid())
+  order_id           String
+  order              Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product_id         String
+  product            Product @relation(fields: [product_id], references: [id], onDelete: Restrict)
+  quantity           Int     @default(1)
+  unit_price         Decimal
+  customization_data Json
+  print_asset_url    String?
+  created_at         DateTime @default(now())
+
+  @@index([order_id])
+  @@map("order_items")
+}
+
+/// Payment records for orders
+model Payment {
+  id                  String        @id @default(uuid())
+  order_id            String
+  order               Order         @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  razorpay_payment_id String?
+  amount              Decimal
+  status              PaymentStatus @default(PENDING)
+  method              String?
+  created_at          DateTime      @default(now())
+  updated_at          DateTime      @updatedAt
+
+  @@index([order_id])
+  @@map("payments")
+}
+
+/// Images uploaded by users for printing/framing
+model UserUpload {
+  id                String       @id @default(uuid())
+  user_id           String
+  user              User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  original_filename String
+  r2_key            String       @unique
+  mime_type         String
+  file_size         Int
+  width             Int?
+  height            Int?
+  dpi               Int?
+  status            UploadStatus @default(UPLOADING)
+  created_at        DateTime     @default(now())
+
+  @@index([user_id])
+  @@map("user_uploads")
+}
+
+/// Discount coupons
+model Coupon {
+  id               String       @id @default(uuid())
+  code             String       @unique
+  discount_type    DiscountType
+  value            Decimal
+  min_order_amount Decimal?
+  max_uses         Int?
+  current_uses     Int          @default(0)
+  is_active        Boolean      @default(true)
+  expires_at       DateTime?
+  created_at       DateTime     @default(now())
+
+  @@map("coupons")
+}
+
+/// Audit logs for admin actions
+model AuditLog {
+  id          String   @id @default(uuid())
+  admin_id    String
+  admin       User     @relation(fields: [admin_id], references: [id], onDelete: Cascade)
+  action      String
+  entity_type String
+  entity_id   String
+  metadata    Json?
+  created_at  DateTime @default(now())
+
+  @@index([admin_id])
+  @@index([entity_type, entity_id])
+  @@map("audit_logs")
+}

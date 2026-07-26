@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand: 232 98% 47%; /* #E8620A converted to HSL approximation, actually we can just use tailwind config */
+  }
+  
+  body {
+    @apply bg-[#F9FAFB] text-[#111827] antialiased; /* Warmer, softer gray for admin */
+  }
+}
