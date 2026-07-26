@@ -24,13 +24,23 @@ export interface Category {
   name: string;
   slug: string;
   description: string | null;
-  parent_id: string | null;
-  image_url: string | null;
   is_active: boolean;
   sort_order: number;
   created_at: string;
-  children?: Category[];
-  parent?: Pick<Category, 'id' | 'name' | 'slug'> | null;
+}
+
+export interface CreateCategoryInput {
+  name: string;
+  description?: string;
+  is_active?: boolean;
+  sort_order?: number;
+}
+
+export interface UpdateCategoryInput {
+  name?: string;
+  description?: string;
+  is_active?: boolean;
+  sort_order?: number;
 }
 
 export interface ProductImage {

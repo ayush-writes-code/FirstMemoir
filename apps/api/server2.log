@@ -1,0 +1,6 @@
+--- ENV.CORS_ORIGIN --- [ 'http://localhost:3000', 'http://localhost:5173' ]
+Server is running on port 3001 in development mode
+[Error]: {"statusCode":400,"message":"Cannot delete category because it contains products"}
+[Error]: {"statusCode":400,"message":"Cannot delete category because it contains products"}
+[Error]: {"statusCode":400,"message":"Cannot delete category because it contains products"}
+[Error]: {"statusCode":400,"message":"Cannot delete category because it contains products"}

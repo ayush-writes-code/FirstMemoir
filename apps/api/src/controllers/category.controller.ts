@@ -5,24 +5,19 @@ import { successResponse, errorResponse } from '../utils/response.js';
 
 export const createCategorySchema = {
   body: z.object({
-    name: z.string(),
-    slug: z.string(),
-    description: z.string().optional(),
-    parent_id: z.string().uuid().optional(),
-    image_url: z.string().url().optional(),
-    sort_order: z.number().int().optional()
+    name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name cannot exceed 100 characters"),
+    description: z.string().max(500, "Description cannot exceed 500 characters").optional(),
+    is_active: z.boolean().optional(),
+    sort_order: z.number().int().min(0, "Sort order must be 0 or greater").optional()
   })
 };
 
 export const updateCategorySchema = {
   body: z.object({
-    name: z.string().optional(),
-    slug: z.string().optional(),
-    description: z.string().optional(),
-    parent_id: z.string().uuid().optional(),
-    image_url: z.string().url().optional(),
-    sort_order: z.number().int().optional(),
-    is_active: z.boolean().optional()
+    name: z.string().trim().min(2, "Name must be at least 2 characters").max(100, "Name cannot exceed 100 characters").optional(),
+    description: z.string().max(500, "Description cannot exceed 500 characters").optional(),
+    is_active: z.boolean().optional(),
+    sort_order: z.number().int().min(0, "Sort order must be 0 or greater").optional()
   })
 };
 
@@ -31,7 +26,7 @@ export const slugParamSchema = {
 };
 
 export const idParamSchema = {
-  params: z.object({ id: z.string().uuid() })
+  params: z.object({ id: z.string().uuid("Invalid category ID format") })
 };
 
 export const categoryController = {

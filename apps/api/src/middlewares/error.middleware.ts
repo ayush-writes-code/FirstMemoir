@@ -8,7 +8,10 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ) {
-  console.error('[Error]:', err);
+  const errLog = err instanceof Error
+    ? `${err.constructor.name}: ${err.message}\n${err.stack}`
+    : JSON.stringify(err);
+  console.error('[Error]:', errLog);
 
   if (err instanceof ZodError) {
     const issues = err.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(', ');

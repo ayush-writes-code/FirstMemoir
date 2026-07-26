@@ -1,76 +1,90 @@
 import { prisma } from '@repo/database';
+import crypto from 'crypto';
 
 export interface CreateCategoryInput {
   name: string;
-  slug: string;
   description?: string;
-  parent_id?: string;
-  image_url?: string;
-  sort_order?: number;
-}
-
-export interface UpdateCategoryInput {
-  name?: string;
-  slug?: string;
-  description?: string;
-  parent_id?: string;
-  image_url?: string;
   sort_order?: number;
   is_active?: boolean;
 }
 
+export interface UpdateCategoryInput {
+  name?: string;
+  description?: string;
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+function generateSlugBase(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+}
+
 export const categoryService = {
   async getAllCategories() {
+    // Admin needs to see all categories, including inactive ones
     return prisma.category.findMany({
-      where: { is_active: true },
-      orderBy: { sort_order: 'asc' },
-      include: {
-        parent: {
-          select: { id: true, name: true, slug: true }
-        },
-        _count: {
-          select: { children: true }
-        }
-      }
+      orderBy: { sort_order: 'asc' }
     });
   },
 
   async getCategoryBySlug(slug: string) {
-    const category = await prisma.category.findUnique({
-      where: { slug, is_active: true },
-      include: {
-        children: {
-          where: { is_active: true }
-        }
-      }
+    return prisma.category.findUnique({
+      where: { slug }
     });
-
-    if (!category) return null;
-    return category;
   },
 
   async createCategoryService(data: CreateCategoryInput) {
-    const existing = await prisma.category.findUnique({ where: { slug: data.slug } });
-    if (existing) {
-      throw { statusCode: 400, message: 'Category slug already exists' };
+    // Unique name check (case-insensitive)
+    const existingName = await prisma.category.findFirst({
+      where: { name: { equals: data.name, mode: 'insensitive' } }
+    });
+    
+    if (existingName) {
+      throw { statusCode: 400, message: 'Category name already exists' };
     }
 
-    return prisma.category.create({ data });
+    const baseSlug = generateSlugBase(data.name);
+    let finalSlug = baseSlug;
+
+    // Slug collision handling
+    const existingSlug = await prisma.category.findUnique({ where: { slug: finalSlug } });
+    if (existingSlug) {
+      // Append a short identifier to guarantee uniqueness
+      const shortId = crypto.randomBytes(3).toString('hex');
+      finalSlug = `${baseSlug}-${shortId}`;
+    }
+
+    try {
+      return await prisma.category.create({ 
+        data: {
+          ...data,
+          slug: finalSlug
+        } 
+      });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        throw { statusCode: 400, message: 'Category name already exists' };
+      }
+      throw error;
+    }
   },
 
   async updateCategoryService(id: string, data: UpdateCategoryInput) {
-    if (data.slug) {
-      const existing = await prisma.category.findUnique({ where: { slug: data.slug } });
-      if (existing && existing.id !== id) {
-        throw { statusCode: 400, message: 'Category slug already exists' };
-      }
-    }
-
     const category = await prisma.category.findUnique({ where: { id } });
     if (!category) {
       throw { statusCode: 404, message: 'Category not found' };
     }
 
+    if (data.name && data.name.toLowerCase() !== category.name.toLowerCase()) {
+      const existingName = await prisma.category.findFirst({
+        where: { name: { equals: data.name, mode: 'insensitive' } }
+      });
+      if (existingName) {
+        throw { statusCode: 400, message: 'Category name already exists' };
+      }
+    }
+
+    // Do NOT regenerate slug. 
     return prisma.category.update({
       where: { id },
       data
@@ -78,14 +92,28 @@ export const categoryService = {
   },
 
   async deleteCategoryService(id: string) {
-    const category = await prisma.category.findUnique({ where: { id } });
-    if (!category) {
-      throw { statusCode: 404, message: 'Category not found' };
-    }
+    return prisma.$transaction(async (tx) => {
+      const category = await tx.category.findUnique({ 
+        where: { id },
+        include: {
+          _count: {
+            select: { products: true }
+          }
+        }
+      });
 
-    await prisma.category.update({
-      where: { id },
-      data: { is_active: false }
+      if (!category) {
+        throw { statusCode: 404, message: 'Category not found' };
+      }
+
+      if (category._count.products > 0) {
+        throw { statusCode: 400, message: 'Cannot delete category because it contains products' };
+      }
+
+      // Secure deletion
+      await tx.category.delete({
+        where: { id }
+      });
     });
   }
 };
