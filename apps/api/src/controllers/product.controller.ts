@@ -12,49 +12,30 @@ export const listProductsSchema = {
   })
 };
 
+const priceRegex = /^\d+(\.\d{1,2})?$/;
+
 export const createProductSchema = {
   body: z.object({
-    name: z.string(),
-    slug: z.string(),
-    description: z.string().optional(),
-    base_price: z.coerce.number().positive(),
-    category_ids: z.array(z.string().uuid()).optional(),
-    images: z.array(z.object({
-      url: z.string().url(),
-      alt_text: z.string().optional(),
-      sort_order: z.number().int().optional()
-    })).optional()
+    name: z.string().trim().min(2).max(100),
+    description: z.string().max(1000).optional(),
+    base_price: z.string().regex(priceRegex, "Must be a valid price with up to 2 decimal places").refine(val => Number(val) > 0, "Price must be greater than 0"),
+    category_ids: z.array(z.string().uuid()).min(1, "At least one category is required"),
+    is_active: z.boolean().optional().default(true)
   })
 };
 
 export const updateProductSchema = {
   body: z.object({
-    name: z.string().optional(),
-    slug: z.string().optional(),
-    description: z.string().optional(),
-    base_price: z.coerce.number().positive().optional(),
-    category_ids: z.array(z.string().uuid()).optional()
+    name: z.string().trim().min(2).max(100),
+    description: z.string().max(1000).optional().nullable(),
+    base_price: z.string().regex(priceRegex, "Must be a valid price with up to 2 decimal places").refine(val => Number(val) > 0, "Price must be greater than 0"),
+    category_ids: z.array(z.string().uuid()).min(1, "At least one category is required"),
+    is_active: z.boolean().optional()
   })
-};
-
-export const addImageSchema = {
-  body: z.object({
-    url: z.string().url(),
-    alt_text: z.string().optional(),
-    sort_order: z.number().int().optional()
-  })
-};
-
-export const slugParamSchema = {
-  params: z.object({ slug: z.string() })
 };
 
 export const idParamSchema = {
   params: z.object({ id: z.string().uuid() })
-};
-
-export const imageIdParamSchema = {
-  params: z.object({ imageId: z.string().uuid() })
 };
 
 export const productController = {
@@ -68,15 +49,6 @@ export const productController = {
         sort
       });
       res.json(paginatedResponse(result.products, result.total, result.page, result.limit));
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  async getProduct(req: Request, res: Response, next: NextFunction) {
-    try {
-      const data = await productService.getProductBySlug(req.params.slug as string);
-      res.json(successResponse(data));
     } catch (error) {
       next(error);
     }
@@ -103,24 +75,6 @@ export const productController = {
   async deleteProduct(req: Request, res: Response, next: NextFunction) {
     try {
       await productService.deleteProduct(req.params.id as string);
-      res.status(204).send();
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  async addImage(req: Request, res: Response, next: NextFunction) {
-    try {
-      const image = await productService.addProductImage(req.params.id as string, req.body);
-      res.status(201).json(successResponse(image));
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  async deleteImage(req: Request, res: Response, next: NextFunction) {
-    try {
-      await productService.deleteProductImage(req.params.imageId as string);
       res.status(204).send();
     } catch (error) {
       next(error);

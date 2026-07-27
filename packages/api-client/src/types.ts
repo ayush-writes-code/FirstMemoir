@@ -63,6 +63,22 @@ export interface Product {
   categories: Array<{ category: Category }>;
 }
 
+export interface CreateProductInput {
+  name: string;
+  description?: string;
+  base_price: string;
+  category_ids: string[];
+  is_active?: boolean;
+}
+
+export interface UpdateProductInput {
+  name?: string;
+  description?: string | null;
+  base_price?: string;
+  category_ids?: string[];
+  is_active?: boolean;
+}
+
 export interface FrameMaterial {
   id: string;
   name: string;
@@ -73,10 +89,7 @@ export interface FrameMaterial {
   is_active: boolean;
 }
 
-export interface ProductDetailResponse {
-  product: Product;
-  frameMaterials: FrameMaterial[];
-}
+
 
 export interface ProductsListResponse {
   products: Product[];

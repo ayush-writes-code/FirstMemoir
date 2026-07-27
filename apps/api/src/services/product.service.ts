@@ -1,31 +1,42 @@
 import { prisma } from '@repo/database';
 import { Prisma } from '@repo/database';
+import { randomBytes } from 'crypto';
 
 export interface CreateProductInput {
   name: string;
-  slug: string;
   description?: string;
-  base_price: number;
-  category_ids?: string[];
-  images?: { url: string; alt_text?: string; sort_order?: number }[];
+  base_price: string;
+  category_ids: string[];
+  is_active?: boolean;
 }
 
 export interface UpdateProductInput {
-  name?: string;
-  slug?: string;
-  description?: string;
-  base_price?: number;
-  category_ids?: string[];
+  name: string;
+  description?: string | null;
+  base_price: string;
+  category_ids: string[];
+  is_active?: boolean;
+}
+
+function generateSlug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+}
+
+function serializeProduct(product: any) {
+  if (!product) return product;
+  return {
+    ...product,
+    base_price: product.base_price.toString()
+  };
 }
 
 export const productService = {
   async getProducts(params: { category_slug?: string; page?: number; limit?: number; sort?: 'price_asc' | 'price_desc' | 'newest' }) {
     const page = params.page || 1;
-    const limit = params.limit || 10;
+    const limit = params.limit || 50;
     const skip = (page - 1) * limit;
 
-    const where: any = { is_active: true };
-
+    const where: any = {};
     if (params.category_slug) {
       where.categories = {
         some: {
@@ -48,18 +59,14 @@ export const productService = {
         take: limit,
         orderBy,
         include: {
-          categories: { include: { category: true } },
-          images: {
-            orderBy: { sort_order: 'asc' },
-            take: 1
-          }
+          categories: { include: { category: true } }
         }
       }),
       prisma.product.count({ where })
     ]);
 
     return {
-      products,
+      products: products.map(serializeProduct),
       total,
       page,
       limit,
@@ -67,42 +74,29 @@ export const productService = {
     };
   },
 
-  async getProductBySlug(slug: string) {
-    const product = await prisma.product.findUnique({
-      where: { slug, is_active: true },
-      include: {
-        images: { orderBy: { sort_order: 'asc' } },
-        categories: { include: { category: true } }
-      }
-    });
-
-    if (!product) {
-      throw { statusCode: 404, message: 'Product not found' };
-    }
-
-    const frameMaterials = await prisma.frameMaterial.findMany({
-      where: { is_active: true }
-    });
-
-    return { product, frameMaterials };
-  },
-
   async createProduct(data: CreateProductInput) {
-    const existing = await prisma.product.findUnique({ where: { slug: data.slug } });
-    if (existing) {
-      throw { statusCode: 400, message: 'Product slug already exists' };
+    let slug = generateSlug(data.name);
+    
+    // Slug collision handling
+    const existingSlug = await prisma.product.findUnique({ where: { slug } });
+    if (existingSlug) {
+      const suffix = randomBytes(3).toString('hex');
+      slug = `${slug}-${suffix}`;
     }
 
-    const { category_ids, images, base_price, ...rest } = data;
+    const { category_ids, base_price, ...rest } = data;
 
-    return prisma.$transaction(async (tx) => {
+    // Transaction ensures both product and categories are saved together
+    const result = await prisma.$transaction(async (tx) => {
       const product = await tx.product.create({
         data: {
           ...rest,
+          slug,
           base_price: new Prisma.Decimal(base_price),
         }
       });
 
+      // Category assignment (if this fails, transaction rolls back)
       if (category_ids && category_ids.length > 0) {
         await tx.productCategory.createMany({
           data: category_ids.map(category_id => ({
@@ -112,32 +106,16 @@ export const productService = {
         });
       }
 
-      if (images && images.length > 0) {
-        await tx.productImage.createMany({
-          data: images.map(img => ({
-            product_id: product.id,
-            url: img.url,
-            alt_text: img.alt_text,
-            sort_order: img.sort_order || 0
-          }))
-        });
-      }
-
-      return tx.product.findUnique({
+      return tx.product.findUniqueOrThrow({
         where: { id: product.id },
-        include: { categories: true, images: true }
+        include: { categories: { include: { category: true } } }
       });
     });
+
+    return serializeProduct(result);
   },
 
   async updateProduct(id: string, data: UpdateProductInput) {
-    if (data.slug) {
-      const existing = await prisma.product.findUnique({ where: { slug: data.slug } });
-      if (existing && existing.id !== id) {
-        throw { statusCode: 400, message: 'Product slug already exists' };
-      }
-    }
-
     const productExists = await prisma.product.findUnique({ where: { id } });
     if (!productExists) {
       throw { statusCode: 404, message: 'Product not found' };
@@ -145,23 +123,21 @@ export const productService = {
 
     const { category_ids, base_price, ...rest } = data;
 
-    if (category_ids) {
-      return prisma.$transaction(async (tx) => {
-        // Update product
-        const updateData: any = { ...rest };
-        if (base_price !== undefined) {
-          updateData.base_price = new Prisma.Decimal(base_price);
-        }
+    const result = await prisma.$transaction(async (tx) => {
+      const updateData: any = { ...rest };
+      if (base_price !== undefined) {
+        updateData.base_price = new Prisma.Decimal(base_price);
+      }
 
-        await tx.product.update({
-          where: { id },
-          data: updateData
-        });
+      await tx.product.update({
+        where: { id },
+        data: updateData
+      });
 
-        // Delete existing category connections
+      if (category_ids) {
+        // Complete replacement strategy for categories
         await tx.productCategory.deleteMany({ where: { product_id: id } });
-
-        // Add new category connections
+        
         if (category_ids.length > 0) {
           await tx.productCategory.createMany({
             data: category_ids.map(category_id => ({
@@ -170,22 +146,15 @@ export const productService = {
             }))
           });
         }
-
-        return tx.product.findUnique({
-          where: { id },
-          include: { categories: true }
-        });
-      });
-    } else {
-      const updateData: any = { ...rest };
-      if (base_price !== undefined) {
-        updateData.base_price = new Prisma.Decimal(base_price);
       }
-      return prisma.product.update({
+
+      return tx.product.findUniqueOrThrow({
         where: { id },
-        data: updateData
+        include: { categories: { include: { category: true } } }
       });
-    }
+    });
+
+    return serializeProduct(result);
   },
 
   async deleteProduct(id: string) {
@@ -194,34 +163,18 @@ export const productService = {
       throw { statusCode: 404, message: 'Product not found' };
     }
 
-    await prisma.product.update({
-      where: { id },
-      data: { is_active: false }
+    // Check if product is ordered
+    const orderItemCount = await prisma.orderItem.count({
+      where: { product_id: id }
     });
-  },
 
-  async addProductImage(product_id: string, data: { url: string; alt_text?: string; sort_order?: number }) {
-    const product = await prisma.product.findUnique({ where: { id: product_id } });
-    if (!product) {
-      throw { statusCode: 404, message: 'Product not found' };
+    if (orderItemCount > 0) {
+      throw { statusCode: 400, message: 'Cannot delete product that has been ordered' };
     }
 
-    return prisma.productImage.create({
-      data: {
-        product_id,
-        url: data.url,
-        alt_text: data.alt_text,
-        sort_order: data.sort_order || 0
-      }
+    // Hard delete - productCategory rows will be cascade deleted
+    await prisma.product.delete({
+      where: { id }
     });
-  },
-
-  async deleteProductImage(image_id: string) {
-    const image = await prisma.productImage.findUnique({ where: { id: image_id } });
-    if (!image) {
-      throw { statusCode: 404, message: 'Image not found' };
-    }
-
-    await prisma.productImage.delete({ where: { id: image_id } });
   }
 };

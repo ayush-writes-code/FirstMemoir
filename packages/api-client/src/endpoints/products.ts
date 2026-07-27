@@ -1,20 +1,63 @@
 import { fetchClient } from '../client';
-import type { ProductDetailResponse, ProductsListResponse } from '../types';
+import type { ApiResponse, Product, CreateProductInput, UpdateProductInput } from '../types';
 
-export const getProducts = (options?: { category?: string; limit?: number; page?: number; sort?: string }): Promise<import('../types').ApiResponse<ProductsListResponse['products']>> => {
+/**
+ * Fetch a paginated list of products.
+ */
+export const getProducts = (options?: { category?: string; limit?: number; page?: number; sort?: string }): Promise<ApiResponse<Product[]>> => {
   let url = '/products';
   if (options) {
     const params = new URLSearchParams();
     if (options.category) params.append('category', options.category);
     if (options.limit) params.append('limit', options.limit.toString());
+    if (options.page) params.append('page', options.page.toString());
+    if (options.sort) params.append('sort', options.sort);
     const queryString = params.toString();
     if (queryString) {
       url += `?${queryString}`;
     }
   }
-  return fetchClient(url);
+  
+  // Notice we are returning the array directly instead of ProductsListResponse to match getCategories
+  return fetchClient<Product[]>(url).then(res => {
+    // Our fetchClient casts the T onto the response data, but because our backend returns
+    // res.json(paginatedResponse(products, ...)), the 'data' field is the array.
+    return res;
+  });
 };
 
-export const getProductBySlug = (slug: string): Promise<import('../types').ApiResponse<ProductDetailResponse>> => {
-  return fetchClient(`/products/${slug}`);
+
+
+/**
+ * Create a new product.
+ * Requires name, base_price, and at least one category.
+ */
+export const createProduct = (input: CreateProductInput): Promise<ApiResponse<Product>> => {
+  return fetchClient<Product>('/products', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+};
+
+/**
+ * Update an existing product by ID.
+ * The slug cannot be updated.
+ * The `category_ids` array will completely replace existing assignments.
+ */
+export const updateProduct = (id: string, input: UpdateProductInput): Promise<ApiResponse<Product>> => {
+  return fetchClient<Product>(`/products/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+};
+
+/**
+ * Delete a product by ID.
+ * Returns 400 if the product has been ordered.
+ * Returns 204 No Content on success; data will be null.
+ */
+export const deleteProduct = (id: string): Promise<ApiResponse<null>> => {
+  return fetchClient<null>(`/products/${id}`, {
+    method: 'DELETE',
+  });
 };
