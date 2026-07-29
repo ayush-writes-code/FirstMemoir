@@ -43,9 +43,19 @@ export interface UpdateCategoryInput {
   sort_order?: number;
 }
 
+export type StorageVisibility = 'public' | 'private';
+
+export interface PresignedPostResponse {
+  url: string;
+  fields: Record<string, string>;
+  fileKey: string;
+  publicUrl?: string; // Present only if visibility is 'public'
+}
+
 export interface ProductImage {
   id: string;
-  url: string;
+  file_key: string;
+  url: string; // Dynamically added by the backend
   alt_text: string | null;
   sort_order: number;
 }

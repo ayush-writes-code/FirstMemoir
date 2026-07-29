@@ -79,5 +79,38 @@ export const productController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  async confirmProductImage(req: Request, res: Response, next: NextFunction) {
+    try {
+      const image = await productService.confirmProductImage(req.params.id as string, req.body);
+      res.status(201).json(successResponse(image));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async deleteProductImage(req: Request, res: Response, next: NextFunction) {
+    try {
+      await productService.deleteProductImage(req.params.id as string, req.params.imageId as string);
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
   }
+};
+
+export const confirmProductImageSchema = {
+  params: z.object({ id: z.string().uuid() }),
+  body: z.object({
+    file_key: z.string().min(1, "File key is required"),
+    alt_text: z.string().max(255).optional().nullable()
+  })
+};
+
+export const imageIdParamSchema = {
+  params: z.object({
+    id: z.string().uuid(),
+    imageId: z.string().uuid()
+  })
 };

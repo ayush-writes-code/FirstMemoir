@@ -179,7 +179,7 @@ model ProductImage {
   id         String  @id @default(uuid())
   product_id String
   product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  url        String
+  file_key   String
   alt_text   String?
   sort_order Int     @default(0)
 

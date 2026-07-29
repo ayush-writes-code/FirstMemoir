@@ -22,12 +22,23 @@ function generateSlug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 }
 
+import { env } from '../config/env.js';
+
 function serializeProduct(product: any) {
   if (!product) return product;
-  return {
+  const serialized = {
     ...product,
     base_price: product.base_price.toString()
   };
+
+  if (serialized.images) {
+    serialized.images = serialized.images.map((img: any) => ({
+      ...img,
+      url: `${env.R2_PUBLIC_URL}/${img.file_key}`
+    }));
+  }
+
+  return serialized;
 }
 
 export const productService = {
@@ -157,13 +168,73 @@ export const productService = {
     return serializeProduct(result);
   },
 
+  async confirmProductImage(productId: string, data: { file_key: string, alt_text?: string }) {
+    // 1. Verify product exists
+    const productExists = await prisma.product.findUnique({ where: { id: productId } });
+    if (!productExists) {
+      throw { statusCode: 404, message: 'Product not found' };
+    }
+
+    // 2. Server-side verification of R2 object
+    const { storageService } = await import('./storage.service.js');
+    await storageService.verifyFile(data.file_key, {
+      expectedPrefix: 'products/',
+      allowedMimeTypes: new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']),
+      maxSizeBytes: 5 * 1024 * 1024 // 5MB limit
+    });
+
+    // 3. Persist record
+    const highestSort = await prisma.productImage.findFirst({
+      where: { product_id: productId },
+      orderBy: { sort_order: 'desc' }
+    });
+    
+    const newSortOrder = highestSort ? highestSort.sort_order + 1 : 0;
+
+    const newImage = await prisma.productImage.create({
+      data: {
+        product_id: productId,
+        file_key: data.file_key,
+        alt_text: data.alt_text,
+        sort_order: newSortOrder
+      }
+    });
+
+    return {
+      ...newImage,
+      url: `${env.R2_PUBLIC_URL}/${newImage.file_key}`
+    };
+  },
+
+  async deleteProductImage(productId: string, imageId: string) {
+    const image = await prisma.productImage.findUnique({
+      where: { id: imageId }
+    });
+
+    if (!image || image.product_id !== productId) {
+      throw { statusCode: 404, message: 'Image not found' };
+    }
+
+    // 1. Delete database record
+    await prisma.productImage.delete({ where: { id: imageId } });
+
+    // 2. Best-effort R2 deletion
+    const { storageService } = await import('./storage.service.js');
+    storageService.deleteFile(image.file_key).catch(err => {
+      console.error(`Failed to delete orphaned R2 object: ${image.file_key}`, err);
+    });
+  },
+
   async deleteProduct(id: string) {
-    const product = await prisma.product.findUnique({ where: { id } });
+    const product = await prisma.product.findUnique({
+      where: { id },
+      include: { images: true }
+    });
+
     if (!product) {
       throw { statusCode: 404, message: 'Product not found' };
     }
 
-    // Check if product is ordered
     const orderItemCount = await prisma.orderItem.count({
       where: { product_id: id }
     });
@@ -172,9 +243,18 @@ export const productService = {
       throw { statusCode: 400, message: 'Cannot delete product that has been ordered' };
     }
 
-    // Hard delete - productCategory rows will be cascade deleted
+    const fileKeys = product.images.map(img => img.file_key);
+
     await prisma.product.delete({
       where: { id }
     });
+
+    // Best-effort cascade R2 deletion
+    const { storageService } = await import('./storage.service.js');
+    for (const key of fileKeys) {
+      storageService.deleteFile(key).catch(err => {
+        console.error(`Failed to delete cascaded R2 object: ${key}`, err);
+      });
+    }
   }
 };

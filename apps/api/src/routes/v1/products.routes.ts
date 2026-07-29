@@ -1,5 +1,13 @@
 import { Router } from 'express';
-import { productController, listProductsSchema, createProductSchema, updateProductSchema, idParamSchema } from '../../controllers/product.controller.js';
+import { 
+  productController, 
+  listProductsSchema, 
+  createProductSchema, 
+  updateProductSchema, 
+  idParamSchema,
+  confirmProductImageSchema,
+  imageIdParamSchema
+} from '../../controllers/product.controller.js';
 import { validate } from '../../middlewares/validate.middleware.js';
 import { authenticate, requireAdmin } from '../../middlewares/auth.middleware.js';
 
@@ -11,5 +19,9 @@ router.post('/', authenticate, requireAdmin, validate(createProductSchema), prod
 
 router.put('/:id', authenticate, requireAdmin, validate(idParamSchema), validate(updateProductSchema), productController.updateProduct);
 router.delete('/:id', authenticate, requireAdmin, validate(idParamSchema), productController.deleteProduct);
+
+// Image endpoints
+router.post('/:id/images/confirm', authenticate, requireAdmin, validate(confirmProductImageSchema), productController.confirmProductImage);
+router.delete('/:id/images/:imageId', authenticate, requireAdmin, validate(imageIdParamSchema), productController.deleteProductImage);
 
 export default router;

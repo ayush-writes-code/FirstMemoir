@@ -1,5 +1,5 @@
 import { fetchClient } from '../client';
-import type { ApiResponse, Product, CreateProductInput, UpdateProductInput } from '../types';
+import type { ApiResponse, Product, CreateProductInput, UpdateProductInput, ProductImage } from '../types';
 
 /**
  * Fetch a paginated list of products.
@@ -58,6 +58,25 @@ export const updateProduct = (id: string, input: UpdateProductInput): Promise<Ap
  */
 export const deleteProduct = (id: string): Promise<ApiResponse<null>> => {
   return fetchClient<null>(`/products/${id}`, {
+    method: 'DELETE',
+  });
+};
+
+/**
+ * Confirm a product image upload and save it to the product.
+ */
+export const confirmProductImage = (productId: string, input: { file_key: string; alt_text?: string }): Promise<ApiResponse<ProductImage>> => {
+  return fetchClient<ProductImage>(`/products/${productId}/images/confirm`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+};
+
+/**
+ * Delete a product image.
+ */
+export const deleteProductImage = (productId: string, imageId: string): Promise<ApiResponse<null>> => {
+  return fetchClient<null>(`/products/${productId}/images/${imageId}`, {
     method: 'DELETE',
   });
 };
