@@ -1,10 +1,8 @@
 export type StorageVisibility = 'public' | 'private';
 
-export interface PresignedPostResponse {
-  /** The R2 endpoint URL to POST the multipart/form-data to */
+export interface PresignedUploadResponse {
+  /** The R2 endpoint URL to PUT the binary file to */
   url: string;
-  /** Signed fields that must be included in the FormData alongside the file */
-  fields: Record<string, string>;
   /** The storage key to reference this asset in subsequent API calls */
   fileKey: string;
   /**
@@ -16,19 +14,16 @@ export interface PresignedPostResponse {
 
 export interface IStorageProvider {
   /**
-   * Generates a pre-signed POST policy for a direct browser-to-R2 upload.
-   * The caller must POST to `url` using FormData with all `fields` included
-   * before appending the file.
-   *
-   * File size and MIME type limits are enforced server-side inside the policy.
-   * The caller does NOT control these limits.
+   * Generates a pre-signed PUT URL for a direct browser-to-R2 upload.
+   * The caller must PUT the file directly to `url` using binary payload.
+   * The Content-Type header must exactly match the requested mimeType.
    */
-  generateUploadPostPolicy(
+  generateUploadUrl(
     fileName: string,
     mimeType: string,
     visibility: StorageVisibility,
     maxSizeBytes: number,
-  ): Promise<PresignedPostResponse>;
+  ): Promise<PresignedUploadResponse>;
 
   /**
    * Generates a short-lived pre-signed URL for reading a private file.

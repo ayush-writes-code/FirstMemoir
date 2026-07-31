@@ -1,12 +1,11 @@
-import { S3Client, DeleteObjectCommand, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
-import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
+import { S3Client, DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 import path from 'path';
 import { env } from '../../config/env.js';
 import type {
   IStorageProvider,
-  PresignedPostResponse,
+  PresignedUploadResponse,
   StorageVisibility,
 } from './storage.interface.js';
 
@@ -33,28 +32,23 @@ function buildFileKey(fileName: string, visibility: StorageVisibility): string {
 }
 
 export const r2Provider: IStorageProvider = {
-  async generateUploadPostPolicy(
+  async generateUploadUrl(
     fileName: string,
     mimeType: string,
     visibility: StorageVisibility,
     maxSizeBytes: number,
-  ): Promise<PresignedPostResponse> {
+  ): Promise<PresignedUploadResponse> {
     const fileKey = buildFileKey(fileName, visibility);
 
-    const { url, fields } = await createPresignedPost(client, {
+    const command = new PutObjectCommand({
       Bucket: env.R2_BUCKET_NAME,
       Key: fileKey,
-      Conditions: [
-        ['eq', '$Content-Type', mimeType],
-        ['content-length-range', 1, maxSizeBytes],
-      ],
-      Fields: {
-        'Content-Type': mimeType,
-      },
-      Expires: 300,
+      ContentType: mimeType,
     });
 
-    const result: PresignedPostResponse = { url, fields, fileKey };
+    const url = await getSignedUrl(client, command, { expiresIn: 300 });
+
+    const result: PresignedUploadResponse = { url, fileKey };
 
     if (visibility === 'public') {
       result.publicUrl = `${env.R2_PUBLIC_URL}/${fileKey}`;

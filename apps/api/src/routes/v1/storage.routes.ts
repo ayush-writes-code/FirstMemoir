@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import {
   storageController,
-  requestUploadPolicySchema,
+  requestUploadUrlSchema,
   requestReadUrlSchema,
 } from '../../controllers/storage.controller.js';
 import { validate } from '../../middlewares/validate.middleware.js';
@@ -10,9 +10,9 @@ import { authenticate } from '../../middlewares/auth.middleware.js';
 const router = Router();
 
 /**
- * POST /api/v1/storage/upload-policy
+ * POST /api/v1/storage/upload-url
  *
- * Any authenticated user can request an upload policy.
+ * Any authenticated user can request an upload URL.
  * - Admins use it to upload product images (public).
  * - Customers will use it to upload print photos (private).
  *
@@ -24,10 +24,10 @@ const router = Router();
  * - Abandoned customer uploads → cleaned up by an R2 Lifecycle Rule.
  */
 router.post(
-  '/upload-policy',
+  '/upload-url',
   authenticate,
-  validate(requestUploadPolicySchema),
-  storageController.requestUploadPolicy,
+  validate(requestUploadUrlSchema),
+  storageController.requestUploadUrl,
 );
 
 /**

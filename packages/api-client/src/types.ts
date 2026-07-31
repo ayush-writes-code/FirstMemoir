@@ -45,9 +45,8 @@ export interface UpdateCategoryInput {
 
 export type StorageVisibility = 'public' | 'private';
 
-export interface PresignedPostResponse {
+export interface PresignedUploadResponse {
   url: string;
-  fields: Record<string, string>;
   fileKey: string;
   publicUrl?: string; // Present only if visibility is 'public'
 }

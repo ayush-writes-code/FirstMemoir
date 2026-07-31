@@ -26,7 +26,7 @@ const MAX_SIZE_BYTES: Record<StorageVisibility, number> = {
 // ---------------------------------------------------------------------------
 // Zod schemas
 // ---------------------------------------------------------------------------
-export const requestUploadPolicySchema = {
+export const requestUploadUrlSchema = {
   body: z.object({
     file_name: z.string().trim().min(1).max(255),
     mime_type: z.string().trim().min(1),
@@ -56,12 +56,12 @@ export const requestReadUrlSchema = {
 // ---------------------------------------------------------------------------
 export const storageController = {
   /**
-   * POST /api/v1/storage/upload-policy
+   * POST /api/v1/storage/upload-url
    *
-   * Returns a pre-signed POST policy that the client uses to upload a file
+   * Returns a pre-signed PUT URL that the client uses to upload a file
    * directly to R2 — no file data passes through the backend.
    */
-  async requestUploadPolicy(req: Request, res: Response, next: NextFunction) {
+  async requestUploadUrl(req: Request, res: Response, next: NextFunction) {
     try {
       const { file_name, mime_type, visibility } = req.body as {
         file_name: string;
@@ -80,7 +80,7 @@ export const storageController = {
 
       const maxSizeBytes = MAX_SIZE_BYTES[visibility];
 
-      const policy = await storageService.generateUploadPostPolicy(
+      const policy = await storageService.generateUploadUrl(
         file_name,
         mime_type,
         visibility,
@@ -89,7 +89,6 @@ export const storageController = {
 
       res.status(201).json(successResponse({
         upload_url:     policy.url,
-        fields:         policy.fields,
         file_key:       policy.fileKey,
         public_url:     policy.publicUrl ?? null,
         expires_in:     300, // seconds

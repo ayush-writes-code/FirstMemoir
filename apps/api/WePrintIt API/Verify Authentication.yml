@@ -1,10 +1,11 @@
 info:
-  name: 01 - Upload Policy
+  name: Verify Authentication
   type: http
+  seq: 1
 
 http:
-  method: POST
-  url: "{{baseUrl}}/api/v1/storage/upload-policy"
+  method: GET
+  url: http://localhost:3001/api/v1/auth/me
   auth: inherit
 
 settings:

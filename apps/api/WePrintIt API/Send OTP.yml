@@ -1,5 +1,5 @@
 info:
-  name: 01 - Send OTP
+  name: Send OTP
   type: http
   seq: 1
 
@@ -13,4 +13,3 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
-​

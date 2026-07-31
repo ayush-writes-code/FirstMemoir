@@ -1,0 +1,42 @@
+info:
+  name: Upload to R2
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: https://weprintit-assets.694b7628005c133e000f815f81d91640.r2.cloudflarestorage.com/
+  body:
+    type: multipart-form
+    data:
+      - name: Content-Type
+        type: text
+        value: image/webp
+      - name: bucket
+        type: text
+        value: weprintit-assets
+      - name: X-Amz-Algorithm
+        type: text
+        value: AWS4-HMAC-SHA256
+      - name: X-Amz-Credential
+        type: text
+        value: 6ab294ed3fca74dd1aa302fabc654ab9/20260730/auto/s3/aws4_request
+      - name: X-Amz-Date
+        type: text
+        value: 20260730T104038Z
+      - name: key
+        type: text
+        value: products/1785408038225-85b6c9e9-2fe4-47aa-b5f3-50ddf1fe9364.webp
+      - name: Policy
+        type: text
+        value: eyJleHBpcmF0aW9uIjoiMjAyNi0wNy0zMFQxMDo0NTozOFoiLCJjb25kaXRpb25zIjpbWyJlcSIsIiRDb250ZW50LVR5cGUiLCJpbWFnZS93ZWJwIl0sWyJjb250ZW50LWxlbmd0aC1yYW5nZSIsMSw1MjQyODgwXSx7IkNvbnRlbnQtVHlwZSI6ImltYWdlL3dlYnAifSx7ImJ1Y2tldCI6IndlcHJpbnRpdC1hc3NldHMifSx7IlgtQW16LUFsZ29yaXRobSI6IkFXUzQtSE1BQy1TSEEyNTYifSx7IlgtQW16LUNyZWRlbnRpYWwiOiI2YWIyOTRlZDNmY2E3NGRkMWFhMzAyZmFiYzY1NGFiOS8yMDI2MDczMC9hdXRvL3MzL2F3czRfcmVxdWVzdCJ9LHsiWC1BbXotRGF0ZSI6IjIwMjYwNzMwVDEwNDAzOFoifSx7ImtleSI6InByb2R1Y3RzLzE3ODU0MDgwMzgyMjUtODViNmM5ZTktMmZlNC00N2FhLWI1ZjMtNTBkZGYxZmU5MzY0LndlYnAifV19
+      - name: X-Amz-Signature
+        type: text
+        value: f311a67ef7e28c3488259c91dacd62d7b068bb5ecaa979c8c064c141623915ba
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
