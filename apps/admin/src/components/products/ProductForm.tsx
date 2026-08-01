@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Product, Category, CreateProductInput, UpdateProductInput } from '@repo/api-client';
 import { X } from 'lucide-react';
+import { ProductImageList } from './ProductImageList';
 
 interface Props {
   mode: 'create' | 'edit';
@@ -224,6 +225,16 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
               </p>
             )}
           </form>
+
+          {/* Product Images (Only in Edit Mode) */}
+          {mode === 'edit' && product && (
+            <div className="px-6 pb-5">
+              <div className="border-t border-gray-100 pt-5 mb-4">
+                <h3 className="text-sm font-medium text-gray-900 mb-3">Product Images</h3>
+                <ProductImageList images={product.images} />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Modal Footer */}
