@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import type { Product, Category, CreateProductInput, UpdateProductInput } from '@repo/api-client';
+import { products as productsApi } from '@repo/api-client';
+import type { Product, Category, CreateProductInput, UpdateProductInput, ProductImage } from '@repo/api-client';
 import { X } from 'lucide-react';
 import { ProductImageList } from './ProductImageList';
 import { ProductImageUpload } from './ProductImageUpload';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 interface Props {
   mode: 'create' | 'edit';
@@ -50,6 +52,11 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
     is_active: product?.is_active ?? true,
   });
   const [localError, setLocalError] = useState('');
+  
+  // Image deletion state
+  const [imageToDelete, setImageToDelete] = useState<ProductImage | null>(null);
+  const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
 
   // Reset form only when the selected product ID changes.
   // This prevents form wipeout when the product is refreshed with new images after an upload.
@@ -97,6 +104,24 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
       is_active: form.is_active,
     };
     onSubmit(payload);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!product || !imageToDelete) return;
+    
+    setDeletingImageId(imageToDelete.id);
+    setImageToDelete(null); // Close dialog immediately
+    setDeleteError('');
+
+    try {
+      await productsApi.deleteProductImage(product.id, imageToDelete.id);
+      onRefresh?.();
+    } catch (err: any) {
+      console.error('Failed to delete image:', err);
+      setDeleteError(err.message || 'Failed to delete image. Please try again.');
+    } finally {
+      setDeletingImageId(null);
+    }
   };
 
   const displayError = error || localError;
@@ -240,7 +265,17 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
                     onUploadComplete={() => onRefresh?.()}
                   />
                 </div>
-                <ProductImageList images={product.images} />
+                {deleteError && (
+                  <div className="mb-4 bg-red-50 text-red-700 text-sm px-3 py-2.5 rounded-md border border-red-100">
+                    {deleteError}
+                  </div>
+                )}
+                <ProductImageList 
+                  images={product.images} 
+                  deletingImageId={deletingImageId}
+                  disabled={isSubmitting}
+                  onDeleteImage={(image) => setImageToDelete(image)}
+                />
               </div>
             </div>
           )}
@@ -276,6 +311,16 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
           </button>
         </div>
       </div>
+      
+      <ConfirmDialog
+        isOpen={imageToDelete !== null}
+        title="Delete Image"
+        description="Are you sure you want to delete this product image? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setImageToDelete(null)}
+      />
     </div>
   );
 }
