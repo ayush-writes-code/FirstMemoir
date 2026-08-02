@@ -1,0 +1,1 @@
+{"root":["./src/client.ts","./src/index.ts","./src/types.ts","./src/endpoints/auth.ts","./src/endpoints/categories.ts","./src/endpoints/products.ts","./src/endpoints/storage.ts"],"version":"5.9.2"}

@@ -36,6 +36,8 @@ function serializeProduct(product: any) {
       ...img,
       url: `${env.R2_PUBLIC_URL}/${img.file_key}`
     }));
+  } else {
+    serialized.images = [];
   }
 
   return serialized;
@@ -70,7 +72,8 @@ export const productService = {
         take: limit,
         orderBy,
         include: {
-          categories: { include: { category: true } }
+          categories: { include: { category: true } },
+          images: true
         }
       }),
       prisma.product.count({ where })
@@ -117,13 +120,15 @@ export const productService = {
         });
       }
 
-      return tx.product.findUniqueOrThrow({
-        where: { id: product.id },
-        include: { categories: { include: { category: true } } }
-      });
+      return product.id;
     });
 
-    return serializeProduct(result);
+    const createdProduct = await prisma.product.findUniqueOrThrow({
+      where: { id: result },
+      include: { categories: { include: { category: true } }, images: true }
+    });
+
+    return serializeProduct(createdProduct);
   },
 
   async updateProduct(id: string, data: UpdateProductInput) {
@@ -159,13 +164,15 @@ export const productService = {
         }
       }
 
-      return tx.product.findUniqueOrThrow({
-        where: { id },
-        include: { categories: { include: { category: true } } }
-      });
+      return id;
     });
 
-    return serializeProduct(result);
+    const updatedProduct = await prisma.product.findUniqueOrThrow({
+      where: { id: result },
+      include: { categories: { include: { category: true } }, images: true }
+    });
+
+    return serializeProduct(updatedProduct);
   },
 
   async confirmProductImage(productId: string, data: { file_key: string, alt_text?: string }) {

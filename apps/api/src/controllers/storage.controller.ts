@@ -3,24 +3,28 @@ import { z } from 'zod';
 import { storageService } from '../services/storage.service.js';
 import { successResponse } from '../utils/response.js';
 import type { StorageVisibility } from '../services/storage/storage.interface.js';
+import {
+  ALLOWED_IMAGE_MIME_TYPES,
+  MAX_PUBLIC_IMAGE_SIZE_BYTES,
+  MAX_PRIVATE_IMAGE_SIZE_BYTES,
+} from '@repo/shared';
 
 // ---------------------------------------------------------------------------
 // MIME type whitelist
 // ---------------------------------------------------------------------------
 // Only these types may be uploaded to R2. The backend validates this before
 // generating a policy — the bucket-level condition enforces it at upload time.
-const ALLOWED_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]);
+//
+// Sourced from shared @repo/shared constants.
+const ALLOWED_MIME_TYPES = new Set<string>(ALLOWED_IMAGE_MIME_TYPES);
 
 // ---------------------------------------------------------------------------
 // Upload size limits — determined internally, never by the caller.
 // ---------------------------------------------------------------------------
+// Sourced from shared @repo/shared constants.
 const MAX_SIZE_BYTES: Record<StorageVisibility, number> = {
-  public:  5  * 1024 * 1024, // 5 MB  — product assets (admin-controlled)
-  private: 50 * 1024 * 1024, // 50 MB — customer photos (print-quality)
+  public:  MAX_PUBLIC_IMAGE_SIZE_BYTES,
+  private: MAX_PRIVATE_IMAGE_SIZE_BYTES,
 };
 
 // ---------------------------------------------------------------------------

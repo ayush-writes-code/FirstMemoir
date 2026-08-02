@@ -46,9 +46,11 @@ export interface UpdateCategoryInput {
 export type StorageVisibility = 'public' | 'private';
 
 export interface PresignedUploadResponse {
-  url: string;
-  fileKey: string;
-  publicUrl?: string; // Present only if visibility is 'public'
+  upload_url: string;
+  file_key: string;
+  public_url: string | null;
+  expires_in: number;    // seconds the URL is valid for
+  max_size_bytes: number;
 }
 
 export interface ProductImage {

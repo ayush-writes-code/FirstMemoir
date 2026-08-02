@@ -34,6 +34,21 @@ export function Products() {
     if (prodRes.success && prodRes.data && catRes.success && catRes.data) {
       setProductList(prodRes.data);
       setCategoryList(catRes.data);
+      // If an edit modal is open, sync it with the refreshed product data
+      // so the modal never shows stale images after an upload completes.
+      // We only update the images array to preserve any unsaved local form edits.
+      setModal((prev) => {
+        if (prev.type === 'edit' && prodRes.data) {
+          const refreshed = prodRes.data.find((p) => p.id === prev.product.id);
+          if (refreshed) {
+            return {
+              type: 'edit',
+              product: { ...prev.product, images: refreshed.images },
+            };
+          }
+        }
+        return prev;
+      });
     } else {
       setFetchError(prodRes.error ?? catRes.error ?? 'Failed to load data.');
     }
@@ -182,6 +197,7 @@ export function Products() {
           error={mutationError}
           onSubmit={handleUpdate}
           onClose={closeModal}
+          onRefresh={fetchProductsAndCategories}
         />
       )}
 

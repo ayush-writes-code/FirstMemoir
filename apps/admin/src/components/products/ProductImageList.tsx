@@ -20,10 +20,11 @@ export function ProductImageList({ images }: Props) {
   };
 
   const sortedImages = useMemo(() => {
+    if (!images || !Array.isArray(images)) return [];
     return [...images].sort((a, b) => a.sort_order - b.sort_order);
   }, [images]);
 
-  if (images.length === 0) {
+  if (!images || !Array.isArray(images) || images.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-10 px-4 bg-gray-50 border border-dashed border-gray-200 rounded-lg">
         <ImageIcon className="h-10 w-10 text-gray-300 mb-3" />

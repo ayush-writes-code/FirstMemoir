@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Product, Category, CreateProductInput, UpdateProductInput } from '@repo/api-client';
 import { X } from 'lucide-react';
 import { ProductImageList } from './ProductImageList';
+import { ProductImageUpload } from './ProductImageUpload';
 
 interface Props {
   mode: 'create' | 'edit';
@@ -11,6 +12,7 @@ interface Props {
   error: string;
   onSubmit: (data: CreateProductInput | UpdateProductInput) => void;
   onClose: () => void;
+  onRefresh?: () => void;
 }
 
 interface FormState {
@@ -39,7 +41,7 @@ function validate(state: FormState): string {
   return '';
 }
 
-export function ProductForm({ mode, product, categories, isSubmitting, error, onSubmit, onClose }: Props) {
+export function ProductForm({ mode, product, categories, isSubmitting, error, onSubmit, onClose, onRefresh }: Props) {
   const [form, setForm] = useState<FormState>({
     name: product?.name ?? '',
     description: product?.description ?? '',
@@ -49,7 +51,8 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
   });
   const [localError, setLocalError] = useState('');
 
-  // Reset form when product changes
+  // Reset form only when the selected product ID changes.
+  // This prevents form wipeout when the product is refreshed with new images after an upload.
   useEffect(() => {
     setForm({
       name: product?.name ?? '',
@@ -59,7 +62,7 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
       is_active: product?.is_active ?? true,
     });
     setLocalError('');
-  }, [product]);
+  }, [product?.id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -229,8 +232,14 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
           {/* Product Images (Only in Edit Mode) */}
           {mode === 'edit' && product && (
             <div className="px-6 pb-5">
-              <div className="border-t border-gray-100 pt-5 mb-4">
+              <div className="border-t border-gray-100 pt-5">
                 <h3 className="text-sm font-medium text-gray-900 mb-3">Product Images</h3>
+                <div className="mb-4">
+                  <ProductImageUpload
+                    productId={product.id}
+                    onUploadComplete={() => onRefresh?.()}
+                  />
+                </div>
                 <ProductImageList images={product.images} />
               </div>
             </div>

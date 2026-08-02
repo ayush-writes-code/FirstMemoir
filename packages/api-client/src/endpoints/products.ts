@@ -26,7 +26,12 @@ export const getProducts = (options?: { category?: string; limit?: number; page?
   });
 };
 
-
+/**
+ * Fetch a single product by its slug.
+ */
+export const getProductBySlug = (slug: string): Promise<ApiResponse<{ product: Product; frameMaterials: any[] }>> => {
+  return fetchClient<{ product: Product; frameMaterials: any[] }>(`/products/slug/${slug}`);
+};
 
 /**
  * Create a new product.
