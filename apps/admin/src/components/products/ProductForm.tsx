@@ -57,6 +57,9 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
   const [imageToDelete, setImageToDelete] = useState<ProductImage | null>(null);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
+  
+  // Image reordering state
+  const [isReordering, setIsReordering] = useState(false);
 
   // Reset form only when the selected product ID changes.
   // This prevents form wipeout when the product is refreshed with new images after an upload.
@@ -122,6 +125,43 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
     } finally {
       setDeletingImageId(null);
     }
+  };
+
+  const handleReorderImages = async (newOrderedIds: string[]) => {
+    if (!product || isReordering) return;
+
+    const currentOrderedIds = [...product.images]
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((img) => img.id);
+
+    // No-op check: do not call API if array order is identical
+    if (
+      newOrderedIds.length === currentOrderedIds.length &&
+      newOrderedIds.every((id, idx) => id === currentOrderedIds[idx])
+    ) {
+      return;
+    }
+
+    setIsReordering(true);
+    setDeleteError('');
+
+    try {
+      await productsApi.reorderProductImages(product.id, newOrderedIds);
+      onRefresh?.();
+    } catch (err: any) {
+      console.error('Failed to reorder images:', err);
+      setDeleteError(err.message || 'Failed to reorder images. Please try again.');
+    } finally {
+      setIsReordering(false);
+    }
+  };
+
+  const handleSetPrimaryImage = (targetImage: ProductImage) => {
+    if (!product) return;
+    const currentSorted = [...product.images].sort((a, b) => a.sort_order - b.sort_order);
+    const otherImages = currentSorted.filter((img) => img.id !== targetImage.id);
+    const newOrder = [targetImage.id, ...otherImages.map((img) => img.id)];
+    handleReorderImages(newOrder);
   };
 
   const displayError = error || localError;
@@ -273,8 +313,11 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
                 <ProductImageList 
                   images={product.images} 
                   deletingImageId={deletingImageId}
+                  isReordering={isReordering}
                   disabled={isSubmitting}
                   onDeleteImage={(image) => setImageToDelete(image)}
+                  onReorderImages={handleReorderImages}
+                  onSetPrimaryImage={handleSetPrimaryImage}
                 />
               </div>
             </div>

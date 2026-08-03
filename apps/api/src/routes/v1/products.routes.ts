@@ -6,7 +6,8 @@ import {
   updateProductSchema, 
   idParamSchema,
   confirmProductImageSchema,
-  imageIdParamSchema
+  imageIdParamSchema,
+  reorderProductImagesSchema
 } from '../../controllers/product.controller.js';
 import { validate } from '../../middlewares/validate.middleware.js';
 import { authenticate, requireAdmin } from '../../middlewares/auth.middleware.js';
@@ -22,6 +23,8 @@ router.delete('/:id', authenticate, requireAdmin, validate(idParamSchema), produ
 
 // Image endpoints
 router.post('/:id/images/confirm', authenticate, requireAdmin, validate(confirmProductImageSchema), productController.confirmProductImage);
+router.put('/:id/images/reorder', authenticate, requireAdmin, validate(reorderProductImagesSchema), productController.reorderProductImages);
 router.delete('/:id/images/:imageId', authenticate, requireAdmin, validate(imageIdParamSchema), productController.deleteProductImage);
 
 export default router;
+

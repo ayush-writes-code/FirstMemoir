@@ -73,7 +73,7 @@ export const productService = {
         orderBy,
         include: {
           categories: { include: { category: true } },
-          images: true
+          images: { orderBy: [{ sort_order: 'asc' }, { id: 'asc' }] }
         }
       }),
       prisma.product.count({ where })
@@ -125,7 +125,7 @@ export const productService = {
 
     const createdProduct = await prisma.product.findUniqueOrThrow({
       where: { id: result },
-      include: { categories: { include: { category: true } }, images: true }
+      include: { categories: { include: { category: true } }, images: { orderBy: [{ sort_order: 'asc' }, { id: 'asc' }] } }
     });
 
     return serializeProduct(createdProduct);
@@ -169,7 +169,7 @@ export const productService = {
 
     const updatedProduct = await prisma.product.findUniqueOrThrow({
       where: { id: result },
-      include: { categories: { include: { category: true } }, images: true }
+      include: { categories: { include: { category: true } }, images: { orderBy: [{ sort_order: 'asc' }, { id: 'asc' }] } }
     });
 
     return serializeProduct(updatedProduct);
@@ -235,7 +235,7 @@ export const productService = {
   async deleteProduct(id: string) {
     const product = await prisma.product.findUnique({
       where: { id },
-      include: { images: true }
+      include: { images: { orderBy: [{ sort_order: 'asc' }, { id: 'asc' }] } }
     });
 
     if (!product) {
@@ -263,5 +263,44 @@ export const productService = {
         console.error(`Failed to delete cascaded R2 object: ${key}`, err);
       });
     }
+  },
+
+  async reorderProductImages(productId: string, imageIds: string[]) {
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: { images: { orderBy: [{ sort_order: 'asc' }, { id: 'asc' }] } }
+    });
+
+    if (!product) {
+      throw { statusCode: 404, message: 'Product not found' };
+    }
+
+    const existingImageIds = product.images.map(img => img.id);
+    if (
+      existingImageIds.length !== imageIds.length ||
+      !imageIds.every(id => existingImageIds.includes(id))
+    ) {
+      throw { statusCode: 400, message: 'Invalid image_ids: must match existing product images' };
+    }
+
+    // Atomic reorder within a single transaction
+    await prisma.$transaction(
+      imageIds.map((id, index) =>
+        prisma.productImage.update({
+          where: { id },
+          data: { sort_order: index }
+        })
+      )
+    );
+
+    const updatedImages = await prisma.productImage.findMany({
+      where: { product_id: productId },
+      orderBy: [{ sort_order: 'asc' }, { id: 'asc' }]
+    });
+
+    return updatedImages.map(img => ({
+      ...img,
+      url: `${env.R2_PUBLIC_URL}/${img.file_key}`
+    }));
   }
 };

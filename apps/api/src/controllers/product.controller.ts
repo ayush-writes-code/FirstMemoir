@@ -97,6 +97,15 @@ export const productController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  async reorderProductImages(req: Request, res: Response, next: NextFunction) {
+    try {
+      const images = await productService.reorderProductImages(req.params.id as string, req.body.image_ids);
+      res.json(successResponse(images));
+    } catch (error) {
+      next(error);
+    }
   }
 };
 
@@ -114,3 +123,11 @@ export const imageIdParamSchema = {
     imageId: z.string().uuid()
   })
 };
+
+export const reorderProductImagesSchema = {
+  params: z.object({ id: z.string().uuid() }),
+  body: z.object({
+    image_ids: z.array(z.string().uuid()).min(1, "image_ids array must not be empty")
+  })
+};
+

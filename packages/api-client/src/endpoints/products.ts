@@ -85,3 +85,14 @@ export const deleteProductImage = (productId: string, imageId: string): Promise<
     method: 'DELETE',
   });
 };
+
+/**
+ * Reorder product images.
+ */
+export const reorderProductImages = (productId: string, imageIds: string[]): Promise<ApiResponse<ProductImage[]>> => {
+  return fetchClient<ProductImage[]>(`/products/${productId}/images/reorder`, {
+    method: 'PUT',
+    body: JSON.stringify({ image_ids: imageIds }),
+  });
+};
+
