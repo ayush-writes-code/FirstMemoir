@@ -288,6 +288,7 @@ Material availability (`FrameMaterial`) is tracked per frame component. Max widt
 - [x] Next.js Storefront app initialization with Tailwind CSS & global styling.
 - [x] Vite Admin app initialization with layout & routing foundation.
 - [x] Phase 6A: Catalog Contract Stabilization (DTOs, Pagination, Category Tree, ADR).
+- [x] Phase 6.5: Database Workflow Stabilization (Prisma baselining, idempotent seed, whitelist safety model).
 
 ### Pending Features (Milestone 2 - 5)
 - [ ] Next.js Storefront homepage UI, product grid, and category filtering.
