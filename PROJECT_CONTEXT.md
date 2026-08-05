@@ -340,4 +340,71 @@ Material availability (`FrameMaterial`) is tracked per frame component. Max widt
 4. **Final Stage:** Complete Admin Dashboard order management and production deployment.
 
 ---
+
+## 21. Git Commit Policy
+
+> [!CAUTION]
+> **No feature branch or milestone may be committed to Git until ALL of the following conditions are satisfied:**
+>
+> 1. **Architecture review is complete** — the implementation plan has been reviewed and approved by the Product Owner before any code is written.
+> 2. **TypeScript typecheck passes** — `tsc --noEmit` must succeed with zero errors across all affected packages.
+> 3. **Build succeeds** — `npm run build` (or `turbo run build`) must complete without errors.
+> 4. **A Review Package has been prepared** — a structured document covering: modified files, schema changes, API changes, DTO changes, UI changes, build results, and a manual QA checklist.
+> 5. **Manual QA has been completed** — the Product Owner has executed the QA checklist and approved the results.
+> 6. **All critical issues discovered during QA have been resolved.**
+> 7. **Final explicit approval has been given** by the Product Owner.
+
+**The required workflow sequence is:**
+
+```
+Implementation
+    ↓
+TypeCheck / Build Verification
+    ↓
+Prepare Review Package (modified files, QA checklist, known limitations)
+    ↓
+Architecture Review
+    ↓
+Manual QA by Product Owner
+    ↓
+Fix all critical issues
+    ↓
+Final Approval
+    ↓
+Git Commit
+    ↓
+Update PROJECT_CONTEXT.md
+    ↓
+Proceed to next phase
+```
+
+Any deviation from this workflow — including committing before QA, skipping the review package, or proceeding to the next phase without explicit approval — is a process violation.
+
+---
+
+## 22. Architecture Review Standards
+
+Every major architecture proposal must include the following before implementation begins:
+
+1. **Resource Lifecycle Definitions** — For every long-lived resource (images, files, carts, orders, payments, coupons) introduced by the feature:
+   - Creation
+   - Ownership
+   - Mutation
+   - Archival
+   - Deletion
+
+2. **State Machine Diagrams** — For every stateful entity or user flow:
+   - All states enumerated
+   - All valid state transitions with their triggers
+   - Failure/error paths
+
+3. **Explicit State Dependencies** — Any user action that affects another piece of state must be explicitly documented (e.g., changing print size resets crop aspect ratio).
+
+4. **Cart/Pricing Contract** — Any feature that touches pricing must define who is authoritative (always the backend) and how stale state is detected and resolved.
+
+5. **API Contracts** — Endpoints, DTOs, validation rules, and HTTP status codes must be defined before implementation.
+
+These standards were established during the Phase 6B architecture review and apply to all future milestones.
+
+---
 *End of Project Context Document.*
