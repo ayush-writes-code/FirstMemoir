@@ -1,10 +1,10 @@
-import type { Category } from '@repo/api-client';
+import type { CategoryDto } from '@repo/api-client';
 import { Pencil, Trash2 } from 'lucide-react';
 
 interface Props {
-  categories: Category[];
-  onEdit: (category: Category) => void;
-  onDelete: (category: Category) => void;
+  categories: CategoryDto[];
+  onEdit: (category: CategoryDto) => void;
+  onDelete: (category: CategoryDto) => void;
 }
 
 export function CategoryTable({ categories, onEdit, onDelete }: Props) {

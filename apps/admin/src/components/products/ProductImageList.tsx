@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import type { ProductImage } from '@repo/api-client';
+import type { ProductImageDto } from '@repo/api-client';
 import { ImageIcon, Trash2, Loader2, Star, GripVertical } from 'lucide-react';
 import {
   DndContext,
@@ -22,22 +22,22 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 interface Props {
-  images: ProductImage[];
+  images: ProductImageDto[];
   deletingImageId?: string | null;
   isReordering?: boolean;
   disabled?: boolean;
-  onDeleteImage?: (image: ProductImage) => void;
+  onDeleteImage?: (image: ProductImageDto) => void;
   onReorderImages?: (newOrderedIds: string[]) => void;
-  onSetPrimaryImage?: (image: ProductImage) => void;
+  onSetPrimaryImage?: (image: ProductImageDto) => void;
 }
 
 interface SortableImageCardProps {
-  image: ProductImage;
+  image: ProductImageDto;
   index: number;
   isDeleting: boolean;
   isDisabled: boolean;
-  onDeleteImage?: (image: ProductImage) => void;
-  onSetPrimaryImage?: (image: ProductImage) => void;
+  onDeleteImage?: (image: ProductImageDto) => void;
+  onSetPrimaryImage?: (image: ProductImageDto) => void;
   onImageError: (imageId: string) => void;
   hasFailed: boolean;
 }

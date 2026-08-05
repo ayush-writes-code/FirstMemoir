@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import type { Category, CreateCategoryInput, UpdateCategoryInput } from '@repo/api-client';
+import type { CategoryDto, CreateCategoryInput, UpdateCategoryInput } from '@repo/api-client';
 import { X } from 'lucide-react';
 
 interface Props {
   mode: 'create' | 'edit';
-  category?: Category;
+  category?: CategoryDto;
   isSubmitting: boolean;
   error: string;
   onSubmit: (data: CreateCategoryInput | UpdateCategoryInput) => void;

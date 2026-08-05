@@ -1,8 +1,8 @@
-import type { Category } from '@repo/api-client';
+import type { CategoryDto } from '@repo/api-client';
 import { AlertTriangle } from 'lucide-react';
 
 interface Props {
-  category: Category;
+  category: CategoryDto;
   isSubmitting: boolean;
   error: string;
   onConfirm: () => void;
@@ -19,7 +19,7 @@ export function DeleteCategoryDialog({ category, isSubmitting, error, onConfirm,
               <AlertTriangle className="h-5 w-5 text-red-500" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-gray-900">Delete Category</h3>
+              <h3 className="text-base font-semibold text-gray-900">Delete CategoryDto</h3>
               <p className="mt-1 text-sm text-gray-500">
                 Are you sure you want to delete{' '}
                 <span className="font-medium text-gray-800">"{category.name}"</span>?

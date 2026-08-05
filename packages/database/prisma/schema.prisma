@@ -159,6 +159,8 @@ model Product {
   categories  ProductCategory[]
   images      ProductImage[]
   order_items OrderItem[]
+  options     ProductOption[]
+  exclusions  OptionExclusion[]
 
   @@map("products")
 }
@@ -199,6 +201,8 @@ model FrameMaterial {
   image_url      String?
   is_active      Boolean           @default(true)
   created_at     DateTime          @default(now())
+
+  option_values  ProductOptionValue[]
 
   @@map("frame_materials")
 }
@@ -307,4 +311,86 @@ model AuditLog {
   @@index([admin_id])
   @@index([entity_type, entity_id])
   @@map("audit_logs")
+}
+
+// -----------------------------------------
+// PRODUCT OPTIONS (VARIANTS)
+// -----------------------------------------
+
+enum OptionInputType {
+  SELECT
+  RADIO
+  BUTTON
+  SWATCH
+}
+
+enum PriceModifierType {
+  FLAT
+  PERCENTAGE
+}
+
+/// Defines a category of options for a product (e.g., "Size", "Frame")
+model ProductOption {
+  id            String               @id @default(uuid())
+  product_id    String
+  product       Product              @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  name          String               // e.g., "Size", "Frame", "Orientation"
+  input_type    OptionInputType      // e.g., SELECT, BUTTON, RADIO, SWATCH
+  is_required   Boolean              @default(true)
+  sort_order    Int                  @default(0)
+  
+  values        ProductOptionValue[]
+  
+  @@index([product_id])
+  @@map("product_options")
+}
+
+/// Defines the specific choices for an option (e.g., "8x10", "Oak Frame")
+model ProductOptionValue {
+  id                  String               @id @default(uuid())
+  option_id           String
+  option              ProductOption        @relation(fields: [option_id], references: [id], onDelete: Cascade)
+  value               String               // e.g., "16x20", "Oak"
+  
+  // UI Rendering Metadata (e.g., { hex: "#8B4513", swatchUrl: "..." })
+  metadata            Json?                
+  
+  // The pricing modifier strategy
+  modifier_type       PriceModifierType    @default(FLAT)
+  price_modifier      Decimal              @default(0.0) // Can be amount or percentage
+  
+  // Proper relation to global material with SetNull
+  global_material_id  String?
+  global_material     FrameMaterial?       @relation(fields: [global_material_id], references: [id], onDelete: SetNull)
+  
+  // Inventory tracking for this specific component
+  track_inventory     Boolean              @default(false)
+  stock_count         Int                  @default(0)
+  
+  is_active           Boolean              @default(true)
+  sort_order          Int                  @default(0)
+
+  // Relations for exclusions
+  exclusions_as_source OptionExclusion[]   @relation("ExclusionSource")
+  exclusions_as_target OptionExclusion[]   @relation("ExclusionTarget")
+
+  @@index([option_id])
+  @@index([global_material_id])
+  @@map("product_option_values")
+}
+
+/// Defines explicitly incompatible option values (e.g. "Canvas" + "Glass")
+model OptionExclusion {
+  id              String             @id @default(uuid())
+  product_id      String
+  product         Product            @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  
+  option_value_1_id String
+  option_value_1    ProductOptionValue @relation("ExclusionSource", fields: [option_value_1_id], references: [id], onDelete: Cascade)
+  
+  option_value_2_id String
+  option_value_2    ProductOptionValue @relation("ExclusionTarget", fields: [option_value_2_id], references: [id], onDelete: Cascade)
+
+  @@unique([option_value_1_id, option_value_2_id])
+  @@map("option_exclusions")
 }

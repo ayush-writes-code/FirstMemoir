@@ -1,5 +1,6 @@
 import { prisma } from '@repo/database';
 import crypto from 'crypto';
+import { buildCategoryTree } from '../mappers/category.mapper.js';
 
 export interface CreateCategoryInput {
   name: string;
@@ -20,11 +21,20 @@ function generateSlugBase(name: string): string {
 }
 
 export const categoryService = {
-  async getAllCategories() {
+  async getAllCategories(options?: { active?: boolean }) {
     // Admin needs to see all categories, including inactive ones
+    // Storefront queries with active = true
     return prisma.category.findMany({
+      where: options?.active !== undefined ? { is_active: options.active } : undefined,
       orderBy: { sort_order: 'asc' }
     });
+  },
+
+  async getCategoryTree() {
+    const categories = await prisma.category.findMany({
+      orderBy: { sort_order: 'asc' }
+    });
+    return buildCategoryTree(categories);
   },
 
   async getCategoryBySlug(slug: string) {

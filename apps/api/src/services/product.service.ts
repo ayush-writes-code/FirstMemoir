@@ -32,10 +32,14 @@ function serializeProduct(product: any) {
   };
 
   if (serialized.images) {
-    serialized.images = serialized.images.map((img: any) => ({
-      ...img,
-      url: `${env.R2_PUBLIC_URL}/${img.file_key}`
-    }));
+    serialized.images = serialized.images.map((img: any) => {
+      // If file_key is already an absolute URL (e.g. Unsplash seed image), use it directly
+      const isAbsolute = img.file_key.startsWith('http://') || img.file_key.startsWith('https://');
+      return {
+        ...img,
+        url: isAbsolute ? img.file_key : `${env.R2_PUBLIC_URL}/${img.file_key}`
+      };
+    });
   } else {
     serialized.images = [];
   }
@@ -207,9 +211,10 @@ export const productService = {
       }
     });
 
+    const isAbsolute = newImage.file_key.startsWith('http://') || newImage.file_key.startsWith('https://');
     return {
       ...newImage,
-      url: `${env.R2_PUBLIC_URL}/${newImage.file_key}`
+      url: isAbsolute ? newImage.file_key : `${env.R2_PUBLIC_URL}/${newImage.file_key}`
     };
   },
 
@@ -298,9 +303,12 @@ export const productService = {
       orderBy: [{ sort_order: 'asc' }, { id: 'asc' }]
     });
 
-    return updatedImages.map(img => ({
-      ...img,
-      url: `${env.R2_PUBLIC_URL}/${img.file_key}`
-    }));
+    return updatedImages.map(img => {
+      const isAbsolute = img.file_key.startsWith('http://') || img.file_key.startsWith('https://');
+      return {
+        ...img,
+        url: isAbsolute ? img.file_key : `${env.R2_PUBLIC_URL}/${img.file_key}`
+      };
+    });
   }
 };

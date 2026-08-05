@@ -1,9 +1,9 @@
 'use client';
 import { useState } from 'react';
 import Image from 'next/image';
-import type { ProductImage } from '@repo/api-client';
+import type { ProductImageDto } from '@repo/api-client';
 
-export function ProductImageGallery({ images, productName }: { images: ProductImage[], productName: string }) {
+export function ProductImageGallery({ images, productName }: { images: ProductImageDto[], productName: string }) {
   const defaultImageUrl = 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=1200';
   const hasImages = images && images.length > 0;
   const [selectedIndex, setSelectedIndex] = useState(0);

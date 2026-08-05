@@ -1,13 +1,21 @@
 import { fetchClient } from '../client';
-import type { ApiResponse, Category, CreateCategoryInput, UpdateCategoryInput } from '../types';
+import type { ApiResponse, CategoryDto, CategoryTreeDto, CreateCategoryInput, UpdateCategoryInput } from '../types';
 
 /**
  * Fetch all categories.
  * The API currently returns the full list without pagination.
  * The response envelope is pagination-compatible via the `meta` field.
  */
-export const getCategories = (): Promise<ApiResponse<Category[]>> => {
-  return fetchClient<Category[]>('/categories');
+export const getCategories = (options?: { active?: boolean }): Promise<ApiResponse<CategoryDto[]>> => {
+  let url = '/categories';
+  if (options?.active !== undefined) {
+    url += `?active=${options.active}`;
+  }
+  return fetchClient<CategoryDto[]>(url);
+};
+
+export const getCategoryTree = (): Promise<ApiResponse<CategoryTreeDto[]>> => {
+  return fetchClient<CategoryTreeDto[]>('/categories/tree');
 };
 
 /**
@@ -15,8 +23,8 @@ export const getCategories = (): Promise<ApiResponse<Category[]>> => {
  * The backend generates the slug from `name`; do not pass a slug.
  * Throws 400 if the name already exists (case-insensitive).
  */
-export const createCategory = (input: CreateCategoryInput): Promise<ApiResponse<Category>> => {
-  return fetchClient<Category>('/categories', {
+export const createCategory = (input: CreateCategoryInput): Promise<ApiResponse<CategoryDto>> => {
+  return fetchClient<CategoryDto>('/categories', {
     method: 'POST',
     body: JSON.stringify(input),
   });
@@ -26,8 +34,8 @@ export const createCategory = (input: CreateCategoryInput): Promise<ApiResponse<
  * Update an existing category by ID.
  * The slug is immutable and cannot be changed via this endpoint.
  */
-export const updateCategory = (id: string, input: UpdateCategoryInput): Promise<ApiResponse<Category>> => {
-  return fetchClient<Category>(`/categories/${id}`, {
+export const updateCategory = (id: string, input: UpdateCategoryInput): Promise<ApiResponse<CategoryDto>> => {
+  return fetchClient<CategoryDto>(`/categories/${id}`, {
     method: 'PUT',
     body: JSON.stringify(input),
   });

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { products as productsApi, categories as categoriesApi } from '@repo/api-client';
-import type { Product, Category, CreateProductInput, UpdateProductInput } from '@repo/api-client';
+import type { ProductDto, ProductWithOptionsDto, CategoryDto, CreateProductInput, UpdateProductInput } from '@repo/api-client';
 import { ProductTable } from '../components/products/ProductTable';
 import { ProductForm } from '../components/products/ProductForm';
 import { DeleteProductDialog } from '../components/products/DeleteProductDialog';
@@ -9,12 +9,12 @@ import { Plus, RefreshCw } from 'lucide-react';
 type Modal =
   | { type: 'none' }
   | { type: 'create' }
-  | { type: 'edit'; product: Product }
-  | { type: 'delete'; product: Product };
+  | { type: 'edit'; product: ProductDto | ProductWithOptionsDto; isLoadingFullProduct: boolean }
+  | { type: 'delete'; product: ProductDto };
 
 export function Products() {
-  const [productList, setProductList] = useState<Product[]>([]);
-  const [categoryList, setCategoryList] = useState<Category[]>([]);
+  const [productList, setProductList] = useState<ProductDto[]>([]);
+  const [categoryList, setCategoryList] = useState<CategoryDto[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [fetchError, setFetchError] = useState('');
   const [modal, setModal] = useState<Modal>({ type: 'none' });
@@ -44,6 +44,7 @@ export function Products() {
             return {
               type: 'edit',
               product: { ...prev.product, images: refreshed.images },
+              isLoadingFullProduct: prev.isLoadingFullProduct,
             };
           }
         }
@@ -55,6 +56,21 @@ export function Products() {
     
     setIsFetching(false);
   }, []);
+
+  // Refresh a single product with full options/exclusions for the edit modal
+  const refreshEditProduct = useCallback(async () => {
+    if (modal.type !== 'edit') return;
+    const res = await productsApi.getProduct(modal.product.id);
+    if (res.success && res.data) {
+      setModal({ type: 'edit', product: res.data, isLoadingFullProduct: false });
+      // Also refresh the product list so the table stays in sync
+      const listRes = await productsApi.getProducts();
+      if (listRes.success && listRes.data) {
+        setProductList(listRes.data);
+      }
+    }
+  }, [modal]);
+
 
   useEffect(() => {
     fetchProductsAndCategories();
@@ -123,7 +139,7 @@ export function Products() {
           className="inline-flex items-center gap-2 px-4 py-2 bg-[#E8620A] text-white text-sm font-medium rounded-md hover:bg-[#d05809] transition-colors shadow-sm"
         >
           <Plus className="h-4 w-4" />
-          Add Product
+          Add ProductDto
         </button>
       </div>
 
@@ -170,7 +186,18 @@ export function Products() {
         {!isFetching && !fetchError && (
           <ProductTable
             products={productList}
-            onEdit={(prod) => { setMutationError(''); setModal({ type: 'edit', product: prod }); }}
+            onEdit={async (prod) => {
+              setMutationError('');
+              // Open immediately with list data for instant feedback
+              setModal({ type: 'edit', product: prod, isLoadingFullProduct: true });
+              // Then fetch full product with options/exclusions
+              const res = await productsApi.getProduct(prod.id);
+              if (res.success && res.data) {
+                setModal({ type: 'edit', product: res.data, isLoadingFullProduct: false });
+              } else {
+                setModal({ type: 'edit', product: prod, isLoadingFullProduct: false });
+              }
+            }}
             onDelete={(prod) => { setMutationError(''); setModal({ type: 'delete', product: prod }); }}
           />
         )}
@@ -197,7 +224,8 @@ export function Products() {
           error={mutationError}
           onSubmit={handleUpdate}
           onClose={closeModal}
-          onRefresh={fetchProductsAndCategories}
+          onRefresh={refreshEditProduct}
+          isLoadingFullProduct={modal.isLoadingFullProduct}
         />
       )}
 

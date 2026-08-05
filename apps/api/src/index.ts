@@ -23,7 +23,7 @@ app.use(globalLimiter);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'weprintit-api' });
+  res.json({ status: 'ok', service: 'first-memoir-api' });
 });
 
 // API Routes
@@ -32,6 +32,10 @@ app.use('/api', routes);
 // Global Error Handler
 app.use(errorHandler);
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port} in ${env.NODE_ENV} mode`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port} in ${env.NODE_ENV} mode`);
+  });
+}
+
+export { app };

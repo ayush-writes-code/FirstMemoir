@@ -5,8 +5,9 @@
   "types": "index.ts",
   "scripts": {
     "generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "tsx scripts/db-reset.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.0.0"

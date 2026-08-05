@@ -2,6 +2,13 @@ import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { categoryService } from '../services/category.service.js';
 import { successResponse, errorResponse } from '../utils/response.js';
+import { toCategoryDto } from '../mappers/category.mapper.js';
+
+export const listCategoriesSchema = {
+  query: z.object({
+    active: z.enum(['true', 'false']).transform((val) => val === 'true').optional()
+  })
+};
 
 export const createCategorySchema = {
   body: z.object({
@@ -32,8 +39,18 @@ export const idParamSchema = {
 export const categoryController = {
   async listCategories(req: Request, res: Response, next: NextFunction) {
     try {
-      const categories = await categoryService.getAllCategories();
-      res.json(successResponse(categories));
+      const { active } = req.query as any;
+      const categories = await categoryService.getAllCategories({ active });
+      res.json(successResponse(categories.map(toCategoryDto)));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getCategoryTree(req: Request, res: Response, next: NextFunction) {
+    try {
+      const tree = await categoryService.getCategoryTree();
+      res.json(successResponse(tree));
     } catch (error) {
       next(error);
     }
@@ -45,7 +62,7 @@ export const categoryController = {
       if (!category) {
         return res.status(404).json(errorResponse('Category not found', 404));
       }
-      res.json(successResponse(category));
+      res.json(successResponse(toCategoryDto(category)));
     } catch (error) {
       next(error);
     }
@@ -54,7 +71,7 @@ export const categoryController = {
   async createCategory(req: Request, res: Response, next: NextFunction) {
     try {
       const category = await categoryService.createCategoryService(req.body);
-      res.status(201).json(successResponse(category));
+      res.status(201).json(successResponse(toCategoryDto(category)));
     } catch (error) {
       next(error);
     }
@@ -63,7 +80,7 @@ export const categoryController = {
   async updateCategory(req: Request, res: Response, next: NextFunction) {
     try {
       const category = await categoryService.updateCategoryService(req.params.id as string, req.body);
-      res.json(successResponse(category));
+      res.json(successResponse(toCategoryDto(category)));
     } catch (error) {
       next(error);
     }

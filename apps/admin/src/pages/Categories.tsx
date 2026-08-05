@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { categories as categoriesApi } from '@repo/api-client';
-import type { Category, CreateCategoryInput, UpdateCategoryInput } from '@repo/api-client';
+import type { CategoryDto, CreateCategoryInput, UpdateCategoryInput } from '@repo/api-client';
 import { CategoryTable } from '../components/categories/CategoryTable';
 import { CategoryForm } from '../components/categories/CategoryForm';
 import { DeleteCategoryDialog } from '../components/categories/DeleteCategoryDialog';
@@ -9,11 +9,11 @@ import { Plus, RefreshCw } from 'lucide-react';
 type Modal =
   | { type: 'none' }
   | { type: 'create' }
-  | { type: 'edit'; category: Category }
-  | { type: 'delete'; category: Category };
+  | { type: 'edit'; category: CategoryDto }
+  | { type: 'delete'; category: CategoryDto };
 
 export function Categories() {
-  const [categoryList, setCategoryList] = useState<Category[]>([]);
+  const [categoryList, setCategoryList] = useState<CategoryDto[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [fetchError, setFetchError] = useState('');
   const [modal, setModal] = useState<Modal>({ type: 'none' });
@@ -99,7 +99,7 @@ export function Categories() {
           className="inline-flex items-center gap-2 px-4 py-2 bg-[#E8620A] text-white text-sm font-medium rounded-md hover:bg-[#d05809] transition-colors shadow-sm"
         >
           <Plus className="h-4 w-4" />
-          Add Category
+          Add CategoryDto
         </button>
       </div>
 

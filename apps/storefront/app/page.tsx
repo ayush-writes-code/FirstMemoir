@@ -47,7 +47,7 @@ export default async function Home() {
       {/* Categories Strip */}
       {categories.length > 0 && (
         <section className="max-w-content mx-auto px-4 md:px-8 w-full">
-          <h2 className="text-2xl font-semibold text-ink mb-6">Shop by Category</h2>
+          <h2 className="text-2xl font-semibold text-ink mb-6">Shop by CategoryDto</h2>
           <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
             {categories.slice(0, 6).map((category) => (
               <Link 

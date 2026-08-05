@@ -1,11 +1,11 @@
 'use client';
 
-import type { Product } from '@repo/api-client';
+import type { ProductDto } from '@repo/api-client';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Heart } from 'lucide-react';
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({ product }: { product: ProductDto }) {
   const mainImage = product.images?.[0]?.url || 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800';
   
   return (

@@ -16,6 +16,17 @@
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "db:migrate": {
+      "cache": false,
+      "inputs": ["prisma/schema.prisma", ".env*"]
+    },
+    "db:seed": {
+      "cache": false,
+      "inputs": ["prisma/seed.ts", ".env*"]
+    },
+    "db:reset": {
+      "cache": false
     }
   }
 }

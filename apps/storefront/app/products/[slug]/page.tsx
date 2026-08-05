@@ -45,7 +45,7 @@ export default async function ProductDetailPage({
           {/* Description below gallery on desktop */}
           {product.description && (
             <div className="hidden lg:block mt-12 border-t border-hairline pt-8">
-              <h2 className="text-xl font-semibold text-ink mb-4">Product Details</h2>
+              <h2 className="text-xl font-semibold text-ink mb-4">ProductDto Details</h2>
               <div className="text-body leading-relaxed whitespace-pre-wrap">
                 {product.description}
               </div>
@@ -104,7 +104,7 @@ export default async function ProductDetailPage({
             {/* Description on mobile */}
             {product.description && (
               <div className="lg:hidden mt-12 border-t border-hairline pt-8">
-                <h2 className="text-xl font-semibold text-ink mb-4">Product Details</h2>
+                <h2 className="text-xl font-semibold text-ink mb-4">ProductDto Details</h2>
                 <div className="text-body leading-relaxed whitespace-pre-wrap">
                   {product.description}
                 </div>

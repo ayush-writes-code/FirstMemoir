@@ -1,8 +1,8 @@
-import type { Product } from '@repo/api-client';
+import type { ProductDto } from '@repo/api-client';
 import { AlertTriangle, X } from 'lucide-react';
 
 interface Props {
-  product: Product;
+  product: ProductDto;
   isSubmitting: boolean;
   error: string;
   onConfirm: () => void;
@@ -17,7 +17,7 @@ export function DeleteProductDialog({ product, isSubmitting, error, onConfirm, o
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2 text-red-600">
             <AlertTriangle className="h-5 w-5" />
-            <h2 className="text-lg font-semibold text-gray-900">Delete Product</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Delete ProductDto</h2>
           </div>
           <button
             type="button"

@@ -13,11 +13,12 @@ export default async function ProductsPage({
   
   const [productsRes, categoriesRes] = await Promise.all([
     productsApi.getProducts({ category, page: currentPage, sort }),
-    categoriesApi.getCategories(),
+    categoriesApi.getCategories({ active: true }),
   ]);
 
   const products = productsRes.success ? productsRes.data || [] : [];
   const categories = categoriesRes.success ? categoriesRes.data || [] : [];
+  const totalPages = productsRes.meta?.totalPages || 1;
   
   // Basic filtering for heading
   const currentCategoryObj = categories.find(c => c.slug === category);
@@ -85,10 +86,10 @@ export default async function ProductsPage({
           >
             Previous
           </Link>
-          <span className="text-muted">Page {currentPage}</span>
+          <span className="text-muted">Page {currentPage} of {totalPages}</span>
           <Link 
             href={`/products?category=${category || ''}&page=${currentPage + 1}`}
-            className="px-4 py-2 rounded-card border border-border-strong text-ink font-medium hover:bg-surface-soft"
+            className={`px-4 py-2 rounded-card border border-border-strong text-ink font-medium hover:bg-surface-soft ${currentPage >= totalPages ? 'pointer-events-none opacity-50' : ''}`}
           >
             Next
           </Link>

@@ -10,6 +10,18 @@ export interface ApiResponse<T> {
   };
 }
 
+export interface PaginatedApiResponse<T> extends ApiResponse<T[]> {
+  success: boolean;
+  data: T[];
+  error: string | null;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 export interface User {
   id: string;
   phone_number: string;
@@ -19,7 +31,7 @@ export interface User {
   created_at: string;
 }
 
-export interface Category {
+export interface CategoryDto {
   id: string;
   name: string;
   slug: string;
@@ -27,6 +39,10 @@ export interface Category {
   is_active: boolean;
   sort_order: number;
   created_at: string;
+}
+
+export interface CategoryTreeDto extends CategoryDto {
+  children: CategoryTreeDto[];
 }
 
 export interface CreateCategoryInput {
@@ -53,7 +69,7 @@ export interface PresignedUploadResponse {
   max_size_bytes: number;
 }
 
-export interface ProductImage {
+export interface ProductImageDto {
   id: string;
   file_key: string;
   url: string; // Dynamically added by the backend
@@ -61,7 +77,7 @@ export interface ProductImage {
   sort_order: number;
 }
 
-export interface Product {
+export interface ProductDto {
   id: string;
   name: string;
   slug: string;
@@ -70,8 +86,8 @@ export interface Product {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-  images: ProductImage[];
-  categories: Array<{ category: Category }>;
+  images: ProductImageDto[];
+  categories: Array<{ category: CategoryDto }>;
 }
 
 export interface CreateProductInput {
@@ -103,5 +119,56 @@ export interface FrameMaterial {
 
 
 export interface ProductsListResponse {
-  products: Product[];
+  products: ProductDto[];
+}
+
+export interface ProductOptionValueDto {
+  id: string;
+  option_id: string;
+  value: string;
+  metadata: any | null;
+  modifier_type: 'FLAT' | 'PERCENTAGE';
+  price_modifier: string;
+  global_material_id: string | null;
+  track_inventory: boolean;
+  stock_count: number;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface ProductOptionDto {
+  id: string;
+  product_id: string;
+  name: string;
+  input_type: 'SELECT' | 'RADIO' | 'BUTTON' | 'SWATCH';
+  is_required: boolean;
+  sort_order: number;
+  values: ProductOptionValueDto[];
+}
+
+export interface OptionExclusionDto {
+  id: string;
+  product_id: string;
+  option_value_1_id: string;
+  option_value_2_id: string;
+}
+
+export interface PricingModifierBreakdown {
+  optionName: string;
+  value: string;
+  type: 'FLAT' | 'PERCENTAGE';
+  amount: number;
+}
+
+export interface PricingBreakdown {
+  version: 1;
+  basePrice: number;
+  modifiers: PricingModifierBreakdown[];
+  subtotal: number;
+  finalPrice: number;
+}
+
+export interface ProductWithOptionsDto extends ProductDto {
+  options: ProductOptionDto[];
+  exclusions: OptionExclusionDto[];
 }

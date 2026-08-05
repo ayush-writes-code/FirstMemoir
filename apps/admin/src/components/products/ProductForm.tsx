@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react';
 import { products as productsApi } from '@repo/api-client';
-import type { Product, Category, CreateProductInput, UpdateProductInput, ProductImage } from '@repo/api-client';
-import { X } from 'lucide-react';
+import type { ProductDto, CategoryDto, CreateProductInput, UpdateProductInput, ProductImageDto } from '@repo/api-client';
+import { X, RefreshCw } from 'lucide-react';
 import { ProductImageList } from './ProductImageList';
 import { ProductImageUpload } from './ProductImageUpload';
+import { ProductOptionsEditor } from './ProductOptionsEditor';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
+import type { ProductWithOptionsDto } from '@repo/api-client';
 
 interface Props {
   mode: 'create' | 'edit';
-  product?: Product;
-  categories: Category[];
+  product?: ProductWithOptionsDto | ProductDto;
+  categories: CategoryDto[];
   isSubmitting: boolean;
   error: string;
   onSubmit: (data: CreateProductInput | UpdateProductInput) => void;
   onClose: () => void;
   onRefresh?: () => void;
+  isLoadingFullProduct?: boolean;
 }
 
 interface FormState {
@@ -43,7 +46,7 @@ function validate(state: FormState): string {
   return '';
 }
 
-export function ProductForm({ mode, product, categories, isSubmitting, error, onSubmit, onClose, onRefresh }: Props) {
+export function ProductForm({ mode, product, categories, isSubmitting, error, onSubmit, onClose, onRefresh, isLoadingFullProduct = false }: Props) {
   const [form, setForm] = useState<FormState>({
     name: product?.name ?? '',
     description: product?.description ?? '',
@@ -54,12 +57,15 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
   const [localError, setLocalError] = useState('');
   
   // Image deletion state
-  const [imageToDelete, setImageToDelete] = useState<ProductImage | null>(null);
+  const [imageToDelete, setImageToDelete] = useState<ProductImageDto | null>(null);
   const [deletingImageId, setDeletingImageId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState('');
   
   // Image reordering state
   const [isReordering, setIsReordering] = useState(false);
+  
+  // Tabs state
+  const [activeTab, setActiveTab] = useState<'basic' | 'images' | 'variants'>('basic');
 
   // Reset form only when the selected product ID changes.
   // This prevents form wipeout when the product is refreshed with new images after an upload.
@@ -156,7 +162,7 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
     }
   };
 
-  const handleSetPrimaryImage = (targetImage: ProductImage) => {
+  const handleSetPrimaryImage = (targetImage: ProductImageDto) => {
     if (!product) return;
     const currentSorted = [...product.images].sort((a, b) => a.sort_order - b.sort_order);
     const otherImages = currentSorted.filter((img) => img.id !== targetImage.id);
@@ -185,9 +191,40 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
           </button>
         </div>
 
+        {/* Tabs for Edit Mode */}
+        {mode === 'edit' && (
+          <div className="flex px-6 border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab('basic')}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'basic' ? 'border-[#E8620A] text-[#E8620A]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Basic Details
+            </button>
+            <button
+              onClick={() => setActiveTab('images')}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'images' ? 'border-[#E8620A] text-[#E8620A]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Images
+            </button>
+            <button
+              onClick={() => setActiveTab('variants')}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'variants' ? 'border-[#E8620A] text-[#E8620A]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Variants & Options
+            </button>
+          </div>
+        )}
+
         {/* Modal Body */}
         <div className="overflow-y-auto flex-1">
-          <form id="product-form" onSubmit={handleSubmit} noValidate className="px-6 py-5 space-y-4">
+          <div className={mode === 'edit' && activeTab !== 'basic' ? 'hidden' : 'block'}>
+            <form id="product-form" onSubmit={handleSubmit} noValidate className="px-6 py-5 space-y-4">
             {displayError && (
               <div className="bg-red-50 text-red-700 text-sm px-3 py-2.5 rounded-md border border-red-100">
                 {displayError}
@@ -293,12 +330,12 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
               </p>
             )}
           </form>
+        </div>
 
-          {/* Product Images (Only in Edit Mode) */}
-          {mode === 'edit' && product && (
-            <div className="px-6 pb-5">
-              <div className="border-t border-gray-100 pt-5">
-                <h3 className="text-sm font-medium text-gray-900 mb-3">Product Images</h3>
+          {/* ProductDto Images (Only in Edit Mode) */}
+          {mode === 'edit' && product && activeTab === 'images' && (
+            <div className="px-6 py-5">
+              <div className="">
                 <div className="mb-4">
                   <ProductImageUpload
                     productId={product.id}
@@ -320,6 +357,23 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
                   onSetPrimaryImage={handleSetPrimaryImage}
                 />
               </div>
+            </div>
+          )}
+          
+          {/* Variants & Options Tab */}
+          {mode === 'edit' && product && activeTab === 'variants' && (
+            <div className="px-6 py-5">
+              {isLoadingFullProduct ? (
+                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                  <RefreshCw className="h-6 w-6 animate-spin mb-3 text-[#E8620A]" />
+                  <p className="text-sm font-medium text-gray-600">Loading options...</p>
+                </div>
+              ) : (
+                <ProductOptionsEditor
+                  product={product as ProductWithOptionsDto}
+                  onRefresh={() => onRefresh?.()}
+                />
+              )}
             </div>
           )}
         </div>

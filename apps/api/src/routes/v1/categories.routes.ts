@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { categoryController, createCategorySchema, updateCategorySchema, slugParamSchema, idParamSchema } from '../../controllers/category.controller.js';
+import { categoryController, createCategorySchema, updateCategorySchema, slugParamSchema, idParamSchema, listCategoriesSchema } from '../../controllers/category.controller.js';
 import { validate } from '../../middlewares/validate.middleware.js';
 import { authenticate, requireAdmin } from '../../middlewares/auth.middleware.js';
 
 const router = Router();
 
-router.get('/', categoryController.listCategories);
+router.get('/', validate(listCategoriesSchema), categoryController.listCategories);
+router.get('/tree', categoryController.getCategoryTree);
 router.get('/:slug', validate(slugParamSchema), categoryController.getCategory);
 
 router.post('/', authenticate, requireAdmin, validate(createCategorySchema), categoryController.createCategory);

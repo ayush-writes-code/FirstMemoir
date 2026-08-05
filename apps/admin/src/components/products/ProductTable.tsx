@@ -1,10 +1,10 @@
-import type { Product } from '@repo/api-client';
+import type { ProductDto } from '@repo/api-client';
 import { Pencil, Trash2 } from 'lucide-react';
 
 interface Props {
-  products: Product[];
-  onEdit: (product: Product) => void;
-  onDelete: (product: Product) => void;
+  products: ProductDto[];
+  onEdit: (product: ProductDto) => void;
+  onDelete: (product: ProductDto) => void;
 }
 
 export function ProductTable({ products, onEdit, onDelete }: Props) {
