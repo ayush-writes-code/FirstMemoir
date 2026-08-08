@@ -290,6 +290,7 @@ Material availability (`FrameMaterial`) is tracked per frame component. Max widt
 - [x] Phase 6A: Catalog Contract Stabilization (DTOs, Pagination, Category Tree, ADR).
 - [x] Phase 6.5: Database Workflow Stabilization (Prisma baselining, idempotent seed, whitelist safety model).
 - [x] Phase 6B: Storefront Core Flows (Upload Lifecycle, Secure HttpOnly Cart Sessions, Dynamic DPI Quality Tiers, Database Pricing Versioning).
+- [x] Phase 6C: Interactive Image Customization & Cropping (EXIF Canonicalization, Interactive Cropper, Portrait/Landscape Orientation, Dynamic DPI Validation, Bleed/Safe Zones, Persistent Crop Contract).
 
 ### Pending Features (Milestone 2 - 5)
 - [ ] Next.js Storefront homepage UI, product grid, and category filtering.
