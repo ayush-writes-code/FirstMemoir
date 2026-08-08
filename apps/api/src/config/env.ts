@@ -18,4 +18,14 @@ export const env = {
   R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY || '',
   R2_BUCKET_NAME: process.env.R2_BUCKET_NAME || '',
   R2_PUBLIC_URL: process.env.R2_PUBLIC_URL || '',
+  
+  COOKIE_SECRET: process.env.COOKIE_SECRET || (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' ? 'dev_cookie_secret_override' : undefined),
 };
+
+if (env.NODE_ENV === 'production' && !env.COOKIE_SECRET) {
+  throw new Error('COOKIE_SECRET environment variable is required in production');
+}
+
+if (!env.COOKIE_SECRET) {
+  throw new Error('COOKIE_SECRET must be defined');
+}

@@ -54,4 +54,14 @@ export interface IStorageProvider {
    * Silently succeeds if the file does not exist (idempotent).
    */
   deleteFile(fileKey: string): Promise<void>;
+
+  /**
+   * Download file to a buffer.
+   */
+  downloadFile(fileKey: string): Promise<Buffer>;
+
+  /**
+   * Upload buffer directly to R2.
+   */
+  uploadBuffer(fileKey: string, buffer: Buffer, mimeType: string): Promise<void>;
 }

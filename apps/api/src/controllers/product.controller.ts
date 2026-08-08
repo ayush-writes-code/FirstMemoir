@@ -38,7 +38,8 @@ export const updateProductSchema = {
 };
 
 export const idParamSchema = {
-  params: z.object({ id: z.string().uuid() })
+  // Accepts both UUIDs and slug strings — the controller handles detection
+  params: z.object({ id: z.string().min(1) })
 };
 
 export const productController = {
@@ -114,7 +115,12 @@ export const productController = {
 
   async getProduct(req: Request, res: Response, next: NextFunction) {
     try {
-      const product = await productOptionsService.getProductWithOptions(req.params.id as string);
+      const { id } = req.params as { id: string };
+      // Unified idOrSlug: detect whether param is a UUID or a slug
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const product = uuidRegex.test(id)
+        ? await productOptionsService.getProductWithOptions(id)
+        : await productOptionsService.getProductWithOptionsBySlug(id);
       res.json(successResponse(toProductWithOptionsDto(product as any)));
     } catch (error) {
       next(error);

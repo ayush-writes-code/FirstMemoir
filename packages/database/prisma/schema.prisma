@@ -41,7 +41,25 @@ enum UploadStatus {
   PROCESSING
   READY
   FAILED
-  LOW_RESOLUTION
+  LINKED_TO_CART
+  FULFILLED
+  ARCHIVED
+}
+
+enum PrintQualityStatus {
+  EXCELLENT
+  GOOD
+  ACCEPTABLE
+  LOW_QUALITY
+  NOT_RECOMMENDED
+}
+
+enum CartLineItemStatus {
+  PENDING
+  VALIDATED
+  STALE
+  CHECKED_OUT
+  CONVERTED
 }
 
 enum FrameMaterialType {
@@ -161,6 +179,7 @@ model Product {
   order_items OrderItem[]
   options     ProductOption[]
   exclusions  OptionExclusion[]
+  cart_line_items CartLineItem[]
 
   @@map("products")
 }
@@ -265,19 +284,24 @@ model Payment {
 /// Images uploaded by users for printing/framing
 model UserUpload {
   id                String       @id @default(uuid())
-  user_id           String
-  user              User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id           String?
+  user              User?        @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  session_id        String?      // HttpOnly session identifier for anonymous uploads
   original_filename String
   r2_key            String       @unique
+  preview_r2_key    String?      // ~800px WebP proxy generated on READY
   mime_type         String
   file_size         Int
-  width             Int?
-  height            Int?
-  dpi               Int?
+  width             Int?         // Original image width in pixels
+  height            Int?         // Original image height in pixels
   status            UploadStatus @default(UPLOADING)
   created_at        DateTime     @default(now())
+  updated_at        DateTime     @updatedAt
+
+  cart_line_items   CartLineItem[]
 
   @@index([user_id])
+  @@index([session_id])
   @@map("user_uploads")
 }
 
@@ -373,6 +397,7 @@ model ProductOptionValue {
   // Relations for exclusions
   exclusions_as_source OptionExclusion[]   @relation("ExclusionSource")
   exclusions_as_target OptionExclusion[]   @relation("ExclusionTarget")
+  cart_selections      CartLineItemOptionValue[]
 
   @@index([option_id])
   @@index([global_material_id])
@@ -393,4 +418,91 @@ model OptionExclusion {
 
   @@unique([option_value_1_id, option_value_2_id])
   @@map("option_exclusions")
+}
+
+// -----------------------------------------
+// CART
+// -----------------------------------------
+
+/// Anonymous or authenticated shopping cart
+model Cart {
+  id          String   @id @default(uuid())
+  user_id     String?
+  session_id  String?  @unique // HttpOnly session for anonymous carts
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  items       CartLineItem[]
+
+  @@index([user_id])
+  @@map("carts")
+}
+
+/// A single customized product line item in the cart
+/// Prices are NEVER stored here. Backend always recalculates from option values.
+model CartLineItem {
+  id           String              @id @default(uuid())
+  cart_id      String
+  cart         Cart                @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+  product_id   String
+  product      Product             @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  quantity     Int                 @default(1)
+  status       CartLineItemStatus  @default(PENDING)
+
+  // Selected option values — stored as FK array via join table
+  selected_option_values CartLineItemOptionValue[]
+
+  // Image asset reference
+  upload_id    String
+  upload       UserUpload          @relation(fields: [upload_id], references: [id], onDelete: Restrict)
+  preview_url  String              // Served to browser canvas (~800px proxy)
+
+  // Crop metadata — ALL values are NORMALIZED (0.0–1.0) in original image space
+  crop_x       Float               // Left edge
+  crop_y       Float               // Top edge
+  crop_width   Float               // Width of crop window
+  crop_height  Float               // Height of crop window
+  crop_aspect_ratio String         // e.g., "8:10", "12:12" — derived from Size option
+  rotation     Float               @default(0)  // Degrees
+  zoom         Float               @default(1.0) // Scale factor
+
+  // Print quality
+  effective_dpi         Int
+  print_quality_status  PrintQualityStatus
+  dpi_acknowledged      Boolean     @default(false)
+
+  // Pricing version snapshot — used to detect stale carts
+  pricing_version       Int
+
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@index([cart_id])
+  @@index([upload_id])
+  @@map("cart_line_items")
+}
+
+/// Join table: which ProductOptionValues are selected for a CartLineItem
+model CartLineItemOptionValue {
+  cart_line_item_id      String
+  product_option_value_id String
+
+  cart_line_item         CartLineItem        @relation(fields: [cart_line_item_id], references: [id], onDelete: Cascade)
+  option_value           ProductOptionValue  @relation(fields: [product_option_value_id], references: [id], onDelete: Restrict)
+
+  @@id([cart_line_item_id, product_option_value_id])
+  @@map("cart_line_item_option_values")
+}
+
+// -----------------------------------------
+// SYSTEM CONFIGURATION
+// -----------------------------------------
+
+/// Global store settings and configuration state
+model StoreSettings {
+  id              String   @id @default("default") // Singleton pattern
+  pricing_version Int      @default(1)
+  updated_at      DateTime @updatedAt
+
+  @@map("store_settings")
 }

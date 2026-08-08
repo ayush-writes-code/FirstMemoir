@@ -23,3 +23,16 @@ export const getReadUrl = (fileKey: string): Promise<ApiResponse<{ url: string }
     method: 'GET',
   });
 };
+
+/**
+ * Notify the server that an upload is complete.
+ */
+export const uploadComplete = (input: {
+  file_key: string;
+  original_filename: string;
+}): Promise<ApiResponse<{ upload_id: string; status: string; preview_url: string; width: number; height: number }>> => {
+  return fetchClient<{ upload_id: string; status: string; preview_url: string; width: number; height: number }>('/storage/upload-complete', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+};

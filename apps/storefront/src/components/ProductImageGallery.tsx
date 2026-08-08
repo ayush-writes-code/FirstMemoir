@@ -17,7 +17,8 @@ export function ProductImageGallery({ images, productName }: { images: ProductIm
         <Image 
           src={mainImage} 
           alt={mainAlt} 
-          fill 
+          fill
+          sizes="(max-width: 768px) 100vw, 50vw"
           priority
           className="object-cover"
         />
@@ -37,6 +38,7 @@ export function ProductImageGallery({ images, productName }: { images: ProductIm
                 src={image.url} 
                 alt={image.alt_text || `${productName} thumbnail ${idx + 1}`} 
                 fill 
+                sizes="80px"
                 className="object-cover"
               />
             </button>

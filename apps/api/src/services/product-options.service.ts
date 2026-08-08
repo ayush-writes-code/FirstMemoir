@@ -60,6 +60,46 @@ export const productOptionsService = {
     };
   },
 
+  async getProductWithOptionsBySlug(slug: string) {
+    const product = await prisma.product.findUnique({
+      where: { slug },
+      include: {
+        categories: { include: { category: true } },
+        images: { orderBy: [{ sort_order: 'asc' }, { id: 'asc' }] },
+        options: {
+          orderBy: { sort_order: 'asc' },
+          include: {
+            values: { orderBy: { sort_order: 'asc' } }
+          }
+        },
+        exclusions: true
+      }
+    });
+
+    if (!product) {
+      throw { statusCode: 404, message: 'Product not found' };
+    }
+
+    return {
+      ...product,
+      base_price: product.base_price.toString(),
+      images: product.images.map(img => {
+        const isAbsolute = img.file_key.startsWith('http://') || img.file_key.startsWith('https://');
+        return {
+          ...img,
+          url: isAbsolute ? img.file_key : `${env.R2_PUBLIC_URL}/${img.file_key}`
+        };
+      }),
+      options: product.options.map(opt => ({
+        ...opt,
+        values: opt.values.map(v => ({
+          ...v,
+          price_modifier: v.price_modifier.toString()
+        }))
+      }))
+    };
+  },
+
   async createOption(data: CreateOptionInput) {
     const maxSort = await prisma.productOption.findFirst({
       where: { product_id: data.product_id },

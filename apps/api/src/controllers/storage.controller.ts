@@ -91,6 +91,27 @@ export const storageController = {
         maxSizeBytes,
       );
 
+      // Create UPLOADING record bound to the session
+      const { getSessionId } = await import('../middlewares/session.middleware.js');
+      const sessionId = getSessionId(req);
+      const userId = (req as any).user?.id || null;
+
+      const { prisma } = await import('@repo/database');
+      await prisma.userUpload.create({
+        data: {
+          user_id: userId,
+          session_id: sessionId,
+          original_filename: file_name,
+          r2_key: policy.fileKey,
+          mime_type: mime_type,
+          status: 'UPLOADING',
+          // Default required fields before processing
+          file_size: 0,
+          width: 0,
+          height: 0,
+        }
+      });
+
       res.status(201).json(successResponse({
         upload_url:     policy.url,
         file_key:       policy.fileKey,
@@ -126,4 +147,105 @@ export const storageController = {
       next(error);
     }
   },
+
+  /**
+   * POST /api/v1/storage/upload-complete
+   *
+   * Called by the client after they successfully PUT the file to R2.
+   * We verify the file, create the preview proxy, and save to DB.
+   */
+  async uploadComplete(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { file_key, original_filename } = req.body as { file_key: string, original_filename: string };
+      const { getSessionId } = await import('../middlewares/session.middleware.js');
+      const sessionId = getSessionId(req);
+      const userId = (req as any).user?.id || null;
+
+      const { prisma } = await import('@repo/database');
+      
+      // 1. Verify ownership and state
+      const existingUpload = await prisma.userUpload.findUnique({
+        where: { r2_key: file_key }
+      });
+
+      if (!existingUpload) {
+        return res.status(404).json({ success: false, data: null, error: 'Upload not found' });
+      }
+
+      // Allow either anonymous session match or logged-in user match
+      const isOwnedBySession = existingUpload.session_id === sessionId;
+      const isOwnedByUser = userId && existingUpload.user_id === userId;
+      
+      if (!isOwnedBySession && !isOwnedByUser) {
+        return res.status(403).json({ success: false, data: null, error: 'Unauthorized to claim this upload' });
+      }
+
+      if (existingUpload.status !== 'UPLOADING') {
+        return res.status(409).json({ success: false, data: null, error: 'Upload already processed' });
+      }
+
+      // Mark as PROCESSING immediately
+      await prisma.userUpload.update({
+        where: { id: existingUpload.id },
+        data: { status: 'PROCESSING' }
+      });
+
+      // 2. Verify file exists in R2 and meets criteria
+      const { contentType, contentLength } = await storageService.verifyFile(file_key, {
+        expectedPrefix: 'customers/',
+        allowedMimeTypes: ALLOWED_MIME_TYPES,
+        maxSizeBytes: MAX_SIZE_BYTES['private'], // customer uploads are private
+      });
+
+      // 3. Download and process with Sharp
+      const buffer = await storageService.downloadFile(file_key);
+      const sharp = (await import('sharp')).default;
+      const image = sharp(buffer);
+      const metadata = await image.metadata();
+
+      // Generate 800px WebP preview
+      const previewBuffer = await image
+        .resize({ width: 800, withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toBuffer();
+
+      const previewKey = `previews/${file_key.split('/').pop()?.split('.')[0]}.webp`;
+      await storageService.uploadBuffer(previewKey, previewBuffer, 'image/webp');
+
+      // 4. Update the database record with final details
+      const upload = await prisma.userUpload.update({
+        where: { id: existingUpload.id },
+        data: {
+          original_filename, // In case it changed or was dropped on retry
+          preview_r2_key: previewKey,
+          mime_type: contentType,
+          file_size: contentLength,
+          width: metadata.width || 0,
+          height: metadata.height || 0,
+          status: 'READY'
+        }
+      });
+
+      res.status(200).json(successResponse({
+        upload_id: upload.id,
+        status: upload.status,
+        preview_url: `${process.env.R2_PUBLIC_URL}/${previewKey}`,
+        width: metadata.width || 0,
+        height: metadata.height || 0,
+      }));
+    } catch (error) {
+      // Best-effort cleanup on failure if we had marked it PROCESSING
+      try {
+        const { file_key } = req.body as { file_key: string };
+        const { prisma } = await import('@repo/database');
+        await prisma.userUpload.updateMany({
+          where: { r2_key: file_key, status: 'PROCESSING' },
+          data: { status: 'FAILED' }
+        });
+      } catch (cleanupError) {
+        console.error('Failed to mark upload as FAILED', cleanupError);
+      }
+      next(error);
+    }
+  }
 };

@@ -18,7 +18,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
-app.use(cookieParser());
+app.use(cookieParser(env.COOKIE_SECRET));
 app.use(globalLimiter);
 
 // Health check

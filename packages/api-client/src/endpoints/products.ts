@@ -34,10 +34,10 @@ export const getProducts = (options?: { category?: string; limit?: number; page?
 };
 
 /**
- * Fetch a single product by its slug.
+ * Fetch a single product by its slug (unified route — accepts UUID or slug).
  */
-export const getProductBySlug = (slug: string): Promise<ApiResponse<{ product: ProductDto; frameMaterials: any[] }>> => {
-  return fetchClient<{ product: ProductDto; frameMaterials: any[] }>(`/products/slug/${slug}`);
+export const getProductBySlug = (slug: string): Promise<ApiResponse<ProductWithOptionsDto>> => {
+  return fetchClient<ProductWithOptionsDto>(`/products/${slug}`);
 };
 
 /**

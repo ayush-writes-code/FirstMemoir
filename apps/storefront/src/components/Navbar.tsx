@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Search, ShoppingBag } from 'lucide-react';
 import { NavMobileMenu } from './NavMobileMenu';
+import { CartIcon } from './CartIcon';
 
 export function Navbar() {
   return (
@@ -9,7 +10,7 @@ export function Navbar() {
         <div className="flex items-center gap-4">
           <NavMobileMenu />
           <Link href="/" className="font-serif font-bold text-2xl text-brand">
-            PrintCraft
+            First Memoir.in
           </Link>
         </div>
         
@@ -23,9 +24,7 @@ export function Navbar() {
           <button aria-label="Search" className="text-ink hover:text-brand transition-colors p-2">
             <Search size={24} />
           </button>
-          <button aria-label="Cart" className="text-ink hover:text-brand transition-colors p-2">
-            <ShoppingBag size={24} />
-          </button>
+          <CartIcon />
         </div>
       </div>
     </header>

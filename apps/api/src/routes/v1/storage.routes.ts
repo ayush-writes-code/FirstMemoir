@@ -6,6 +6,7 @@ import {
 } from '../../controllers/storage.controller.js';
 import { validate } from '../../middlewares/validate.middleware.js';
 import { authenticate } from '../../middlewares/auth.middleware.js';
+import { ensureCartSession } from '../../middlewares/session.middleware.js';
 
 const router = Router();
 
@@ -25,7 +26,7 @@ const router = Router();
  */
 router.post(
   '/upload-url',
-  authenticate,
+  ensureCartSession, // Only requires cart session, which is anonymous. Authenticated users also have a cart session.
   validate(requestUploadUrlSchema),
   storageController.requestUploadUrl,
 );
@@ -41,6 +42,17 @@ router.get(
   authenticate,
   validate(requestReadUrlSchema),
   storageController.requestReadUrl,
+);
+
+/**
+ * POST /api/v1/storage/upload-complete
+ *
+ * Notify the server that an upload is complete.
+ */
+router.post(
+  '/upload-complete',
+  ensureCartSession, // Requires cart session (anonymous or authenticated)
+  storageController.uploadComplete,
 );
 
 export default router;

@@ -5,3 +5,4 @@ export * as auth from './endpoints/auth';
 export * as products from './endpoints/products';
 export * as categories from './endpoints/categories';
 export * as storage from './endpoints/storage';
+export * as cart from './endpoints/cart';

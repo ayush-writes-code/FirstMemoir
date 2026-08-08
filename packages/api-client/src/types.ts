@@ -172,3 +172,82 @@ export interface ProductWithOptionsDto extends ProductDto {
   options: ProductOptionDto[];
   exclusions: OptionExclusionDto[];
 }
+
+export type PrintQualityStatus =
+  | 'EXCELLENT'
+  | 'GOOD'
+  | 'ACCEPTABLE'
+  | 'LOW_QUALITY'
+  | 'NOT_RECOMMENDED';
+
+export type CartLineItemStatus =
+  | 'PENDING'
+  | 'VALIDATED'
+  | 'STALE'
+  | 'CHECKED_OUT'
+  | 'CONVERTED';
+
+export interface CropData {
+  /** Normalized left edge of crop window (0.0–1.0 of original image width) */
+  x: number;
+  /** Normalized top edge of crop window (0.0–1.0 of original image height) */
+  y: number;
+  /** Normalized width of crop window (0.0–1.0) */
+  width: number;
+  /** Normalized height of crop window (0.0–1.0) */
+  height: number;
+  /** Aspect ratio string derived from the selected Size option, e.g. "8:10" */
+  aspect_ratio: string;
+}
+
+export interface CartLineItemDto {
+  id: string;
+  cart_id: string;
+  product_id: string;
+  product_name: string;
+  unit_price: number;
+  quantity: number;
+  status: CartLineItemStatus;
+  upload_id: string;
+  preview_url: string;
+  crop: CropData;
+  rotation: number;
+  zoom: number;
+  effective_dpi: number;
+  print_quality_status: PrintQualityStatus;
+  dpi_acknowledged: boolean;
+  pricing_version: number;
+  created_at: string;
+  updated_at: string;
+  selected_options: {
+    option_id: string;
+    option_name: string;
+    value_name: string;
+    price_modifier: number;
+  }[];
+}
+
+export interface CartDto {
+  id: string;
+  user_id: string | null;
+  session_id: string | null;
+  items: CartLineItemDto[];
+  created_at: string;
+  updated_at: string;
+}
+
+/** Payload sent from the Storefront to POST /cart/items */
+export interface AddToCartInput {
+  product_id: string;
+  quantity: number;
+  selected_option_value_ids: string[];
+  upload_id: string;
+  preview_url: string;
+  crop: CropData;
+  rotation: number;
+  zoom: number;
+  effective_dpi: number;
+  print_quality_status: PrintQualityStatus;
+  /** Must be true when print_quality_status is LOW_QUALITY or NOT_RECOMMENDED */
+  dpi_acknowledged: boolean;
+}

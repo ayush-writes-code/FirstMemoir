@@ -12,15 +12,16 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'PrintCraft — Premium Photo Prints & Frames',
-    template: '%s | PrintCraft',
+    default: 'First Memoir — Premium Photo Prints & Frames',
+    template: '%s | First Memoir',
   },
-  description: 'Turn your memories into premium wall art. Custom photo prints, framed photos, and posters delivered across India.',
-  keywords: ['photo prints', 'framed photos', 'custom prints', 'wall art', 'photo frames', 'India'],
+  description: 'Custom photo prints, framed photos, and premium posters. Crafted with care, delivered across India.',
+  metadataBase: new URL('http://localhost:3000'), // Change in production
   openGraph: {
     type: 'website',
     locale: 'en_IN',
-    siteName: 'PrintCraft',
+    url: '/',
+    siteName: 'First Memoir',
   },
 };
 

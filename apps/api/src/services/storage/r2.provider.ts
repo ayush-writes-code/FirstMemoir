@@ -107,4 +107,28 @@ export const r2Provider: IStorageProvider = {
 
     await client.send(command);
   },
+
+  async downloadFile(fileKey: string): Promise<Buffer> {
+    const command = new GetObjectCommand({
+      Bucket: env.R2_BUCKET_NAME,
+      Key: fileKey,
+    });
+    const response = await client.send(command);
+    if (!response.Body) throw new Error('Empty body');
+    const chunks = [];
+    for await (const chunk of response.Body as any) {
+      chunks.push(chunk);
+    }
+    return Buffer.concat(chunks);
+  },
+
+  async uploadBuffer(fileKey: string, buffer: Buffer, mimeType: string): Promise<void> {
+    const command = new PutObjectCommand({
+      Bucket: env.R2_BUCKET_NAME,
+      Key: fileKey,
+      Body: buffer,
+      ContentType: mimeType,
+    });
+    await client.send(command);
+  }
 };
