@@ -17,7 +17,7 @@ The following commands are available from the project root. They delegate to `tu
 
 ### `npm run db:migrate`
 
-Use this command when you have updated `packages/database/prisma/schema.prisma`. 
+Use this command when you have updated `packages/database/prisma/schema.prisma`.
 
 * **What it does:** It compares your Prisma schema to your local database, generates a new `.sql` migration file inside `packages/database/prisma/migrations`, and immediately applies it.
 * **When to use:** Whenever you add a model, alter a column, or change relations.
