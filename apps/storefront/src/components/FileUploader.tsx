@@ -88,11 +88,10 @@ export function FileUploader({ onUploadSuccess, onUploadReset }: FileUploaderPro
 
   if (uploadState === 'READY' && previewUrl) {
     return (
-      <div className="w-full relative rounded-lg border border-hairline overflow-hidden bg-canvas">
-        <img src={previewUrl} alt="Preview" className="w-full h-auto object-contain max-h-[400px]" />
-        <div className="absolute top-2 right-2 bg-white/90 backdrop-blur rounded-pill px-3 py-1.5 shadow-sm flex items-center gap-1.5 border border-hairline text-sm font-medium text-success">
+      <div className="w-full flex items-center justify-between bg-surface p-3 rounded-lg border border-hairline mb-4">
+        <div className="flex items-center gap-2 text-sm font-medium text-success">
           <CheckCircle2 size={16} />
-          Ready
+          Photo Uploaded
         </div>
         <button 
           onClick={() => {
@@ -100,7 +99,7 @@ export function FileUploader({ onUploadSuccess, onUploadReset }: FileUploaderPro
             setPreviewUrl(null);
             onUploadReset();
           }}
-          className="absolute bottom-2 right-2 bg-white/90 hover:bg-white backdrop-blur rounded-pill px-4 py-2 shadow-sm text-sm font-medium transition-colors border border-hairline text-ink"
+          className="bg-white hover:bg-neutral-50 rounded-pill px-4 py-1.5 shadow-sm text-sm font-medium transition-colors border border-hairline text-ink"
         >
           Change Photo
         </button>

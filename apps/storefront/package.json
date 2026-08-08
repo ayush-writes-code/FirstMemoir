@@ -18,7 +18,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-dropzone": "^20.0.0",
-    "react-easy-crop": "^6.2.2",
+    "react-easy-crop": "^6.2.3",
     "zustand": "^5.0.14"
   },
   "devDependencies": {

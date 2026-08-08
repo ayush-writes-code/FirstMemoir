@@ -19,6 +19,12 @@ enum UserRole {
   ADMIN
 }
 
+enum PrintOrientation {
+  PORTRAIT
+  LANDSCAPE
+  SQUARE
+}
+
 enum OrderStatus {
   PENDING
   PAID
@@ -457,9 +463,10 @@ model CartLineItem {
   upload       UserUpload          @relation(fields: [upload_id], references: [id], onDelete: Restrict)
   preview_url  String              // Served to browser canvas (~800px proxy)
 
-  // Crop metadata — ALL values are NORMALIZED (0.0–1.0) in original image space
-  crop_x       Float               // Left edge
-  crop_y       Float               // Top edge
+  // Orientation and Crop metadata
+  orientation  PrintOrientation
+  crop_x       Float               // Left edge (normalized 0.0-1.0 in canonical space)
+  crop_y       Float               // Top edge (normalized 0.0-1.0 in canonical space)
   crop_width   Float               // Width of crop window
   crop_height  Float               // Height of crop window
   crop_aspect_ratio String         // e.g., "8:10", "12:12" — derived from Size option

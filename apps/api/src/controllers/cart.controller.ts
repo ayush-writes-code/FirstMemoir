@@ -5,6 +5,49 @@ import { successResponse } from '../utils/response.js';
 
 import { getSessionId } from '../middlewares/session.middleware.js';
 
+const FLOAT_TOLERANCE = 1e-7;
+
+const normalizeCoordinate = (val: unknown, min: number, max: number) => {
+  if (typeof val !== 'number' || !Number.isFinite(val)) return val;
+  if (val < min && Math.abs(val - min) <= FLOAT_TOLERANCE) return min;
+  if (val > max && Math.abs(val - max) <= FLOAT_TOLERANCE) return max;
+  return val;
+};
+
+export const addToCartSchema = {
+  body: z.object({
+    product_id: z.string().uuid(),
+    quantity: z.number().int().min(1).default(1),
+    selected_option_value_ids: z.array(z.string().uuid()),
+    upload_id: z.string().uuid(),
+    preview_url: z.string().url(),
+    orientation: z.enum(['PORTRAIT', 'LANDSCAPE', 'SQUARE']),
+    crop: z.object({
+      x: z.preprocess(v => normalizeCoordinate(v, 0, 1), z.number().min(0).max(1)),
+      y: z.preprocess(v => normalizeCoordinate(v, 0, 1), z.number().min(0).max(1)),
+      width: z.preprocess(v => normalizeCoordinate(v, 0, 1), z.number().gt(0).max(1)),
+      height: z.preprocess(v => normalizeCoordinate(v, 0, 1), z.number().gt(0).max(1)),
+      aspect_ratio: z.string()
+    }).transform(data => {
+      // Normalize sum artifacts slightly above 1 due to floating point noise
+      if (data.x + data.width > 1 && data.x + data.width <= 1 + FLOAT_TOLERANCE) {
+        data.width = Number((1 - data.x).toFixed(7)); // Avoid introducing further float noise
+      }
+      if (data.y + data.height > 1 && data.y + data.height <= 1 + FLOAT_TOLERANCE) {
+        data.height = Number((1 - data.y).toFixed(7));
+      }
+      return data;
+    }).refine(data => data.x + data.width <= 1 && data.y + data.height <= 1, {
+      message: "Crop coordinates exceed image boundaries"
+    }),
+    rotation: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]),
+    zoom: z.number().min(1),
+    effective_dpi: z.number().int().positive(),
+    print_quality_status: z.enum(['EXCELLENT', 'GOOD', 'ACCEPTABLE', 'LOW_QUALITY', 'NOT_RECOMMENDED']),
+    dpi_acknowledged: z.boolean().default(false)
+  })
+};
+
 // Helper function to map a database line item to the DTO expected by the client
 function mapLineItemToDto(item: any) {
   const basePrice = Number(item.product.base_price);
@@ -42,7 +85,8 @@ function mapLineItemToDto(item: any) {
       width: item.crop_width,
       height: item.crop_height,
       aspect_ratio: item.crop_aspect_ratio,
-    }
+    },
+    orientation: item.orientation
   };
 }
 
@@ -71,7 +115,7 @@ export const cartController = {
       const sessionId = getSessionId(req);
       const userId = (req as any).user?.id;
 
-      // In real life we'd validate the body using Zod
+      // The body is already validated and typed by Zod middleware
       const input = req.body;
 
       const lineItem = await cartService.addToCart(input, sessionId, userId);

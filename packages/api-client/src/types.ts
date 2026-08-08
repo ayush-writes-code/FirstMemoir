@@ -180,6 +180,11 @@ export type PrintQualityStatus =
   | 'LOW_QUALITY'
   | 'NOT_RECOMMENDED';
 
+export type PrintOrientation =
+  | 'PORTRAIT'
+  | 'LANDSCAPE'
+  | 'SQUARE';
+
 export type CartLineItemStatus =
   | 'PENDING'
   | 'VALIDATED'
@@ -210,6 +215,7 @@ export interface CartLineItemDto {
   status: CartLineItemStatus;
   upload_id: string;
   preview_url: string;
+  orientation: PrintOrientation;
   crop: CropData;
   rotation: number;
   zoom: number;
@@ -243,6 +249,7 @@ export interface AddToCartInput {
   selected_option_value_ids: string[];
   upload_id: string;
   preview_url: string;
+  orientation: PrintOrientation;
   crop: CropData;
   rotation: number;
   zoom: number;

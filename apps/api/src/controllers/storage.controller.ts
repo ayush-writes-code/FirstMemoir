@@ -200,10 +200,28 @@ export const storageController = {
       // 3. Download and process with Sharp
       const buffer = await storageService.downloadFile(file_key);
       const sharp = (await import('sharp')).default;
-      const image = sharp(buffer);
-      const metadata = await image.metadata();
 
-      // Generate 800px WebP preview
+      // Initialize the sharp pipeline and explicitly apply EXIF auto-rotation.
+      // MEMORY STRATEGY:
+      // - 'buffer' contains the raw uploaded file (e.g., 20-50MB compressed JPEG).
+      // - .rotate() sets up the pipeline but DOES NOT create a full-resolution decoded bitmap in memory.
+      const image = sharp(buffer).rotate();
+
+
+      // Extract metadata.
+      // Note: sharp's .metadata() reads the file header before pipeline execution.
+      // Therefore, it returns the raw unrotated dimensions. We must mathematically
+      // calculate the canonical EXIF-normalized dimensions.
+      const metadata = await image.metadata();
+      const isSwapped = metadata.orientation && metadata.orientation >= 5;
+      const canonicalWidth = isSwapped ? metadata.height : metadata.width;
+      const canonicalHeight = isSwapped ? metadata.width : metadata.height;
+
+      // Generate the 800px WebP preview proxy.
+      // MEMORY STRATEGY:
+      // - The pipeline processes the raw buffer directly into the resized WebP.
+      // - It does NOT retain a duplicate full-resolution decompressed image in memory.
+      // - After this promise resolves, 'buffer' and 'image' become eligible for garbage collection.
       const previewBuffer = await image
         .resize({ width: 800, withoutEnlargement: true })
         .webp({ quality: 80 })
@@ -212,7 +230,7 @@ export const storageController = {
       const previewKey = `previews/${file_key.split('/').pop()?.split('.')[0]}.webp`;
       await storageService.uploadBuffer(previewKey, previewBuffer, 'image/webp');
 
-      // 4. Update the database record with final details
+      // 4. Update the database record with final EXIF-normalized details
       const upload = await prisma.userUpload.update({
         where: { id: existingUpload.id },
         data: {
@@ -220,8 +238,8 @@ export const storageController = {
           preview_r2_key: previewKey,
           mime_type: contentType,
           file_size: contentLength,
-          width: metadata.width || 0,
-          height: metadata.height || 0,
+          width: canonicalWidth || 0,
+          height: canonicalHeight || 0,
           status: 'READY'
         }
       });
@@ -230,8 +248,8 @@ export const storageController = {
         upload_id: upload.id,
         status: upload.status,
         preview_url: `${process.env.R2_PUBLIC_URL}/${previewKey}`,
-        width: metadata.width || 0,
-        height: metadata.height || 0,
+        width: canonicalWidth || 0,
+        height: canonicalHeight || 0,
       }));
     } catch (error) {
       // Best-effort cleanup on failure if we had marked it PROCESSING

@@ -6,6 +6,9 @@ import { OptionSelector } from './OptionSelector';
 import { PriceSummary } from './PriceSummary';
 import { DpiAcknowledgmentBanner } from './DpiAcknowledgmentBanner';
 import { FileUploader } from './FileUploader';
+import { PhotoCropper } from './PhotoCropper';
+import type { PrintOrientation } from '@repo/api-client';
+import type { CropRect } from '../utils/cropMath';
 import { useCartStore } from '../store/cart.store';
 
 interface Props {
@@ -101,6 +104,45 @@ export function ProductCustomizer({ product }: Props) {
   const [imageHeight, setImageHeight] = useState<number>(0);
   const { addToCart, isLoading: isCartLoading } = useCartStore();
 
+  const [printOrientation, setPrintOrientation] = useState<PrintOrientation>('PORTRAIT');
+  const [cropData, setCropData] = useState<CropRect>({ x: 0, y: 0, width: 1, height: 1 });
+  const [rotation, setRotation] = useState<number>(0);
+  const [zoom, setZoom] = useState<number>(1);
+
+  // Parse physical size
+  const { physicalWidth, physicalHeight, isSquare } = useMemo(() => {
+    let w = 0;
+    let h = 0;
+    const sizeOption = product.options.find(o => o.name.toLowerCase() === 'size');
+    const sizeValueId = sizeOption ? selectedOptions[sizeOption.id] : null;
+    const sizeValue = sizeOption?.values.find(v => v.id === sizeValueId)?.value;
+
+    if (sizeValue) {
+      const match = sizeValue.match(/(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)/i);
+      if (match) {
+        const p1 = parseFloat(match[1]!);
+        const p2 = parseFloat(match[2]!);
+        // By default, smaller is width for portrait
+        w = Math.min(p1, p2);
+        h = Math.max(p1, p2);
+      }
+    }
+    return {
+      physicalWidth: printOrientation === 'LANDSCAPE' ? Math.max(w, h) : Math.min(w, h),
+      physicalHeight: printOrientation === 'LANDSCAPE' ? Math.min(w, h) : Math.max(w, h),
+      isSquare: w === h
+    };
+  }, [selectedOptions, product.options, printOrientation]);
+
+  // Ensure orientation is SQUARE if physical dimensions are square
+  useMemo(() => {
+    if (isSquare && printOrientation !== 'SQUARE') {
+      setPrintOrientation('SQUARE');
+    }
+  }, [isSquare, printOrientation]);
+
+  // ---------------------------------------------------------------------------
+  // Dynamic DPI Calculation
   // ---------------------------------------------------------------------------
   // Dynamic DPI Calculation
   // ---------------------------------------------------------------------------
@@ -109,35 +151,30 @@ export function ProductCustomizer({ product }: Props) {
     let status: PrintQualityStatus = 'EXCELLENT';
     let requiresAck = false;
 
-    if (imageWidth > 0 && imageHeight > 0) {
-      const sizeOption = product.options.find(o => o.name.toLowerCase() === 'size');
-      const sizeValueId = sizeOption ? selectedOptions[sizeOption.id] : null;
-      const sizeValue = sizeOption?.values.find(v => v.id === sizeValueId)?.value;
+    if (imageWidth > 0 && imageHeight > 0 && physicalWidth > 0 && physicalHeight > 0) {
+      // Calculate how many canonical pixels are actually in the crop area
+      const canonical_crop_width_px = cropData.width * imageWidth;
+      const canonical_crop_height_px = cropData.height * imageHeight;
 
-      if (sizeValue) {
-        const match = sizeValue.match(/(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)/i);
-        if (match) {
-          const printWidth = parseFloat(match[1]!);
-          const printHeight = parseFloat(match[2]!);
+      let final_pixel_width = canonical_crop_width_px;
+      let final_pixel_height = canonical_crop_height_px;
 
-          const imgLong = Math.max(imageWidth, imageHeight);
-          const imgShort = Math.min(imageWidth, imageHeight);
-          const prnLong = Math.max(printWidth, printHeight);
-          const prnShort = Math.min(printWidth, printHeight);
-
-          const dpiLong = imgLong / prnLong;
-          const dpiShort = imgShort / prnShort;
-          dpi = Math.floor(Math.min(dpiLong, dpiShort));
-
-          if (dpi >= 250) status = 'EXCELLENT';
-          else if (dpi >= 150) status = 'GOOD';
-          else if (dpi >= 100) status = 'ACCEPTABLE';
-          else if (dpi >= 70) status = 'LOW_QUALITY';
-          else status = 'NOT_RECOMMENDED';
-
-          requiresAck = status === 'LOW_QUALITY' || status === 'NOT_RECOMMENDED';
-        }
+      if (rotation === 90 || rotation === 270) {
+        final_pixel_width = canonical_crop_height_px;
+        final_pixel_height = canonical_crop_width_px;
       }
+
+      const dpi_x = final_pixel_width / physicalWidth;
+      const dpi_y = final_pixel_height / physicalHeight;
+      dpi = Math.floor(Math.min(dpi_x, dpi_y));
+
+      if (dpi >= 250) status = 'EXCELLENT';
+      else if (dpi >= 150) status = 'GOOD';
+      else if (dpi >= 100) status = 'ACCEPTABLE';
+      else if (dpi >= 70) status = 'LOW_QUALITY';
+      else status = 'NOT_RECOMMENDED';
+
+      requiresAck = status === 'LOW_QUALITY' || status === 'NOT_RECOMMENDED';
     }
 
     return {
@@ -145,7 +182,7 @@ export function ProductCustomizer({ product }: Props) {
       printQualityStatus: status,
       dpiAcknowledgmentRequired: requiresAck,
     };
-  }, [imageWidth, imageHeight, selectedOptions, product.options]);
+  }, [imageWidth, imageHeight, physicalWidth, physicalHeight, cropData]);
 
   const handleUploadSuccess = useCallback((id: string, url: string, w: number, h: number) => {
     setUploadId(id);
@@ -160,6 +197,9 @@ export function ProductCustomizer({ product }: Props) {
     setImageWidth(0);
     setImageHeight(0);
     setHasAcknowledgedDpi(false);
+    setCropData({ x: 0, y: 0, width: 1, height: 1 });
+    setZoom(1);
+    setRotation(0);
   }, []);
 
   const canAddToCart = (!dpiAcknowledgmentRequired || hasAcknowledgedDpi) && uploadId !== null;
@@ -168,24 +208,19 @@ export function ProductCustomizer({ product }: Props) {
   const handleAddToCart = async () => {
     if (!uploadId || !previewUrl) return;
     
-    // In Phase 6B, basic crop data defaults
-    const defaultCropData = {
-      x: 0,
-      y: 0,
-      width: 100, // assuming 100% normalized
-      height: 100,
-      aspect_ratio: '1:1', // Or derive from size
-    };
-
     await addToCart({
       product_id: product.id,
       quantity: 1,
       selected_option_value_ids: selectedValueIds,
       upload_id: uploadId,
       preview_url: previewUrl,
-      crop: defaultCropData,
-      rotation: 0,
-      zoom: 1,
+      crop: {
+        ...cropData,
+        aspect_ratio: `${physicalWidth}:${physicalHeight}`,
+      },
+      rotation: rotation,
+      zoom: zoom,
+      orientation: printOrientation,
       effective_dpi: effectiveDpi,
       print_quality_status: printQualityStatus,
       dpi_acknowledged: hasAcknowledgedDpi,
@@ -194,13 +229,31 @@ export function ProductCustomizer({ product }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Photo Upload */}
+      {/* Photo Upload & Crop */}
       <div>
-        <h3 className="text-lg font-semibold text-ink mb-3">1. Upload Photo</h3>
+        <h3 className="text-lg font-semibold text-ink mb-3">1. Upload & Edit Photo</h3>
         <FileUploader 
           onUploadSuccess={handleUploadSuccess} 
           onUploadReset={handleUploadReset}
         />
+
+        {uploadId && previewUrl && physicalWidth > 0 && physicalHeight > 0 && (
+          <PhotoCropper
+            imageUrl={previewUrl}
+            imageWidth={imageWidth}
+            imageHeight={imageHeight}
+            printWidth={physicalWidth}
+            printHeight={physicalHeight}
+            orientation={printOrientation}
+            onOrientationChange={setPrintOrientation}
+            onCropChange={(crop, z, r, o) => {
+              setCropData(crop);
+              setZoom(z);
+              setRotation(r);
+              setPrintOrientation(o);
+            }}
+          />
+        )}
       </div>
 
       {/* Option Selectors */}
