@@ -29,6 +29,7 @@ enum OrderStatus {
   PENDING
   CONFIRMED
   PROCESSING
+  READY_FOR_PICKUP
   SHIPPED
   DELIVERED
   CANCELLED
@@ -191,6 +192,7 @@ model Product {
   id          String   @id @default(uuid())
   name        String
   slug        String   @unique
+  sku         String?
   description String?
   base_price  Decimal
   is_active   Boolean  @default(true)
@@ -266,7 +268,9 @@ model Order {
   tax_amount                Decimal?
   discount_amount           Decimal?
   shipping_address_snapshot Json
-  razorpay_order_id         String?
+  razorpay_order_id         String?     @unique
+  shiprocket_order_id       String?     @unique
+  shiprocket_shipment_id    String?     @unique
   tracking_awb              String?
   notes                     String?
   created_at                DateTime    @default(now())
@@ -307,7 +311,7 @@ model Payment {
   id                  String        @id @default(uuid())
   order_id            String
   order               Order         @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  razorpay_payment_id String?
+  razorpay_payment_id String        @unique
   amount              Decimal
   status              PaymentStatus @default(PENDING)
   method              String?

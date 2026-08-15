@@ -2,13 +2,28 @@
 CREATE TYPE "UserRole" AS ENUM ('CUSTOMER', 'ADMIN');
 
 -- CreateEnum
-CREATE TYPE "OrderStatus" AS ENUM ('PENDING', 'PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'PAYMENT_FAILED');
+CREATE TYPE "PrintOrientation" AS ENUM ('PORTRAIT', 'LANDSCAPE', 'SQUARE');
 
 -- CreateEnum
-CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'CAPTURED', 'FAILED', 'REFUNDED');
+CREATE TYPE "OrderStatus" AS ENUM ('PENDING', 'CONFIRMED', 'PROCESSING', 'READY_FOR_PICKUP', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'EXPIRED');
 
 -- CreateEnum
-CREATE TYPE "UploadStatus" AS ENUM ('UPLOADING', 'PROCESSING', 'READY', 'FAILED', 'LOW_RESOLUTION');
+CREATE TYPE "PaymentStatus" AS ENUM ('CREATED', 'AUTHORIZED', 'CAPTURED', 'FAILED', 'REFUNDED', 'PENDING');
+
+-- CreateEnum
+CREATE TYPE "UploadStatus" AS ENUM ('UPLOADING', 'PROCESSING', 'READY', 'FAILED', 'LINKED_TO_CART', 'FULFILLED', 'ARCHIVED');
+
+-- CreateEnum
+CREATE TYPE "UploadRetentionStatus" AS ENUM ('UNATTACHED', 'CART_ATTACHED', 'CHECKOUT_LOCKED', 'ORDERED_RETAINED', 'FULFILLED', 'ELIGIBLE_FOR_RETENTION_POLICY');
+
+-- CreateEnum
+CREATE TYPE "CartStatus" AS ENUM ('ACTIVE', 'CHECKOUT_STARTED', 'CONVERTED');
+
+-- CreateEnum
+CREATE TYPE "PrintQualityStatus" AS ENUM ('EXCELLENT', 'GOOD', 'ACCEPTABLE', 'LOW_QUALITY', 'NOT_RECOMMENDED');
+
+-- CreateEnum
+CREATE TYPE "CartLineItemStatus" AS ENUM ('PENDING', 'VALIDATED', 'STALE', 'CHECKED_OUT', 'CONVERTED');
 
 -- CreateEnum
 CREATE TYPE "FrameMaterialType" AS ENUM ('FRAME', 'MAT', 'GLASS');
@@ -98,6 +113,7 @@ CREATE TABLE "products" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
+    "sku" TEXT,
     "description" TEXT,
     "base_price" DECIMAL(65,30) NOT NULL,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
@@ -145,11 +161,21 @@ CREATE TABLE "frame_materials" (
 -- CreateTable
 CREATE TABLE "orders" (
     "id" TEXT NOT NULL,
-    "user_id" TEXT NOT NULL,
+    "user_id" TEXT,
+    "session_id" TEXT,
+    "cart_id" TEXT NOT NULL,
+    "customer_email" TEXT,
+    "customer_phone" TEXT,
     "status" "OrderStatus" NOT NULL DEFAULT 'PENDING',
     "total_amount" DECIMAL(65,30) NOT NULL,
+    "subtotal_amount" DECIMAL(65,30),
+    "shipping_fee" DECIMAL(65,30),
+    "tax_amount" DECIMAL(65,30),
+    "discount_amount" DECIMAL(65,30),
     "shipping_address_snapshot" JSONB NOT NULL,
     "razorpay_order_id" TEXT,
+    "shiprocket_order_id" TEXT,
+    "shiprocket_shipment_id" TEXT,
     "tracking_awb" TEXT,
     "notes" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -163,6 +189,7 @@ CREATE TABLE "order_items" (
     "id" TEXT NOT NULL,
     "order_id" TEXT NOT NULL,
     "product_id" TEXT NOT NULL,
+    "upload_id" TEXT NOT NULL,
     "quantity" INTEGER NOT NULL DEFAULT 1,
     "unit_price" DECIMAL(65,30) NOT NULL,
     "customization_data" JSONB NOT NULL,
@@ -176,7 +203,7 @@ CREATE TABLE "order_items" (
 CREATE TABLE "payments" (
     "id" TEXT NOT NULL,
     "order_id" TEXT NOT NULL,
-    "razorpay_payment_id" TEXT,
+    "razorpay_payment_id" TEXT NOT NULL,
     "amount" DECIMAL(65,30) NOT NULL,
     "status" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
     "method" TEXT,
@@ -189,16 +216,19 @@ CREATE TABLE "payments" (
 -- CreateTable
 CREATE TABLE "user_uploads" (
     "id" TEXT NOT NULL,
-    "user_id" TEXT NOT NULL,
+    "user_id" TEXT,
+    "session_id" TEXT,
     "original_filename" TEXT NOT NULL,
     "r2_key" TEXT NOT NULL,
+    "preview_r2_key" TEXT,
     "mime_type" TEXT NOT NULL,
     "file_size" INTEGER NOT NULL,
     "width" INTEGER,
     "height" INTEGER,
-    "dpi" INTEGER,
     "status" "UploadStatus" NOT NULL DEFAULT 'UPLOADING',
+    "retention_status" "UploadRetentionStatus" NOT NULL DEFAULT 'UNATTACHED',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "user_uploads_pkey" PRIMARY KEY ("id")
 );
@@ -271,6 +301,76 @@ CREATE TABLE "option_exclusions" (
     CONSTRAINT "option_exclusions_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "carts" (
+    "id" TEXT NOT NULL,
+    "user_id" TEXT,
+    "session_id" TEXT,
+    "status" "CartStatus" NOT NULL DEFAULT 'ACTIVE',
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "carts_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "cart_line_items" (
+    "id" TEXT NOT NULL,
+    "cart_id" TEXT NOT NULL,
+    "product_id" TEXT NOT NULL,
+    "quantity" INTEGER NOT NULL DEFAULT 1,
+    "status" "CartLineItemStatus" NOT NULL DEFAULT 'PENDING',
+    "upload_id" TEXT NOT NULL,
+    "preview_url" TEXT NOT NULL,
+    "orientation" "PrintOrientation" NOT NULL,
+    "crop_x" DOUBLE PRECISION NOT NULL,
+    "crop_y" DOUBLE PRECISION NOT NULL,
+    "crop_width" DOUBLE PRECISION NOT NULL,
+    "crop_height" DOUBLE PRECISION NOT NULL,
+    "crop_aspect_ratio" TEXT NOT NULL,
+    "rotation" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "zoom" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
+    "effective_dpi" INTEGER NOT NULL,
+    "print_quality_status" "PrintQualityStatus" NOT NULL,
+    "dpi_acknowledged" BOOLEAN NOT NULL DEFAULT false,
+    "pricing_version" INTEGER NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "cart_line_items_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "cart_line_item_option_values" (
+    "cart_line_item_id" TEXT NOT NULL,
+    "product_option_value_id" TEXT NOT NULL,
+
+    CONSTRAINT "cart_line_item_option_values_pkey" PRIMARY KEY ("cart_line_item_id","product_option_value_id")
+);
+
+-- CreateTable
+CREATE TABLE "store_settings" (
+    "id" TEXT NOT NULL DEFAULT 'default',
+    "pricing_version" INTEGER NOT NULL DEFAULT 1,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "store_settings_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "webhook_events" (
+    "id" TEXT NOT NULL,
+    "provider" TEXT NOT NULL DEFAULT 'razorpay',
+    "event_id" TEXT NOT NULL,
+    "event_type" TEXT NOT NULL,
+    "payload" JSONB NOT NULL,
+    "processing_status" TEXT NOT NULL DEFAULT 'PENDING',
+    "received_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "processed_at" TIMESTAMP(3),
+
+    CONSTRAINT "webhook_events_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_phone_number_key" ON "users"("phone_number");
 
@@ -296,13 +396,34 @@ CREATE UNIQUE INDEX "products_slug_key" ON "products"("slug");
 CREATE INDEX "product_images_product_id_idx" ON "product_images"("product_id");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "orders_razorpay_order_id_key" ON "orders"("razorpay_order_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "orders_shiprocket_order_id_key" ON "orders"("shiprocket_order_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "orders_shiprocket_shipment_id_key" ON "orders"("shiprocket_shipment_id");
+
+-- CreateIndex
 CREATE INDEX "orders_user_id_idx" ON "orders"("user_id");
+
+-- CreateIndex
+CREATE INDEX "orders_session_id_idx" ON "orders"("session_id");
+
+-- CreateIndex
+CREATE INDEX "orders_cart_id_idx" ON "orders"("cart_id");
 
 -- CreateIndex
 CREATE INDEX "orders_status_idx" ON "orders"("status");
 
 -- CreateIndex
 CREATE INDEX "order_items_order_id_idx" ON "order_items"("order_id");
+
+-- CreateIndex
+CREATE INDEX "order_items_upload_id_idx" ON "order_items"("upload_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "payments_razorpay_payment_id_key" ON "payments"("razorpay_payment_id");
 
 -- CreateIndex
 CREATE INDEX "payments_order_id_idx" ON "payments"("order_id");
@@ -312,6 +433,9 @@ CREATE UNIQUE INDEX "user_uploads_r2_key_key" ON "user_uploads"("r2_key");
 
 -- CreateIndex
 CREATE INDEX "user_uploads_user_id_idx" ON "user_uploads"("user_id");
+
+-- CreateIndex
+CREATE INDEX "user_uploads_session_id_idx" ON "user_uploads"("session_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "coupons_code_key" ON "coupons"("code");
@@ -334,6 +458,21 @@ CREATE INDEX "product_option_values_global_material_id_idx" ON "product_option_v
 -- CreateIndex
 CREATE UNIQUE INDEX "option_exclusions_option_value_1_id_option_value_2_id_key" ON "option_exclusions"("option_value_1_id", "option_value_2_id");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "carts_session_id_key" ON "carts"("session_id");
+
+-- CreateIndex
+CREATE INDEX "carts_user_id_idx" ON "carts"("user_id");
+
+-- CreateIndex
+CREATE INDEX "cart_line_items_cart_id_idx" ON "cart_line_items"("cart_id");
+
+-- CreateIndex
+CREATE INDEX "cart_line_items_upload_id_idx" ON "cart_line_items"("upload_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "webhook_events_event_id_key" ON "webhook_events"("event_id");
+
 -- AddForeignKey
 ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -353,7 +492,10 @@ ALTER TABLE "product_categories" ADD CONSTRAINT "product_categories_category_id_
 ALTER TABLE "product_images" ADD CONSTRAINT "product_images_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "orders" ADD CONSTRAINT "orders_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "orders" ADD CONSTRAINT "orders_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "orders" ADD CONSTRAINT "orders_cart_id_fkey" FOREIGN KEY ("cart_id") REFERENCES "carts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -362,10 +504,13 @@ ALTER TABLE "order_items" ADD CONSTRAINT "order_items_order_id_fkey" FOREIGN KEY
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "order_items" ADD CONSTRAINT "order_items_upload_id_fkey" FOREIGN KEY ("upload_id") REFERENCES "user_uploads"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "payments" ADD CONSTRAINT "payments_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_uploads" ADD CONSTRAINT "user_uploads_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_uploads" ADD CONSTRAINT "user_uploads_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_admin_id_fkey" FOREIGN KEY ("admin_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -388,3 +533,30 @@ ALTER TABLE "option_exclusions" ADD CONSTRAINT "option_exclusions_option_value_1
 -- AddForeignKey
 ALTER TABLE "option_exclusions" ADD CONSTRAINT "option_exclusions_option_value_2_id_fkey" FOREIGN KEY ("option_value_2_id") REFERENCES "product_option_values"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- AddForeignKey
+ALTER TABLE "cart_line_items" ADD CONSTRAINT "cart_line_items_cart_id_fkey" FOREIGN KEY ("cart_id") REFERENCES "carts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cart_line_items" ADD CONSTRAINT "cart_line_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cart_line_items" ADD CONSTRAINT "cart_line_items_upload_id_fkey" FOREIGN KEY ("upload_id") REFERENCES "user_uploads"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cart_line_item_option_values" ADD CONSTRAINT "cart_line_item_option_values_cart_line_item_id_fkey" FOREIGN KEY ("cart_line_item_id") REFERENCES "cart_line_items"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "cart_line_item_option_values" ADD CONSTRAINT "cart_line_item_option_values_product_option_value_id_fkey" FOREIGN KEY ("product_option_value_id") REFERENCES "product_option_values"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- Create partial unique index to enforce strict 1:1 concurrency rule for PENDING orders
+CREATE UNIQUE INDEX "orders_one_pending_per_cart" ON "orders"("cart_id") WHERE "status" = 'PENDING';
+
+-- Enforce guest contact invariant at the database level
+ALTER TABLE "orders" ADD CONSTRAINT "orders_guest_contact_check"
+CHECK (
+  "user_id" IS NOT NULL
+  OR (
+    "customer_email" IS NOT NULL
+    AND "customer_phone" IS NOT NULL
+  )
+);
