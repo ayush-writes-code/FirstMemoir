@@ -422,7 +422,8 @@ export const checkoutService = {
         if (updated.count === 0) {
           throw { statusCode: 409, message: 'Checkout was interrupted by a concurrent request. Please try again.' };
         }
-      } catch (error) {
+      } catch (error: any) {
+        if (error.statusCode === 409) throw error;
         // Razorpay creation failed: expire the local order, return cart to ACTIVE,
         // and unlock the uploads back to CART_ATTACHED so they can be reused.
         await prisma.$transaction(async (tx) => {

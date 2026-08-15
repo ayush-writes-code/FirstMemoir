@@ -81,12 +81,13 @@ export const adminOrdersController = {
           missingFields.push(`items[${idx}].product.sku`);
         }
         const customization = item.customization_data;
-        
-        try {
-          shiprocketService.calculateFulfillmentMetrics(item);
-        } catch (error: any) {
+        if (!customization || !customization.master_file_key) {
           fulfillmentDataComplete = false;
-          missingFields.push(error.message || 'Fulfillment metrics undefined');
+          missingFields.push(`items[${idx}].customization_data.master_file_key`);
+        }
+        if (!customization || !customization.physical_width || !customization.physical_height) {
+          fulfillmentDataComplete = false;
+          missingFields.push(`items[${idx}].customization_data.physical_dimensions`);
         }
       });
 
@@ -120,7 +121,7 @@ export const adminOrdersController = {
 
       const orderData = order as any;
 
-      // Rerun fulfillment validation
+      // Rerun manufacturing validation (NOT courier validation)
       const address = orderData.shipping_address_snapshot;
       let valid = true;
       if (!address || !address.name || !address.line1 || !address.city || !address.state || !address.postal_code) {
@@ -128,15 +129,14 @@ export const adminOrdersController = {
       }
       orderData.items.forEach((item: any) => {
         if (!item.product.sku) valid = false;
-        try {
-          shiprocketService.calculateFulfillmentMetrics(item);
-        } catch (error) {
-          valid = false;
-        }
+        
+        const customization = item.customization_data;
+        if (!customization || !customization.master_file_key) valid = false;
+        if (!customization || !customization.physical_width || !customization.physical_height || !customization.physical_dimension_unit) valid = false;
       });
 
       if (!valid) {
-        return res.status(400).json(errorResponse('Fulfillment data incomplete', 400));
+        return res.status(400).json(errorResponse('Manufacturing data incomplete (missing address, SKU, or physical dimensions)', 400));
       }
 
       const updatedOrder = await prisma.order.update({

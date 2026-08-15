@@ -16,8 +16,9 @@ describe('Admin Orders Integration', () => {
   before(async () => {
     assertTestDatabaseSafe();
     process.env.SHIPROCKET_DRY_RUN = 'true';
-    mock.method(shiprocketService, 'calculateFulfillmentMetrics', () => ({ length: 20, width: 20, height: 20, weight_kg: 1 }));
     
+    // We intentionally DO NOT mock calculateFulfillmentMetrics here.
+    // The business rule is undefined, so it will throw.
     // 0. Clean up any leftover users from previous crashed runs
     await prisma.orderItem.deleteMany();
     await prisma.user.deleteMany({ where: { phone_number: { in: ['1234567890', '0987654321'] } } });
@@ -92,6 +93,7 @@ describe('Admin Orders Integration', () => {
               physical_width: 8,
               physical_height: 10,
               physical_dimension_unit: 'in',
+              master_file_key: r2Key1,
               selected_options: [{
                 option_name: 'Size',
                 value_name: '8x10',
@@ -157,7 +159,7 @@ describe('Admin Orders Integration', () => {
     assert.strictEqual(res.body.data.missingFields.length, 0);
   });
 
-  it('F. CONFIRMED -> PROCESSING success', async () => {
+  it('F. CONFIRMED -> PROCESSING success (with NO shipping package metrics)', async () => {
     const res = await request(app)
       .post(`/api/v1/admin/orders/${testOrderId}/process`)
       .set('Cookie', [`access_token=${adminToken}`]);
@@ -218,23 +220,24 @@ describe('Admin Orders Integration', () => {
     assert.ok(res.body.data.missingFields.includes('shipping_address_snapshot'));
   });
 
-  it('H. Unmocked fulfillment metrics fail closed (business rule missing)', async () => {
-    // Restore the mock temporarily for this test
-    mock.restoreAll();
-    
+
+  it('I. PROCESSING -> Generate AWB fails safely with undefined packaging metrics', async () => {
     const res = await request(app)
-      .get(`/api/v1/admin/orders/${testOrderId}`)
+      .post(`/api/v1/admin/orders/${testOrderId}/shiprocket/awb`)
       .set('Cookie', [`access_token=${adminToken}`]);
     
-    assert.strictEqual(res.status, 200);
-    assert.strictEqual(res.body.data.fulfillmentDataComplete, false);
-    assert.ok(res.body.data.missingFields.includes('PACKAGE_FULFILLMENT_METRICS_UNDEFINED'));
-
-    // Re-apply the mock for subsequent tests if any
-    mock.method(shiprocketService, 'calculateFulfillmentMetrics', () => ({ length: 20, width: 20, height: 20, weight_kg: 1 }));
+    assert.strictEqual(res.status, 500);
+    assert.ok(res.body.error.includes('PACKAGE_FULFILLMENT_METRICS_UNDEFINED'));
+    
+    // Order should remain PROCESSING
+    const order = await prisma.order.findUnique({ where: { id: testOrderId } });
+    assert.strictEqual(order?.status, 'PROCESSING');
   });
 
-  it('I. Generate AWB success in dry-run', async () => {
+  it('J. Generate AWB success with mocked valid fulfillment metrics', async () => {
+    // Mock the metrics only for this successful generation
+    mock.method(shiprocketService, 'calculateFulfillmentMetrics', () => ({ length: 20, width: 20, height: 20, weight_kg: 1 }));
+
     const res = await request(app)
       .post(`/api/v1/admin/orders/${testOrderId}/shiprocket/awb`)
       .set('Cookie', [`access_token=${adminToken}`]);
@@ -244,5 +247,7 @@ describe('Admin Orders Integration', () => {
     assert.strictEqual(res.body.data.shiprocket_order_id, `mock_ord_${testOrderId}`);
     assert.strictEqual(res.body.data.shiprocket_shipment_id, `mock_ship_${testOrderId}`);
     assert.strictEqual(res.body.data.tracking_awb, `MOCK-AWB-${testOrderId}`);
+    
+    mock.restoreAll();
   });
 });
