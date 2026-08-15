@@ -135,8 +135,16 @@ export const cartService = {
       throw { statusCode: 400, message: `Upload is not ready (Status: ${upload.status})` };
     }
 
-    // Update upload status
-    if (upload.status === 'READY') {
+    // Update upload status and retention
+    if (upload.retention_status === 'UNATTACHED') {
+      await prisma.userUpload.update({
+        where: { id: upload.id },
+        data: { 
+          status: 'LINKED_TO_CART',
+          retention_status: 'CART_ATTACHED'
+        }
+      });
+    } else if (upload.status === 'READY') {
       await prisma.userUpload.update({
         where: { id: upload.id },
         data: { status: 'LINKED_TO_CART' }
@@ -323,6 +331,28 @@ export const cartService = {
     await prisma.cartLineItem.delete({
       where: { id: lineItemId }
     });
+
+    // Check if the upload is used by any other cart line item
+    if (lineItem.upload_id) {
+      const otherItems = await prisma.cartLineItem.count({
+        where: { upload_id: lineItem.upload_id }
+      });
+
+      if (otherItems === 0) {
+        // Only downgrade if it's currently CART_ATTACHED
+        // DO NOT downgrade CHECKOUT_LOCKED uploads
+        const upload = await prisma.userUpload.findUnique({
+          where: { id: lineItem.upload_id }
+        });
+        
+        if (upload && upload.retention_status === 'CART_ATTACHED') {
+          await prisma.userUpload.update({
+            where: { id: upload.id },
+            data: { retention_status: 'UNATTACHED' }
+          });
+        }
+      }
+    }
   },
 
   /**

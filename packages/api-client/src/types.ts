@@ -258,3 +258,43 @@ export interface AddToCartInput {
   /** Must be true when print_quality_status is LOW_QUALITY or NOT_RECOMMENDED */
   dpi_acknowledged: boolean;
 }
+
+export interface CheckoutInitInput {
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  shipping_address: {
+    name: string;
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postal_code: string;
+    country: string;
+  };
+}
+
+export interface CheckoutInitResponse {
+  order_id: string;
+  razorpay_order_id: string;
+  amount: number;
+  currency: string;
+  razorpay_key_id: string;
+}
+
+export type OrderStatus =
+  | 'PENDING'
+  | 'CONFIRMED'
+  | 'PROCESSING'
+  | 'READY_FOR_PICKUP'
+  | 'SHIPPED'
+  | 'DELIVERED'
+  | 'CANCELLED'
+  | 'REFUNDED'
+  | 'EXPIRED';
+
+export interface OrderStatusResponse {
+  order_id: string;
+  status: OrderStatus;
+  created_at: string;
+}

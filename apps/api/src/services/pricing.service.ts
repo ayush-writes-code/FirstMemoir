@@ -55,7 +55,9 @@ export const pricingService = {
     });
 
     if (selectedValues.length !== selectedOptionValueIds.length) {
-      throw new Error('One or more option values are invalid or do not belong to this product.');
+      const foundIds = selectedValues.map(v => v.id);
+      const missingIds = selectedOptionValueIds.filter(id => !foundIds.includes(id));
+      throw new Error(`One or more option values are invalid or do not belong to this product. ProductID: ${productId}. Missing/Invalid IDs: ${missingIds.join(', ')}`);
     }
 
     // 3. Check for Exclusions

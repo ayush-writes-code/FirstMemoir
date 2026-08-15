@@ -20,6 +20,11 @@ export const env = {
   R2_PUBLIC_URL: process.env.R2_PUBLIC_URL || '',
   
   COOKIE_SECRET: process.env.COOKIE_SECRET || (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' ? 'dev_cookie_secret_override' : undefined),
+
+  // Razorpay
+  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || '',
+  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || '',
+  RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET || '',
 };
 
 if (env.NODE_ENV === 'production' && !env.COOKIE_SECRET) {

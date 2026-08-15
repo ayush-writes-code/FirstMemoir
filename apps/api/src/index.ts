@@ -17,6 +17,8 @@ app.use(cors({
   origin: env.CORS_ORIGIN,
   credentials: true,
 }));
+// We must parse Razorpay webhooks as raw Buffer/String to verify signatures correctly
+app.use('/api/v1/webhooks/razorpay', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(cookieParser(env.COOKIE_SECRET));
 app.use(globalLimiter);

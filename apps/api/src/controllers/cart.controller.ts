@@ -48,6 +48,12 @@ export const addToCartSchema = {
   })
 };
 
+export const updateQuantitySchema = {
+  body: z.object({
+    quantity: z.number().int().min(1).max(999)
+  })
+};
+
 // Helper function to map a database line item to the DTO expected by the client
 function mapLineItemToDto(item: any) {
   const basePrice = Number(item.product.base_price);

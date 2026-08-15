@@ -1,0 +1,510 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Represents a user in the system (either CUSTOMER or ADMIN)
+model User {
+  id             String         @id @default(uuid())
+  phone_number   String         @unique
+  password_hash  String?
+  first_name     String?
+  last_name      String?
+  role           UserRole       @default(CUSTOMER)
+  created_at     DateTime       @default(now())
+  updated_at     DateTime       @updatedAt
+  addresses      Address[]
+  audit_logs     AuditLog[]
+  orders         Order[]
+  refresh_tokens RefreshToken[]
+  uploads        UserUpload[]
+
+  @@map("users")
+}
+
+/// Stores OTP requests for phone number authentication
+model OtpRequest {
+  id           String   @id @default(uuid())
+  phone_number String
+  otp_hash     String
+  expires_at   DateTime
+  verified     Boolean  @default(false)
+  created_at   DateTime @default(now())
+
+  @@index([phone_number, created_at])
+  @@map("otp_requests")
+}
+
+/// Manages refresh tokens for user authentication sessions
+model RefreshToken {
+  id         String   @id @default(uuid())
+  token_hash String   @unique
+  user_id    String
+  expires_at DateTime
+  revoked    Boolean  @default(false)
+  family     String?
+  created_at DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("refresh_tokens")
+}
+
+/// Stores user addresses for shipping
+model Address {
+  id          String   @id @default(uuid())
+  user_id     String
+  label       String?
+  street      String
+  city        String
+  state       String
+  postal_code String
+  country     String   @default("India")
+  phone       String?
+  is_default  Boolean  @default(false)
+  created_at  DateTime @default(now())
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("addresses")
+}
+
+/// Product categories that can be organized hierarchically
+model Category {
+  id          String            @id @default(uuid())
+  name        String
+  slug        String            @unique
+  description String?
+  parent_id   String?
+  image_url   String?
+  is_active   Boolean           @default(true)
+  sort_order  Int               @default(0)
+  created_at  DateTime          @default(now())
+  parent      Category?         @relation("CategoryHierarchy", fields: [parent_id], references: [id])
+  children    Category[]        @relation("CategoryHierarchy")
+  products    ProductCategory[]
+
+  @@map("categories")
+}
+
+/// Base product definition
+model Product {
+  id              String            @id @default(uuid())
+  name            String
+  slug            String            @unique
+  description     String?
+  base_price      Decimal
+  is_active       Boolean           @default(true)
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+  sku             String?
+  cart_line_items CartLineItem[]
+  exclusions      OptionExclusion[]
+  order_items     OrderItem[]
+  categories      ProductCategory[]
+  images          ProductImage[]
+  options         ProductOption[]
+
+  @@map("products")
+}
+
+/// Join table for Product and Category many-to-many relationship
+model ProductCategory {
+  product_id  String
+  category_id String
+  category    Category @relation(fields: [category_id], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@id([product_id, category_id])
+  @@map("product_categories")
+}
+
+/// Images associated with products
+model ProductImage {
+  id         String  @id @default(uuid())
+  product_id String
+  file_key   String
+  alt_text   String?
+  sort_order Int     @default(0)
+  product    Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@index([product_id])
+  @@map("product_images")
+}
+
+/// Materials available for framing (frames, mats, glass types)
+model FrameMaterial {
+  id             String               @id @default(uuid())
+  name           String
+  type           FrameMaterialType
+  description    String?
+  price_modifier Decimal
+  max_width      Decimal?
+  max_height     Decimal?
+  image_url      String?
+  is_active      Boolean              @default(true)
+  created_at     DateTime             @default(now())
+  option_values  ProductOptionValue[]
+
+  @@map("frame_materials")
+}
+
+/// User orders containing purchased items
+model Order {
+  id                        String      @id @default(uuid())
+  user_id                   String?
+  status                    OrderStatus @default(PENDING)
+  total_amount              Decimal
+  shipping_address_snapshot Json
+  razorpay_order_id         String?     @unique
+  tracking_awb              String?
+  notes                     String?
+  created_at                DateTime    @default(now())
+  updated_at                DateTime    @updatedAt
+  cart_id                   String
+  customer_email            String?
+  customer_phone            String?
+  discount_amount           Decimal?
+  session_id                String?
+  shipping_fee              Decimal?
+  subtotal_amount           Decimal?
+  tax_amount                Decimal?
+  shiprocket_order_id       String?     @unique
+  shiprocket_shipment_id    String?     @unique
+  items                     OrderItem[]
+  cart                      Cart        @relation(fields: [cart_id], references: [id])
+  user                      User?       @relation(fields: [user_id], references: [id])
+  payments                  Payment[]
+
+  @@index([user_id])
+  @@index([session_id])
+  @@index([cart_id])
+  @@index([status])
+  @@map("orders")
+}
+
+/// Individual items within an order
+model OrderItem {
+  id                 String     @id @default(uuid())
+  order_id           String
+  product_id         String
+  quantity           Int        @default(1)
+  unit_price         Decimal
+  customization_data Json
+  print_asset_url    String?
+  created_at         DateTime   @default(now())
+  upload_id          String
+  order              Order      @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product            Product    @relation(fields: [product_id], references: [id])
+  upload             UserUpload @relation(fields: [upload_id], references: [id])
+
+  @@index([order_id])
+  @@index([upload_id])
+  @@map("order_items")
+}
+
+/// Payment records for orders
+model Payment {
+  id                  String        @id @default(uuid())
+  order_id            String
+  razorpay_payment_id String        @unique
+  amount              Decimal
+  status              PaymentStatus @default(PENDING)
+  method              String?
+  created_at          DateTime      @default(now())
+  updated_at          DateTime      @updatedAt
+  order               Order         @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@index([order_id])
+  @@map("payments")
+}
+
+/// Images uploaded by users for printing/framing
+model UserUpload {
+  id                String                @id @default(uuid())
+  user_id           String?
+  original_filename String
+  r2_key            String                @unique
+  mime_type         String
+  file_size         Int
+  width             Int?
+  height            Int?
+  status            UploadStatus          @default(UPLOADING)
+  created_at        DateTime              @default(now())
+  preview_r2_key    String?
+  session_id        String?
+  updated_at        DateTime              @updatedAt
+  retention_status  UploadRetentionStatus @default(UNATTACHED)
+  cart_line_items   CartLineItem[]
+  order_items       OrderItem[]
+  user              User?                 @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+  @@index([session_id])
+  @@map("user_uploads")
+}
+
+/// Discount coupons
+model Coupon {
+  id               String       @id @default(uuid())
+  code             String       @unique
+  discount_type    DiscountType
+  value            Decimal
+  min_order_amount Decimal?
+  max_uses         Int?
+  current_uses     Int          @default(0)
+  is_active        Boolean      @default(true)
+  expires_at       DateTime?
+  created_at       DateTime     @default(now())
+
+  @@map("coupons")
+}
+
+/// Audit logs for admin actions
+model AuditLog {
+  id          String   @id @default(uuid())
+  admin_id    String
+  action      String
+  entity_type String
+  entity_id   String
+  metadata    Json?
+  created_at  DateTime @default(now())
+  admin       User     @relation(fields: [admin_id], references: [id], onDelete: Cascade)
+
+  @@index([admin_id])
+  @@index([entity_type, entity_id])
+  @@map("audit_logs")
+}
+
+/// Defines a category of options for a product (e.g., "Size", "Frame")
+model ProductOption {
+  id          String               @id @default(uuid())
+  product_id  String
+  name        String
+  input_type  OptionInputType
+  is_required Boolean              @default(true)
+  sort_order  Int                  @default(0)
+  values      ProductOptionValue[]
+  product     Product              @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@index([product_id])
+  @@map("product_options")
+}
+
+/// Defines the specific choices for an option (e.g., "8x10", "Oak Frame")
+model ProductOptionValue {
+  id                   String                    @id @default(uuid())
+  option_id            String
+  value                String
+  metadata             Json?
+  modifier_type        PriceModifierType         @default(FLAT)
+  price_modifier       Decimal                   @default(0.0)
+  global_material_id   String?
+  track_inventory      Boolean                   @default(false)
+  stock_count          Int                       @default(0)
+  is_active            Boolean                   @default(true)
+  sort_order           Int                       @default(0)
+  cart_selections      CartLineItemOptionValue[]
+  exclusions_as_source OptionExclusion[]         @relation("ExclusionSource")
+  exclusions_as_target OptionExclusion[]         @relation("ExclusionTarget")
+  global_material      FrameMaterial?            @relation(fields: [global_material_id], references: [id])
+  option               ProductOption             @relation(fields: [option_id], references: [id], onDelete: Cascade)
+
+  @@index([option_id])
+  @@index([global_material_id])
+  @@map("product_option_values")
+}
+
+/// Defines explicitly incompatible option values (e.g. "Canvas" + "Glass")
+model OptionExclusion {
+  id                String             @id @default(uuid())
+  product_id        String
+  option_value_1_id String
+  option_value_2_id String
+  option_value_1    ProductOptionValue @relation("ExclusionSource", fields: [option_value_1_id], references: [id], onDelete: Cascade)
+  option_value_2    ProductOptionValue @relation("ExclusionTarget", fields: [option_value_2_id], references: [id], onDelete: Cascade)
+  product           Product            @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([option_value_1_id, option_value_2_id])
+  @@map("option_exclusions")
+}
+
+/// Anonymous or authenticated shopping cart
+model Cart {
+  id         String         @id @default(uuid())
+  user_id    String?
+  session_id String?        @unique
+  created_at DateTime       @default(now())
+  updated_at DateTime       @updatedAt
+  status     CartStatus     @default(ACTIVE)
+  items      CartLineItem[]
+  orders     Order[]
+
+  @@index([user_id])
+  @@map("carts")
+}
+
+/// A single customized product line item in the cart
+/// Prices are NEVER stored here. Backend always recalculates from option values.
+model CartLineItem {
+  id                     String                    @id @default(uuid())
+  cart_id                String
+  product_id             String
+  quantity               Int                       @default(1)
+  status                 CartLineItemStatus        @default(PENDING)
+  upload_id              String
+  preview_url            String
+  crop_x                 Float
+  crop_y                 Float
+  crop_width             Float
+  crop_height            Float
+  crop_aspect_ratio      String
+  rotation               Float                     @default(0)
+  zoom                   Float                     @default(1.0)
+  effective_dpi          Int
+  print_quality_status   PrintQualityStatus
+  dpi_acknowledged       Boolean                   @default(false)
+  pricing_version        Int
+  created_at             DateTime                  @default(now())
+  updated_at             DateTime                  @updatedAt
+  orientation            PrintOrientation
+  selected_option_values CartLineItemOptionValue[]
+  cart                   Cart                      @relation(fields: [cart_id], references: [id], onDelete: Cascade)
+  product                Product                   @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  upload                 UserUpload                @relation(fields: [upload_id], references: [id])
+
+  @@index([cart_id])
+  @@index([upload_id])
+  @@map("cart_line_items")
+}
+
+/// Join table: which ProductOptionValues are selected for a CartLineItem
+model CartLineItemOptionValue {
+  cart_line_item_id       String
+  product_option_value_id String
+  cart_line_item          CartLineItem       @relation(fields: [cart_line_item_id], references: [id], onDelete: Cascade)
+  option_value            ProductOptionValue @relation(fields: [product_option_value_id], references: [id])
+
+  @@id([cart_line_item_id, product_option_value_id])
+  @@map("cart_line_item_option_values")
+}
+
+/// Global store settings and configuration state
+model StoreSettings {
+  id              String   @id @default("default")
+  pricing_version Int      @default(1)
+  updated_at      DateTime @updatedAt
+
+  @@map("store_settings")
+}
+
+model WebhookEvent {
+  id                String    @id @default(uuid())
+  provider          String    @default("razorpay")
+  event_id          String    @unique
+  event_type        String
+  payload           Json
+  processing_status String    @default("PENDING")
+  received_at       DateTime  @default(now())
+  processed_at      DateTime?
+
+  @@map("webhook_events")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+}
+
+enum PrintOrientation {
+  PORTRAIT
+  LANDSCAPE
+  SQUARE
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  CAPTURED
+  FAILED
+  REFUNDED
+  CREATED
+  AUTHORIZED
+}
+
+enum UploadStatus {
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
+  LINKED_TO_CART
+  FULFILLED
+  ARCHIVED
+}
+
+enum UploadRetentionStatus {
+  UNATTACHED
+  CART_ATTACHED
+  CHECKOUT_LOCKED
+  ORDERED_RETAINED
+  FULFILLED
+  ELIGIBLE_FOR_RETENTION_POLICY
+}
+
+enum CartStatus {
+  ACTIVE
+  CHECKOUT_STARTED
+  CONVERTED
+}
+
+enum PrintQualityStatus {
+  EXCELLENT
+  GOOD
+  ACCEPTABLE
+  LOW_QUALITY
+  NOT_RECOMMENDED
+}
+
+enum CartLineItemStatus {
+  PENDING
+  VALIDATED
+  STALE
+  CHECKED_OUT
+  CONVERTED
+}
+
+enum FrameMaterialType {
+  FRAME
+  MAT
+  GLASS
+}
+
+enum DiscountType {
+  PERCENT
+  FLAT
+}
+
+enum OptionInputType {
+  SELECT
+  RADIO
+  BUTTON
+  SWATCH
+}
+
+enum PriceModifierType {
+  FLAT
+  PERCENTAGE
+}

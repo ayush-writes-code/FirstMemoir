@@ -7,7 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "node --import tsx --test src/services/__tests__/pricing.service.test.ts",
+    "test": "NODE_ENV=test node --env-file=.env.test --import tsx --test-concurrency=1 --test 'src/**/*.test.ts'",
     "lint": "eslint src/"
   },
   "dependencies": {
