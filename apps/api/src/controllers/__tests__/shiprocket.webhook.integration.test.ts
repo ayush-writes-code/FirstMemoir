@@ -78,7 +78,7 @@ describe('Shiprocket Webhook Integration Tests', () => {
   after(async () => {
     // Cleanup
     await prisma.webhookEvent.deleteMany({ where: { provider: 'shiprocket' } });
-    await prisma.order.deleteMany({ where: { cart_id: testCartId } });
+    await prisma.order.deleteMany({ where: { OR: [{ cart_id: testCartId }, { user_id: testUserId }] } });
     await prisma.cart.deleteMany({ where: { id: testCartId } });
     await prisma.user.deleteMany({ where: { id: testUserId } });
     await prisma.$disconnect();
@@ -203,8 +203,8 @@ describe('Shiprocket Webhook Integration Tests', () => {
     // Create new order
     const o4 = await prisma.order.create({
       data: {
-        cart_id: (await prisma.cart.findFirst())!.id,
-        user_id: (await prisma.user.findFirst())!.id,
+        cart_id: testCartId,
+        user_id: testUserId,
         status: OrderStatus.READY_FOR_PICKUP,
         total_amount: 100,
         shipping_address_snapshot: {},

@@ -26,10 +26,11 @@ import { razorpayService } from '../../services/razorpay.service.js';
 
 // Mock Razorpay SDK creation
 const originalCreateOrder = razorpayService.createOrder;
+const originalFetchOrder = razorpayService.fetchOrder;
 before(() => {
   razorpayService.createOrder = async (amount: number, receipt: string) => {
     return {
-      id: `rzp_test_order_${Date.now()}`,
+      id: `rzp_test_order_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       entity: 'order',
       amount,
       amount_paid: 0,
@@ -41,10 +42,24 @@ before(() => {
       created_at: Math.floor(Date.now() / 1000)
     } as any;
   };
+  razorpayService.fetchOrder = async (orderId: string) => {
+    return {
+      id: orderId,
+      entity: 'order',
+      amount: 10000,
+      amount_paid: 0,
+      amount_due: 10000,
+      currency: 'INR',
+      status: 'created',
+      attempts: 0,
+      created_at: Math.floor(Date.now() / 1000)
+    } as any;
+  };
 });
 
 after(() => {
   razorpayService.createOrder = originalCreateOrder;
+  razorpayService.fetchOrder = originalFetchOrder;
 });
 
 // ─── Shared test fixtures ─────────────────────────────────────────────────────
@@ -773,6 +788,92 @@ describe('Step 2C: POST /api/v1/checkout/initialize', () => {
 
     // Cleanup
     await prisma.order.deleteMany({ where: { id: res.body.data.order_id } });
+    await prisma.cartLineItem.deleteMany({ where: { cart_id: cartId } });
+    await prisma.cart.deleteMany({ where: { id: cartId } });
+    await prisma.userUpload.deleteMany({ where: { id: upload.id } });
+  });
+
+  it('existing PENDING local order + Razorpay paid order → creates fresh Razorpay order and expires old local order', async () => {
+    const agent = makeAgent();
+    const cartRes = await agent.get('/api/v1/cart').expect(200);
+    const cartId = cartRes.body.data.id;
+    const cart = await prisma.cart.findUnique({ where: { id: cartId } });
+    const upload = await createUploadForSession(cart!.session_id!);
+
+    await addItem(agent, upload.id, [testSizeValue.id]);
+
+    const body = {
+      customer_email: 'test@example.com',
+      customer_phone: '+919876543210',
+      shipping_address: validShipping,
+    };
+
+    // First checkout initialization
+    const res1 = await agent.post('/api/v1/checkout/initialize').send(body).expect(200);
+    const firstOrderId = res1.body.data.order_id;
+    const firstRzpOrderId = res1.body.data.razorpay_order_id;
+
+    // Simulate that this Razorpay order is now 'paid'
+    razorpayService.fetchOrder = async (orderId: string) => {
+      if (orderId === firstRzpOrderId) {
+        return {
+          id: orderId,
+          status: 'paid',
+          amount_paid: 10000,
+          attempts: 1,
+        } as any;
+      }
+      return { id: orderId, status: 'created', attempts: 0 } as any;
+    };
+
+    // Second checkout initialization with same cart
+    const res2 = await agent.post('/api/v1/checkout/initialize').send(body).expect(200);
+    const secondOrderId = res2.body.data.order_id;
+    const secondRzpOrderId = res2.body.data.razorpay_order_id;
+
+    // Must NOT reuse the old order or Razorpay ID
+    assert.notStrictEqual(secondOrderId, firstOrderId, 'Must create a fresh Order when old Razorpay order is paid');
+    assert.notStrictEqual(secondRzpOrderId, firstRzpOrderId, 'Must create a fresh Razorpay order when old one is paid');
+
+    // The first order must now be EXPIRED
+    const firstOrderAfter = await prisma.order.findUnique({ where: { id: firstOrderId } });
+    assert.strictEqual(firstOrderAfter?.status, 'EXPIRED', 'Old order must be marked EXPIRED');
+
+    // Cleanup
+    await prisma.order.deleteMany({ where: { cart_id: cartId } });
+    await prisma.cartLineItem.deleteMany({ where: { cart_id: cartId } });
+    await prisma.cart.deleteMany({ where: { id: cartId } });
+    await prisma.userUpload.deleteMany({ where: { id: upload.id } });
+  });
+
+  it('existing PENDING local order + valid unpaid Razorpay order → safely reuses existing order', async () => {
+    const agent = makeAgent();
+    const cartRes = await agent.get('/api/v1/cart').expect(200);
+    const cartId = cartRes.body.data.id;
+    const cart = await prisma.cart.findUnique({ where: { id: cartId } });
+    const upload = await createUploadForSession(cart!.session_id!);
+
+    await addItem(agent, upload.id, [testSizeValue.id]);
+
+    const body = {
+      customer_email: 'test@example.com',
+      customer_phone: '+919876543210',
+      shipping_address: validShipping,
+    };
+
+    // Ensure fetchOrder returns unpaid / created status
+    razorpayService.fetchOrder = async (orderId: string) => {
+      return { id: orderId, status: 'created', attempts: 0 } as any;
+    };
+
+    const res1 = await agent.post('/api/v1/checkout/initialize').send(body).expect(200);
+    const res2 = await agent.post('/api/v1/checkout/initialize').send(body).expect(200);
+
+    assert.strictEqual(res1.body.data.order_id, res2.body.data.order_id, 'Must reuse order when Razorpay order is unpaid');
+    assert.strictEqual(res1.body.data.razorpay_order_id, res2.body.data.razorpay_order_id, 'Must reuse Razorpay order ID');
+
+    // Cleanup
+    await prisma.order.deleteMany({ where: { cart_id: cartId } });
     await prisma.cartLineItem.deleteMany({ where: { cart_id: cartId } });
     await prisma.cart.deleteMany({ where: { id: cartId } });
     await prisma.userUpload.deleteMany({ where: { id: upload.id } });

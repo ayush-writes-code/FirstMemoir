@@ -6,21 +6,21 @@ export const listOrders = async (params?: { page?: number; limit?: number }) => 
   if (params?.limit) query.append('limit', params.limit.toString());
   const queryString = query.toString() ? `?${query.toString()}` : '';
 
-  return fetchClient<{ orders: any[]; pagination: any }>(`/v1/admin/orders${queryString}`);
+  return fetchClient<{ orders: any[]; pagination: any }>(`/admin/orders${queryString}`);
 };
 
 export const getOrderDetail = async (id: string) => {
-  return fetchClient<{ order: any; fulfillmentDataComplete: boolean; missingFields: string[] }>(`/v1/admin/orders/${id}`);
+  return fetchClient<{ order: any; fulfillmentDataComplete: boolean; missingFields: string[] }>(`/admin/orders/${id}`);
 };
 
 export const processOrder = async (id: string) => {
-  return fetchClient<any>(`/v1/admin/orders/${id}/process`, {
+  return fetchClient<any>(`/admin/orders/${id}/process`, {
     method: 'POST',
   });
 };
 
 export const generateAwb = async (id: string) => {
-  return fetchClient<any>(`/v1/admin/orders/${id}/shiprocket/awb`, {
+  return fetchClient<any>(`/admin/orders/${id}/shiprocket/awb`, {
     method: 'POST',
   });
 };

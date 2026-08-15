@@ -4,16 +4,30 @@ import request from 'supertest';
 import { app } from '../../index.js';
 import { prisma } from '@repo/database';
 
+import { signAccessToken } from '../../utils/jwt.js';
+
 describe('Catalog Contract Stabilization Integration Tests', () => {
+  let adminToken: string;
   
   before(async () => {
+    await prisma.user.deleteMany({ where: { phone_number: 'admin12345' } });
+    
+    const adminUser = await prisma.user.create({
+      data: {
+        phone_number: 'admin12345',
+        role: 'ADMIN',
+        first_name: 'Test',
+      }
+    });
+    adminToken = signAccessToken({ userId: adminUser.id, role: 'ADMIN' });
+    
     // Setup test data
     await prisma.category.deleteMany({});
     await prisma.product.deleteMany({});
     
     const rootCat = await prisma.category.create({
       data: {
-        id: 'cat-root-1',
+        id: '11111111-1111-1111-1111-111111111111',
         name: 'Root Category',
         slug: 'root-category',
         is_active: true,
@@ -23,7 +37,7 @@ describe('Catalog Contract Stabilization Integration Tests', () => {
 
     const childCat = await prisma.category.create({
       data: {
-        id: 'cat-child-1',
+        id: '22222222-2222-2222-2222-222222222222',
         name: 'Child Category',
         slug: 'child-category',
         is_active: false, // inactive to test filtering
@@ -40,7 +54,7 @@ describe('Catalog Contract Stabilization Integration Tests', () => {
         base_price: 100,
         is_active: true,
         categories: {
-          create: [{ category_id: rootCat.id }]
+          create: [{ category_id: '11111111-1111-1111-1111-111111111111' }]
         }
       }
     });
@@ -53,7 +67,7 @@ describe('Catalog Contract Stabilization Integration Tests', () => {
         base_price: 200,
         is_active: true,
         categories: {
-          create: [{ category_id: rootCat.id }]
+          create: [{ category_id: '11111111-1111-1111-1111-111111111111' }]
         }
       }
     });
@@ -106,11 +120,40 @@ describe('Catalog Contract Stabilization Integration Tests', () => {
       
       const tree = res.body.data;
       assert.ok(Array.isArray(tree));
-      const root = tree.find((c: any) => c.id === 'cat-root-1');
+      const root = tree.find((c: any) => c.id === '11111111-1111-1111-1111-111111111111');
       assert.ok(root);
       
       assert.strictEqual(root.children.length, 1);
-      assert.strictEqual(root.children[0].id, 'cat-child-1');
+      assert.strictEqual(root.children[0].id, '22222222-2222-2222-2222-222222222222');
+    });
+  });
+
+  describe('Product SKU Support', () => {
+    it('should allow creating a product with a SKU and return it', async () => {
+      const res = await request(app)
+        .post('/api/v1/products')
+        .set('Cookie', [`access_token=${adminToken}`])
+        .send({
+          name: 'Test Product with SKU',
+          sku: 'SKU-TEST-001',
+          base_price: '150.00',
+          category_ids: ['11111111-1111-1111-1111-111111111111'],
+        })
+        .expect(201);
+      
+      assert.strictEqual(res.body.success, true);
+      assert.strictEqual(res.body.data.sku, 'SKU-TEST-001');
+
+      // Verify it persists in DB
+      const dbProduct = await prisma.product.findUnique({ where: { id: res.body.data.id } });
+      assert.strictEqual(dbProduct?.sku, 'SKU-TEST-001');
+    });
+
+    it('should return SKU in GET /api/v1/products', async () => {
+      const res = await request(app).get('/api/v1/products?limit=10').expect(200);
+      const skuProduct = res.body.data.find((p: any) => p.name === 'Test Product with SKU');
+      assert.ok(skuProduct);
+      assert.strictEqual(skuProduct.sku, 'SKU-TEST-001');
     });
   });
 });

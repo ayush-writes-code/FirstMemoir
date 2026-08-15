@@ -81,6 +81,7 @@ export interface ProductDto {
   id: string;
   name: string;
   slug: string;
+  sku: string | null;
   description: string | null;
   base_price: string;
   is_active: boolean;
@@ -92,6 +93,7 @@ export interface ProductDto {
 
 export interface CreateProductInput {
   name: string;
+  sku?: string | null;
   description?: string;
   base_price: string;
   category_ids: string[];
@@ -100,6 +102,7 @@ export interface CreateProductInput {
 
 export interface UpdateProductInput {
   name?: string;
+  sku?: string | null;
   description?: string | null;
   base_price?: string;
   category_ids?: string[];

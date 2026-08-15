@@ -298,10 +298,30 @@ describe('Phase 6D Step 3: Webhook Integration Tests', () => {
   //  6. HAPPY PATH — payment.captured CONFIRMS
   // ═══════════════════════════════════════════════════════════════════
 
-  it('10. payment.captured confirms Order + CAPTURED Payment + ORDERED_RETAINED uploads', async () => {
+  it('10. payment.captured confirms Order + CAPTURED Payment + ORDERED_RETAINED uploads + CLEARS cart', async () => {
     // Ensure order is PENDING before this test
     await prisma.order.update({ where: { id: testOrder.id }, data: { status: 'PENDING' } });
     await prisma.userUpload.update({ where: { id: testUpload.id }, data: { retention_status: 'CHECKOUT_LOCKED' } });
+    
+    // Add a cart line item to verify it gets cleared
+    await prisma.cartLineItem.create({
+      data: {
+        cart_id: testCart.id,
+        product_id: testProduct.id,
+        upload_id: testUpload.id,
+        quantity: 1,
+        preview_url: 'https://example.com/preview.jpg',
+        orientation: 'PORTRAIT',
+        crop_x: 0,
+        crop_y: 0,
+        crop_width: 100,
+        crop_height: 100,
+        crop_aspect_ratio: '8:10',
+        effective_dpi: 300,
+        print_quality_status: 'EXCELLENT',
+        pricing_version: 1,
+      }
+    });
 
     const payload = capturedPayload('pay_whtest_happy', TEST_RZP_ORDER, 10000);
     const res = await sendWebhook('evt_whtest_happy', payload);
@@ -320,6 +340,10 @@ describe('Phase 6D Step 3: Webhook Integration Tests', () => {
 
     const event = await prisma.webhookEvent.findUnique({ where: { event_id: 'evt_whtest_happy' } });
     assert.strictEqual(event?.processing_status, 'PROCESSED');
+
+    // Verify cart items are cleared
+    const remainingCartItems = await prisma.cartLineItem.count({ where: { cart_id: testCart.id } });
+    assert.strictEqual(remainingCartItems, 0, 'Cart line items must be deleted on payment confirmation');
   });
 
   // ═══════════════════════════════════════════════════════════════════
@@ -563,5 +587,55 @@ describe('Phase 6D Step 3: Webhook Integration Tests', () => {
     await prisma.cart.deleteMany({
       where: { id: { in: [cartNull1.id, cartNull2.id, cartDup.id] } }
     });
+  });
+
+  it('19. payment.captured succeeds when upload is already ORDERED_RETAINED (idempotent)', async () => {
+    // Reset order to PENDING, but set upload to ORDERED_RETAINED
+    await prisma.order.update({ where: { id: testOrder.id }, data: { status: 'PENDING' } });
+    await prisma.userUpload.update({ where: { id: testUpload.id }, data: { retention_status: 'ORDERED_RETAINED' } });
+
+    const payload = capturedPayload('pay_whtest_already_retained', TEST_RZP_ORDER, 10000);
+    const res = await sendWebhook('evt_whtest_already_retained', payload);
+    assert.strictEqual(res.status, 200);
+
+    const order = await prisma.order.findUnique({ where: { id: testOrder.id } });
+    assert.strictEqual(order?.status, 'CONFIRMED');
+
+    const upload = await prisma.userUpload.findUnique({ where: { id: testUpload.id } });
+    assert.strictEqual(upload?.retention_status, 'ORDERED_RETAINED');
+
+    const payment = await prisma.payment.findFirst({ where: { razorpay_payment_id: 'pay_whtest_already_retained' } });
+    assert.ok(payment);
+    assert.strictEqual(payment.status, 'CAPTURED');
+  });
+
+  it('20. payment.captured fails safely when an upload record is missing from DB', async () => {
+    // Reset order to PENDING
+    await prisma.order.update({ where: { id: testOrder.id }, data: { status: 'PENDING' } });
+
+    const origTransaction = prisma.$transaction;
+    (prisma as any).$transaction = async (fn: any, opts: any) => {
+      return origTransaction.call(prisma, async (tx: any) => {
+        const proxyTx = new Proxy(tx, {
+          get(target, prop) {
+            if (prop === 'userUpload') {
+              return {
+                ...target.userUpload,
+                findMany: async () => [], // Simulate missing asset lookup
+              };
+            }
+            return target[prop];
+          }
+        });
+        return fn(proxyTx);
+      }, opts);
+    };
+
+    const payload = capturedPayload('pay_whtest_missing_upload', TEST_RZP_ORDER, 10000);
+    const res = await sendWebhook('evt_whtest_missing_upload', payload);
+
+    prisma.$transaction = origTransaction;
+
+    assert.strictEqual(res.status, 500, 'Must return 500 on missing upload asset to allow retry / prevent corrupt state');
   });
 });

@@ -276,36 +276,58 @@ export const checkoutService = {
     const discountAmount = 0;
     const totalAmount = orderSubtotal + shippingFee + taxAmount - discountAmount;
 
-    // ── 3. Transaction: idempotency + order creation + retention lock ─────────
-    let order;
+    // ── 2b. Idempotency Check: Reuse existing PENDING order if cart is identical and Razorpay order is valid & unpaid ──
+    const existingPendingOrder = await prisma.order.findFirst({
+      where: { cart_id: cart.id, status: 'PENDING' },
+      include: { items: true }
+    });
 
-    order = await prisma.$transaction(async (tx) => {
-      // Idempotency: look for an existing PENDING order for this cart
-      const existingPendingOrder = await tx.order.findFirst({
-        where: { cart_id: cart.id, status: 'PENDING' },
-        include: { items: true }
-      });
+    if (existingPendingOrder) {
+      const isIdentical = await isCartStateIdenticalToOrder(
+        prisma,
+        cart.items,
+        existingPendingOrder.id
+      );
 
-      if (existingPendingOrder) {
-        const isIdentical = await isCartStateIdenticalToOrder(
-          tx,
-          cart.items,
-          existingPendingOrder.id
-        );
+      if (isIdentical && existingPendingOrder.razorpay_order_id) {
+        // Fetch Razorpay order status to verify it's still unpaid and valid
+        const rzpOrder = await razorpayService.fetchOrder(existingPendingOrder.razorpay_order_id);
+        const isReusable = rzpOrder && rzpOrder.status === 'created' && (rzpOrder.attempts ?? 0) === 0;
 
-        if (isIdentical && existingPendingOrder.razorpay_order_id) {
-          // Reuse the existing PENDING order — do not call Razorpay again if
-          // it already has a razorpay_order_id
-          return existingPendingOrder;
+        if (isReusable) {
+          // Reusable: return existing order without creating a new one
+          return {
+            orderId: existingPendingOrder.id,
+            razorpayOrderId: existingPendingOrder.razorpay_order_id,
+            amount: Math.round(existingPendingOrder.total_amount.toNumber() * 100),
+            currency: 'INR'
+          };
         }
 
-        // Cart has changed OR order is a concurrent attempt without Razorpay ID:
-        // EXPIRE the old PENDING order to release the partial unique index before creating the replacement
-        await tx.order.update({
+        // Razorpay order is paid, attempted, expired, or fetch failed:
+        // Mark the stale local order as EXPIRED
+        await prisma.order.update({
+          where: { id: existingPendingOrder.id },
+          data: { status: 'EXPIRED' }
+        });
+      } else {
+        // Cart changed or missing razorpay_order_id: expire old PENDING order
+        await prisma.order.update({
           where: { id: existingPendingOrder.id },
           data: { status: 'EXPIRED' }
         });
       }
+    }
+
+    // ── 3. Transaction: order creation + retention lock ─────────
+    let order;
+
+    order = await prisma.$transaction(async (tx) => {
+      // Ensure any lingering PENDING orders for this cart are expired before creating replacement
+      await tx.order.updateMany({
+        where: { cart_id: cart.id, status: 'PENDING' },
+        data: { status: 'EXPIRED' }
+      });
 
       // Build the immutable manufacturing snapshot for each line item
       const orderItemsCreate = lineItemData.map(({ cartItem, pricing, physicalDimensions, masterFileKey, selectedOptionValueIds }) => {

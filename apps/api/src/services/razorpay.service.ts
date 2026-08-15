@@ -42,6 +42,22 @@ class RazorpayService {
   }
 
   /**
+   * Fetches an existing order from Razorpay to check its status.
+   * 
+   * @param orderId The Razorpay order ID (e.g. order_xxx)
+   * @returns Razorpay order object or null if not found/error
+   */
+  async fetchOrder(orderId: string) {
+    try {
+      const order = await this.razorpay.orders.fetch(orderId);
+      return order;
+    } catch (error) {
+      console.error('[RazorpayService] Fetch order failed for', orderId, error);
+      return null;
+    }
+  }
+
+  /**
    * Cryptographically verifies the Razorpay webhook signature using HMAC SHA256.
    * 
    * @param rawBody The raw unparsed string body from the webhook request

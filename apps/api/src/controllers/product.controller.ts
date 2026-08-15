@@ -20,6 +20,7 @@ const priceRegex = /^\d+(\.\d{1,2})?$/;
 export const createProductSchema = {
   body: z.object({
     name: z.string().trim().min(2).max(100),
+    sku: z.string().trim().max(100).optional().nullable(),
     description: z.string().max(1000).optional(),
     base_price: z.string().regex(priceRegex, "Must be a valid price with up to 2 decimal places").refine(val => Number(val) > 0, "Price must be greater than 0"),
     category_ids: z.array(z.string().uuid()).min(1, "At least one category is required"),
@@ -30,6 +31,7 @@ export const createProductSchema = {
 export const updateProductSchema = {
   body: z.object({
     name: z.string().trim().min(2).max(100),
+    sku: z.string().trim().max(100).optional().nullable(),
     description: z.string().max(1000).optional().nullable(),
     base_price: z.string().regex(priceRegex, "Must be a valid price with up to 2 decimal places").refine(val => Number(val) > 0, "Price must be greater than 0"),
     category_ids: z.array(z.string().uuid()).min(1, "At least one category is required"),

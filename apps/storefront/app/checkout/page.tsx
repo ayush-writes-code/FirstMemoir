@@ -160,10 +160,14 @@ export default function CheckoutPage() {
         modal: {
           ondismiss: function () {
             setIsProcessing(false);
-            setInfo('Payment cancelled. You can try again.');
+            setInfo('Payment window closed. You can try again.');
           },
+          escape: true,
+          backdropclose: false,
+          handleback: true,
         },
         prefill: {
+          name: formData.customer_name,
           email: formData.customer_email,
           contact: formData.customer_phone,
         },
@@ -174,7 +178,7 @@ export default function CheckoutPage() {
 
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (response: any) {
-        setError(response.error?.description || 'Payment failed. Please try again.');
+        setError(response.error?.description || response.error?.reason || 'Payment failed. Please try again.');
         setIsProcessing(false);
       });
 

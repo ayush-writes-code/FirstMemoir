@@ -139,9 +139,12 @@ export default function CartPage() {
               </div>
             </div>
 
-            <button className="w-full bg-brand hover:bg-brand-pressed text-white font-medium text-lg rounded-pill h-12 transition-colors">
+            <Link
+              href="/checkout"
+              className="w-full flex items-center justify-center bg-brand hover:bg-brand-pressed text-white font-medium text-lg rounded-pill h-12 transition-colors"
+            >
               Proceed to Checkout
-            </button>
+            </Link>
             
             <p className="text-xs text-center text-muted mt-4">
               Taxes and shipping calculated at checkout.

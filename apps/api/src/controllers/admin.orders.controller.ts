@@ -52,7 +52,8 @@ export const adminOrdersController = {
           payments: true,
           items: {
             include: {
-              product: { select: { name: true, slug: true, sku: true } }
+              product: { select: { name: true, slug: true, sku: true } },
+              upload: true,
             }
           }
         }

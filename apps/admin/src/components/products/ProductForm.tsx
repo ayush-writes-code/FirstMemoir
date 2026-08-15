@@ -22,6 +22,7 @@ interface Props {
 
 interface FormState {
   name: string;
+  sku: string;
   description: string;
   base_price: string;
   category_ids: string[];
@@ -49,6 +50,7 @@ function validate(state: FormState): string {
 export function ProductForm({ mode, product, categories, isSubmitting, error, onSubmit, onClose, onRefresh, isLoadingFullProduct = false }: Props) {
   const [form, setForm] = useState<FormState>({
     name: product?.name ?? '',
+    sku: product?.sku ?? '',
     description: product?.description ?? '',
     base_price: product?.base_price ?? '',
     category_ids: product?.categories.map(c => c.category.id) ?? [],
@@ -72,6 +74,7 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
   useEffect(() => {
     setForm({
       name: product?.name ?? '',
+      sku: product?.sku ?? '',
       description: product?.description ?? '',
       base_price: product?.base_price ?? '',
       category_ids: product?.categories.map(c => c.category.id) ?? [],
@@ -107,6 +110,7 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
     setLocalError('');
     const payload = {
       name: form.name.trim(),
+      sku: form.sku.trim() || undefined,
       description: form.description.trim() || undefined,
       base_price: form.base_price.trim(),
       category_ids: form.category_ids,
@@ -245,6 +249,23 @@ export function ProductForm({ mode, product, categories, isSubmitting, error, on
                 maxLength={100}
                 required
                 placeholder="e.g. Classic Poster"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8620A] focus:border-[#E8620A]"
+              />
+            </div>
+            
+            {/* SKU */}
+            <div>
+              <label htmlFor="prod-sku" className="block text-sm font-medium text-gray-700 mb-1">
+                SKU <span className="text-gray-400 font-normal">(Optional)</span>
+              </label>
+              <input
+                id="prod-sku"
+                name="sku"
+                type="text"
+                value={form.sku}
+                onChange={handleChange}
+                maxLength={100}
+                placeholder="e.g. PST-001"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E8620A] focus:border-[#E8620A]"
               />
             </div>

@@ -59,20 +59,23 @@ export function Orders() {
                   {new Date(order.created_at).toLocaleDateString()}
                 </td>
                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                  {order.user?.name || 'Guest'}
+                  {order.shipping_address_snapshot?.name || (order.user ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.trim() : null) || order.customer_email || 'Guest'}
                 </td>
                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                   <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset
                     ${order.status === 'CONFIRMED' ? 'bg-blue-50 text-blue-700 ring-blue-600/20' : ''}
                     ${order.status === 'PROCESSING' ? 'bg-yellow-50 text-yellow-800 ring-yellow-600/20' : ''}
                     ${order.status === 'READY_FOR_PICKUP' ? 'bg-purple-50 text-purple-700 ring-purple-600/20' : ''}
+                    ${order.status === 'SHIPPED' ? 'bg-indigo-50 text-indigo-700 ring-indigo-600/20' : ''}
+                    ${order.status === 'DELIVERED' ? 'bg-green-50 text-green-700 ring-green-600/20' : ''}
                     ${order.status === 'PENDING' ? 'bg-gray-50 text-gray-600 ring-gray-500/10' : ''}
+                    ${order.status === 'EXPIRED' || order.status === 'CANCELLED' ? 'bg-red-50 text-red-700 ring-red-600/20' : ''}
                   `}>
                     {order.status.replace(/_/g, ' ')}
                   </span>
                 </td>
                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                  {order.payment?.status || 'N/A'}
+                  {order.payments?.[0]?.status || order.payment?.status || 'N/A'}
                 </td>
                 <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                   ₹{Number(order.total_amount).toFixed(2)}

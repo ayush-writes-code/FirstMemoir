@@ -36,8 +36,8 @@ function SuccessContent() {
           const currentStatus = res.data.status;
           setStatus(currentStatus);
 
-          // Stop polling if we reach a final state
-          if (currentStatus === 'CONFIRMED' || currentStatus === 'EXPIRED' || currentStatus === 'CANCELLED') {
+          // Stop polling if we reach a final state (anything other than PENDING)
+          if (currentStatus !== 'PENDING') {
             return;
           }
         }

@@ -126,25 +126,77 @@ export function OrderDetail() {
               <h3 className="text-base font-semibold leading-6 text-gray-900">Order Items</h3>
             </div>
             <ul className="divide-y divide-gray-100">
-              {order.items.map((item: any) => (
-                <li key={item.id} className="p-4 sm:px-6 flex items-start gap-4">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{item.product.name}</p>
-                    <p className="text-sm text-gray-500">SKU: {item.product.sku || 'N/A'}</p>
-                    <p className="text-sm text-gray-500 mt-1">Quantity: {item.quantity}</p>
-                    
-                    <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                      <p className="font-semibold mb-1">Customization</p>
-                      {item.customization_data?.selected_options?.map((opt: any, i: number) => (
-                        <div key={i}>{opt.option_name}: {opt.value_name}</div>
-                      ))}
+              {order.items.map((item: any) => {
+                const customization = item.customization_data || {};
+                const options = customization.selected_product_options || customization.selected_options || [];
+                const upload = item.upload;
+                
+                return (
+                  <li key={item.id} className="p-4 sm:px-6 flex items-start gap-4">
+                    {upload && (
+                      <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
+                        <img
+                          src={upload.preview_r2_key ? `https://pub-cbf2a823886f4d379eba3abf625d08ac.r2.dev/${upload.preview_r2_key}` : (upload.r2_key ? `https://pub-cbf2a823886f4d379eba3abf625d08ac.r2.dev/${upload.r2_key}` : '')}
+                          alt={upload.original_filename || item.product.name}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">{item.product.name}</p>
+                      <p className="text-xs text-gray-500">SKU: <span className="font-mono">{item.product.sku || 'N/A'}</span></p>
+                      <p className="text-xs text-gray-500">Quantity: {item.quantity}</p>
+                      
+                      <div className="mt-2 text-xs text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 space-y-1">
+                        <p className="font-semibold text-gray-900 mb-1">Manufacturing & Customization Snapshot</p>
+                        
+                        {options.length > 0 && (
+                          <div className="mb-2">
+                            <span className="font-medium text-gray-600">Options: </span>
+                            {options.map((opt: any, i: number) => (
+                              <span key={i} className="inline-block bg-white px-2 py-0.5 rounded border border-gray-200 mr-1 text-[11px]">
+                                {opt.option_name}: {opt.value_name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {customization.physical_width && customization.physical_height && (
+                          <div>
+                            <span className="font-medium text-gray-600">Physical Size: </span>
+                            <span className="font-semibold">{customization.physical_width} × {customization.physical_height} {customization.physical_dimension_unit || 'in'}</span>
+                            {customization.orientation && <span className="ml-2 text-gray-500">({customization.orientation})</span>}
+                          </div>
+                        )}
+
+                        {customization.effective_dpi && (
+                          <div>
+                            <span className="font-medium text-gray-600">DPI / Quality: </span>
+                            <span>{customization.effective_dpi} DPI ({customization.print_quality_status || 'OK'})</span>
+                          </div>
+                        )}
+
+                        {customization.master_file_key && (
+                          <div className="pt-1 border-t border-gray-200">
+                            <span className="font-medium text-gray-600">Master File Key: </span>
+                            <span className="font-mono text-[11px] text-gray-800 break-all">{customization.master_file_key}</span>
+                          </div>
+                        )}
+
+                        {upload?.original_filename && (
+                          <div>
+                            <span className="font-medium text-gray-600">Original File: </span>
+                            <span className="text-gray-800">{upload.original_filename} ({upload.width}×{upload.height} px)</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">₹{Number(item.price_at_time).toFixed(2)}</p>
-                  </div>
-                </li>
-              ))}
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-gray-900">₹{Number(item.unit_price || item.price_at_time).toFixed(2)}</p>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>
@@ -157,15 +209,15 @@ export function OrderDetail() {
             <div className="px-4 py-5 sm:px-6 space-y-3">
               <div>
                 <p className="text-sm font-medium text-gray-500">Name</p>
-                <p className="text-sm text-gray-900">{address.name || order.user?.name || 'Guest'}</p>
+                <p className="text-sm font-medium text-gray-900">{address.name || (order.user ? `${order.user.first_name || ''} ${order.user.last_name || ''}`.trim() : null) || order.customer_email || 'Guest'}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">Email</p>
-                <p className="text-sm text-gray-900">{order.user?.email || 'N/A'}</p>
+                <p className="text-sm text-gray-900">{order.customer_email || order.user?.email || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">Phone</p>
-                <p className="text-sm text-gray-900">{order.user?.phone || 'N/A'}</p>
+                <p className="text-sm text-gray-900">{order.customer_phone || order.user?.phone_number || order.user?.phone || 'N/A'}</p>
               </div>
             </div>
           </div>
@@ -192,11 +244,11 @@ export function OrderDetail() {
             <div className="px-4 py-5 sm:px-6 space-y-2">
               <div className="flex justify-between">
                 <p className="text-sm text-gray-500">Status</p>
-                <p className="text-sm font-medium text-gray-900">{order.payment?.status || 'N/A'}</p>
+                <p className="text-sm font-medium text-gray-900">{order.payments?.[0]?.status || order.payment?.status || 'N/A'}</p>
               </div>
               <div className="flex justify-between">
                 <p className="text-sm text-gray-500">Razorpay Payment ID</p>
-                <p className="text-sm font-medium text-gray-900">{order.payment?.razorpay_payment_id || 'N/A'}</p>
+                <p className="text-sm font-mono text-xs text-gray-900">{order.payments?.[0]?.razorpay_payment_id || order.payment?.razorpay_payment_id || 'N/A'}</p>
               </div>
               <div className="flex justify-between pt-2 border-t border-gray-100">
                 <p className="text-sm font-medium text-gray-900">Total Amount</p>

@@ -21,6 +21,7 @@ export function toProductDto(
     id: product.id,
     name: product.name,
     slug: product.slug,
+    sku: product.sku,
     description: product.description,
     base_price: product.base_price.toString(),
     is_active: product.is_active,

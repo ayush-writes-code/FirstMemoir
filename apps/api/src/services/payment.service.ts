@@ -95,29 +95,45 @@ export const paymentService = {
           data: { status: 'CONFIRMED' },
         });
 
-        // 9. Update UserUpload retention
+        // 9. Update UserUpload retention idempotently & securely
         const orderItems = await tx.orderItem.findMany({
           where: { order_id: order.id },
           select: { upload_id: true },
         });
 
-        const uploadIds = orderItems.map((oi: any) => oi.upload_id).filter(Boolean) as string[];
+        const uniqueUploadIds = Array.from(
+          new Set(orderItems.map((oi: any) => oi.upload_id).filter(Boolean))
+        ) as string[];
 
-        if (uploadIds.length > 0) {
-          const updateResult = await tx.userUpload.updateMany({
+        if (uniqueUploadIds.length > 0) {
+          // Strict validation: Verify all upload records exist in DB
+          const existingUploads = await tx.userUpload.findMany({
+            where: { id: { in: uniqueUploadIds } },
+            select: { id: true, retention_status: true },
+          });
+
+          if (existingUploads.length !== uniqueUploadIds.length) {
+            throw new Error('One or more UserUpload assets are missing for this order. Rolling back transaction.');
+          }
+
+          // Idempotently transition all uploads to ORDERED_RETAINED
+          await tx.userUpload.updateMany({
             where: {
-              id: { in: uploadIds },
-              retention_status: 'CHECKOUT_LOCKED',
+              id: { in: uniqueUploadIds },
+              retention_status: { not: 'ORDERED_RETAINED' },
             },
             data: { retention_status: 'ORDERED_RETAINED' },
           });
-
-          if (updateResult.count !== uploadIds.length) {
-            throw new Error('Failed to update all UserUploads to ORDERED_RETAINED. Rolling back transaction.');
-          }
         }
 
-        // 10. Mark WebhookEvent processed
+        // 10. Clear purchased cart items for the confirmed order's cart
+        if (order.cart_id) {
+          await tx.cartLineItem.deleteMany({
+            where: { cart_id: order.cart_id },
+          });
+        }
+
+        // 11. Mark WebhookEvent processed
         await tx.webhookEvent.update({
           where: { id: webhookEvent.id },
           data: { processing_status: 'PROCESSED', processed_at: new Date() },
