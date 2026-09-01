@@ -8,15 +8,8 @@ interface Props {
   selectedValueIds: string[];
 }
 
-/**
- * PriceSummary calculates and displays the optimistic price in the browser.
- *
- * IMPORTANT: This price is purely informational. The backend always recalculates
- * the authoritative price from selectedOptionValueIds at checkout using pricing.service.ts.
- * This component must never be used as the source of truth for payment amounts.
- */
-export function PriceSummary({ product, selectedValueIds }: Props) {
-  const { basePrice, modifiers, total } = useMemo(() => {
+export function useProductPrice(product: ProductWithOptionsDto, selectedValueIds: string[]) {
+  return useMemo(() => {
     const base = Number(product.base_price);
     let subtotalModifier = 0;
 
@@ -45,6 +38,17 @@ export function PriceSummary({ product, selectedValueIds }: Props) {
       total: Math.round(base + subtotalModifier),
     };
   }, [product, selectedValueIds]);
+}
+
+/**
+ * PriceSummary calculates and displays the optimistic price in the browser.
+ *
+ * IMPORTANT: This price is purely informational. The backend always recalculates
+ * the authoritative price from selectedOptionValueIds at checkout using pricing.service.ts.
+ * This component must never be used as the source of truth for payment amounts.
+ */
+export function PriceSummary({ product, selectedValueIds }: Props) {
+  const { basePrice, modifiers, total } = useProductPrice(product, selectedValueIds);
 
   const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 

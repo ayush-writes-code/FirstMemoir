@@ -46,3 +46,35 @@ export function visualCropToCanonicalCrop(
     height: maxY - minY
   };
 }
+
+export function canonicalCropToVisualCrop(
+  canonicalCrop: CropRect,
+  rotation: number
+): CropRect {
+  const { x, y, width: w, height: h } = canonicalCrop;
+  const corners = [
+    { x, y }, { x: x+w, y }, { x, y: y+h }, { x: x+w, y: y+h }
+  ];
+
+  const visualCorners = corners.map(p => {
+    switch (rotation % 360) {
+      case 0: return { x: p.x, y: p.y };
+      case 90: return { x: 1 - p.y, y: p.x };
+      case 180: return { x: 1 - p.x, y: 1 - p.y };
+      case 270: return { x: p.y, y: 1 - p.x };
+      default: return { x: p.x, y: p.y };
+    }
+  });
+
+  const minX = Math.min(...visualCorners.map(p => p.x));
+  const minY = Math.min(...visualCorners.map(p => p.y));
+  const maxX = Math.max(...visualCorners.map(p => p.x));
+  const maxY = Math.max(...visualCorners.map(p => p.y));
+
+  return {
+    x: minX * 100,
+    y: minY * 100,
+    width: (maxX - minX) * 100,
+    height: (maxY - minY) * 100
+  };
+}

@@ -44,7 +44,7 @@ export function OptionSelector({ option, selectedValueId, excludedValueIds, onCh
       )}
 
       {(option.input_type === 'RADIO' || option.input_type === 'BUTTON') && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           {option.values.map(val => {
             const excluded = isExcluded(val.id);
             const selected = selectedValueId === val.id;
@@ -56,10 +56,10 @@ export function OptionSelector({ option, selectedValueId, excludedValueIds, onCh
                 onClick={() => !excluded && onChange(val.id)}
                 title={excluded ? 'Not available with current selections' : val.value}
                 className={[
-                  'px-3 py-1.5 rounded-full text-sm font-medium border transition-colors',
+                  'px-4 py-2 rounded-full text-sm font-medium border transition-colors',
                   selected
-                    ? 'bg-brand text-white border-brand'
-                    : 'bg-surface text-ink border-hairline hover:border-brand',
+                    ? 'bg-ink text-canvas border-ink'
+                    : 'bg-surface text-ink border-hairline hover:border-ink',
                   excluded
                     ? 'opacity-30 cursor-not-allowed line-through'
                     : 'cursor-pointer',
@@ -67,7 +67,7 @@ export function OptionSelector({ option, selectedValueId, excludedValueIds, onCh
               >
                 {val.value}
                 {Number(val.price_modifier) > 0 && (
-                  <span className="ml-1 opacity-70 text-xs">
+                  <span className="ml-1 opacity-70 text-xs font-normal">
                     +₹{Number(val.price_modifier).toLocaleString('en-IN')}
                   </span>
                 )}
@@ -78,7 +78,7 @@ export function OptionSelector({ option, selectedValueId, excludedValueIds, onCh
       )}
 
       {option.input_type === 'SWATCH' && (
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-4">
           {option.values.map(val => {
             const excluded = isExcluded(val.id);
             const selected = selectedValueId === val.id;
@@ -91,8 +91,8 @@ export function OptionSelector({ option, selectedValueId, excludedValueIds, onCh
                 onClick={() => !excluded && onChange(val.id)}
                 title={excluded ? `${val.value} — not available` : val.value}
                 className={[
-                  'w-9 h-9 rounded-full border-2 transition-all',
-                  selected ? 'border-brand scale-110 shadow-md' : 'border-transparent hover:border-muted',
+                  'w-10 h-10 rounded-full border border-hairline transition-all outline-none',
+                  selected ? 'ring-2 ring-ink ring-offset-2 scale-110' : 'hover:ring-2 hover:ring-hairline hover:ring-offset-2',
                   excluded ? 'opacity-25 cursor-not-allowed' : 'cursor-pointer',
                 ].join(' ')}
                 style={{ backgroundColor: hexColor }}

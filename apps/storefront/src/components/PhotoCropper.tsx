@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React, { useState, useCallback, useMemo } from 'react';
-import Cropper from 'react-easy-crop';
-import { visualCropToCanonicalCrop, CropRect } from '../utils/cropMath';
-import { DEFAULT_MANUFACTURING_PROFILE } from '../config/manufacturing';
-import { ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
-import type { PrintOrientation } from '@repo/api-client';
+import React, { useState, useCallback, useMemo } from "react";
+import Cropper from "react-easy-crop";
+import { visualCropToCanonicalCrop, CropRect } from "../utils/cropMath";
+import { DEFAULT_MANUFACTURING_PROFILE } from "../config/manufacturing";
+import { ZoomIn, ZoomOut, RotateCw } from "lucide-react";
+import type { PrintOrientation } from "@repo/api-client";
 
 interface PhotoCropperProps {
   imageUrl: string;
@@ -14,7 +14,16 @@ interface PhotoCropperProps {
   printWidth: number; // in inches
   printHeight: number; // in inches
   orientation: PrintOrientation;
-  onCropChange: (canonicalCrop: CropRect, zoom: number, rotation: number, orientation: PrintOrientation) => void;
+  onCropChange: (
+    canonicalCrop: CropRect,
+    zoom: number,
+    rotation: number,
+    orientation: PrintOrientation,
+    cropTranslation: { x: number; y: number },
+  ) => void;
+  initialZoom?: number;
+  initialRotation?: number;
+  initialCropTranslation?: { x: number; y: number };
   onOrientationChange: (orientation: PrintOrientation) => void;
 }
 
@@ -26,11 +35,16 @@ export function PhotoCropper({
   printHeight,
   orientation,
   onCropChange,
-  onOrientationChange
+  onOrientationChange,
+  initialZoom = 1,
+  initialRotation = 0,
+  initialCropTranslation = { x: 0, y: 0 },
 }: PhotoCropperProps) {
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [rotation, setRotation] = useState<0 | 90 | 180 | 270>(0);
+  const [crop, setCrop] = useState(initialCropTranslation);
+  const [zoom, setZoom] = useState(initialZoom);
+  const [rotation, setRotation] = useState<0 | 90 | 180 | 270>(
+    initialRotation as any,
+  );
 
   // Allow switching orientation if product supports it (i.e. not square)
   const isSquare = printWidth === printHeight;
@@ -44,29 +58,34 @@ export function PhotoCropper({
   // Percentage of the crop area that is bleed and safe zone
   const bleedPctX = (profile.bleedInches / targetWidth) * 100;
   const bleedPctY = (profile.bleedInches / targetHeight) * 100;
-  const safeZonePctX = ((profile.bleedInches + profile.safeZoneInches) / targetWidth) * 100;
-  const safeZonePctY = ((profile.bleedInches + profile.safeZoneInches) / targetHeight) * 100;
+  const safeZonePctX =
+    ((profile.bleedInches + profile.safeZoneInches) / targetWidth) * 100;
+  const safeZonePctY =
+    ((profile.bleedInches + profile.safeZoneInches) / targetHeight) * 100;
 
   const handleRotation = () => {
     setRotation((prev) => ((prev + 90) % 360) as 0 | 90 | 180 | 270);
   };
 
-  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
-    // react-easy-crop returns croppedArea in percentages 0-100 of the VISUAL ROTATED image.
-    const visualCrop = {
-      x: croppedArea.x,
-      y: croppedArea.y,
-      width: croppedArea.width,
-      height: croppedArea.height
-    };
-    const canonicalCrop = visualCropToCanonicalCrop(visualCrop, rotation);
-    onCropChange(canonicalCrop, zoom, rotation, orientation);
-  }, [rotation, zoom, orientation, onCropChange]);
+  const onCropComplete = useCallback(
+    (croppedArea: any, croppedAreaPixels: any) => {
+      // react-easy-crop returns croppedArea in percentages 0-100 of the VISUAL ROTATED image.
+      const visualCrop = {
+        x: croppedArea.x,
+        y: croppedArea.y,
+        width: croppedArea.width,
+        height: croppedArea.height,
+      };
+      const canonicalCrop = visualCropToCanonicalCrop(visualCrop, rotation);
+      onCropChange(canonicalCrop, zoom, rotation, orientation, crop);
+    },
+    [rotation, zoom, orientation, crop, onCropChange],
+  );
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3 flex-1 min-h-0">
       {/* Cropper Container */}
-      <div className="relative w-full h-[400px] bg-canvas rounded-lg overflow-hidden">
+      <div className="relative w-full flex-1 min-h-[250px] bg-canvas rounded-lg overflow-hidden">
         <Cropper
           image={imageUrl}
           crop={crop}
@@ -79,20 +98,22 @@ export function PhotoCropper({
           onRotationChange={(r) => setRotation(r as 0 | 90 | 180 | 270)}
           showGrid={false}
           classes={{
-            containerClassName: 'w-full h-full',
-            cropAreaClassName: 'crop-area-container'
+            containerClassName: "w-full h-full",
+            cropAreaClassName: "crop-area-container",
           }}
         />
 
         {/* Manufacturing Overlays */}
         <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-           {/* We inject custom CSS into the global space or use a trick.
+          {/* We inject custom CSS into the global space or use a trick.
                react-easy-crop sets width/height on its crop area.
                We can't easily put an overlay inside the dynamic crop box without styling hooks,
                but we can draw a crosshair or static overlay if we override the CSS.
                Actually, a better way is to style .crop-area-container globally.
             */}
-           <style dangerouslySetInnerHTML={{__html: `
+          <style
+            dangerouslySetInnerHTML={{
+              __html: `
              .crop-area-container::after {
                content: '';
                position: absolute;
@@ -111,7 +132,9 @@ export function PhotoCropper({
                bottom: ${safeZonePctY}%;
                border: 1px dashed rgba(0, 255, 0, 0.7);
              }
-           `}} />
+           `,
+            }}
+          />
         </div>
       </div>
 
@@ -119,7 +142,7 @@ export function PhotoCropper({
       <div className="flex flex-wrap items-center justify-between gap-4 bg-surface p-4 rounded-lg border border-hairline">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setZoom(z => Math.max(1, z - 0.1))}
+            onClick={() => setZoom((z) => Math.max(1, z - 0.1))}
             className="p-2 hover:bg-neutral-100 rounded text-ink"
             aria-label="Zoom Out"
           >
@@ -136,7 +159,7 @@ export function PhotoCropper({
             className="w-24"
           />
           <button
-            onClick={() => setZoom(z => Math.min(3, z + 0.1))}
+            onClick={() => setZoom((z) => Math.min(3, z + 0.1))}
             className="p-2 hover:bg-neutral-100 rounded text-ink"
             aria-label="Zoom In"
           >
@@ -156,14 +179,14 @@ export function PhotoCropper({
           {!isSquare && (
             <div className="flex bg-neutral-100 rounded p-1">
               <button
-                onClick={() => onOrientationChange('PORTRAIT')}
-                className={`px-3 py-1 text-sm font-medium rounded ${orientation === 'PORTRAIT' ? 'bg-white shadow-sm' : 'text-muted hover:text-ink'}`}
+                onClick={() => onOrientationChange("PORTRAIT")}
+                className={`px-3 py-1 text-sm font-medium rounded ${orientation === "PORTRAIT" ? "bg-white shadow-sm" : "text-muted hover:text-ink"}`}
               >
                 Portrait
               </button>
               <button
-                onClick={() => onOrientationChange('LANDSCAPE')}
-                className={`px-3 py-1 text-sm font-medium rounded ${orientation === 'LANDSCAPE' ? 'bg-white shadow-sm' : 'text-muted hover:text-ink'}`}
+                onClick={() => onOrientationChange("LANDSCAPE")}
+                className={`px-3 py-1 text-sm font-medium rounded ${orientation === "LANDSCAPE" ? "bg-white shadow-sm" : "text-muted hover:text-ink"}`}
               >
                 Landscape
               </button>
@@ -173,8 +196,14 @@ export function PhotoCropper({
       </div>
 
       <div className="text-xs text-muted flex gap-4 justify-center">
-        <span className="flex items-center gap-1"><span className="w-3 h-0 border-t border-dashed border-red-500 inline-block"></span> Bleed Line</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-0 border-t border-dashed border-green-500 inline-block"></span> Safe Zone</span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-0 border-t border-dashed border-red-500 inline-block"></span>{" "}
+          Bleed Line
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-0 border-t border-dashed border-green-500 inline-block"></span>{" "}
+          Safe Zone
+        </span>
       </div>
     </div>
   );

@@ -2,26 +2,34 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import type { ProductImageDto } from '@repo/api-client';
+import { ProductLivePreview } from './ProductLivePreview';
 
-export function ProductImageGallery({ images, productName }: { images: ProductImageDto[], productName: string }) {
+export function ProductImageGallery({ images, productName, productSlug }: { images: ProductImageDto[], productName: string, productSlug: string }) {
   const defaultImageUrl = 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=1200';
   const hasImages = images && images.length > 0;
   const [selectedIndex, setSelectedIndex] = useState(0);
   
-  const mainImage = hasImages ? images[selectedIndex]?.url || defaultImageUrl : defaultImageUrl;
-  const mainAlt = hasImages ? (images[selectedIndex]?.alt_text || productName) : productName;
+  const mainImageDto = hasImages ? images[selectedIndex] : null;
 
   return (
     <div className="flex flex-col gap-4">
       <div className="relative w-full aspect-square rounded-card overflow-hidden bg-surface-soft border border-hairline">
-        <Image 
-          src={mainImage} 
-          alt={mainAlt} 
-          fill
-          sizes="(max-width: 768px) 100vw, 50vw"
-          priority
-          className="object-cover"
-        />
+        {mainImageDto ? (
+          <ProductLivePreview 
+            baseImage={mainImageDto} 
+            productSlug={productSlug} 
+            productName={productName} 
+          />
+        ) : (
+          <Image 
+            src={defaultImageUrl} 
+            alt={productName} 
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            priority
+            className="object-cover"
+          />
+        )}
       </div>
       
       {hasImages && images.length > 1 && (

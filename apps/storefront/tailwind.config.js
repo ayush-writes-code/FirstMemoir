@@ -25,6 +25,7 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', 'var(--font-inter)', ...defaultTheme.fontFamily.sans],
+        serif: ['"Playfair Display"', 'var(--font-playfair)', ...defaultTheme.fontFamily.serif],
       },
       borderRadius: {
         'card': '8px',

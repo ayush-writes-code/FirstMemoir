@@ -12,6 +12,7 @@ interface CartState {
   addToCart: (payload: AddToCartInput) => Promise<void>;
   updateQuantity: (lineItemId: string, quantity: number) => Promise<void>;
   removeItem: (lineItemId: string) => Promise<void>;
+  clearCart: () => void;
 }
 
 export const useCartStore = create<CartState>((set, get) => ({
@@ -78,5 +79,9 @@ export const useCartStore = create<CartState>((set, get) => ({
       const errorMessage = error instanceof Error ? error.message : 'An error occurred';
       set({ error: errorMessage, isLoading: false });
     }
+  },
+  
+  clearCart: () => {
+    set({ cart: null, error: null });
   },
 }));
