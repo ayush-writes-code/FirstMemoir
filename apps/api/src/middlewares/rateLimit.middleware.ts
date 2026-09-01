@@ -31,3 +31,13 @@ export const otpLimiter = rateLimit({
     res.status(429).json(errorResponse('Too many OTP requests, please try again later.', 429));
   },
 });
+
+export const orderTrackLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: env.NODE_ENV === 'development' ? 1000 : 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json(errorResponse('Too many order track requests, please try again later.', 429));
+  },
+});
