@@ -22,6 +22,9 @@ describe('Catalog Contract Stabilization Integration Tests', () => {
     adminToken = signAccessToken({ userId: adminUser.id, role: 'ADMIN' });
     
     // Setup test data
+    await prisma.orderItem.deleteMany({});
+    await prisma.order.deleteMany({});
+    await prisma.cartLineItem.deleteMany({});
     await prisma.category.deleteMany({});
     await prisma.product.deleteMany({});
     
@@ -74,6 +77,9 @@ describe('Catalog Contract Stabilization Integration Tests', () => {
   });
 
   after(async () => {
+    await prisma.orderItem.deleteMany({});
+    await prisma.order.deleteMany({});
+    await prisma.cartLineItem.deleteMany({});
     await prisma.product.deleteMany({});
     await prisma.category.deleteMany({});
   });

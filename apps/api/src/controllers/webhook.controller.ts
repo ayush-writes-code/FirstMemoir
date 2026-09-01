@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { razorpayService } from '../services/razorpay.service.js';
 import { paymentService, OrphanedWebhookError, DuplicateWebhookError, WebhookSecurityError } from '../services/payment.service.js';
+import { logger } from '../utils/logger.js';
 
 export const webhookController = {
   /**
@@ -50,28 +51,28 @@ export const webhookController = {
           currency
         );
       } else if (payload.event === 'order.paid') {
-        console.log(`[WebhookController] Safely ignoring order.paid (relying on payment.captured instead).`);
+        logger.info('[WebhookController] Safely ignoring order.paid (relying on payment.captured instead).');
       } else {
-        console.log(`[WebhookController] Unhandled Razorpay event: ${payload.event}`);
+        logger.info(`[WebhookController] Unhandled Razorpay event: ${payload.event}`);
       }
 
       // 5. Always return 200 OK to Razorpay to acknowledge receipt
       res.status(200).send('OK');
     } catch (error) {
       if (error instanceof DuplicateWebhookError) {
-        console.log(`[WebhookController] ${error.message}. Returning 200 OK.`);
+        logger.info(`[WebhookController] ${error.message}. Returning 200 OK.`);
         return res.status(200).send('OK');
       }
       if (error instanceof OrphanedWebhookError) {
-        console.log(`[WebhookController] ${error.message}. Orphaned webhook safely ignored. Returning 200 OK.`);
+        logger.info(`[WebhookController] ${error.message}. Orphaned webhook safely ignored. Returning 200 OK.`);
         return res.status(200).send('OK');
       }
       if (error instanceof WebhookSecurityError) {
-        console.error(`[WebhookController] Security exception: ${error.message}. Returning 200 OK to avoid retry loop.`);
+        logger.warn(`[WebhookController] Security exception: ${error.message}. Returning 200 OK to avoid retry loop.`);
         return res.status(200).send('Mismatch error');
       }
 
-      console.error('[WebhookController] Error processing webhook:', error);
+      logger.error(error, '[WebhookController] Error processing webhook');
       // For any other unexpected infrastructure error, return 500 to let Razorpay retry
       res.status(500).send('Internal Server Error');
     }

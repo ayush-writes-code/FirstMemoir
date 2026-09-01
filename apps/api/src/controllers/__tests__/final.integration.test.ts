@@ -137,7 +137,13 @@ describe('Phase 6D Step 3: Final Verification Tests', () => {
   });
 
   after(async () => {
-    // Cleanup mocked services if we override any
+    await prisma.orderItem.deleteMany({ where: { order: { cart: { session_id: { in: ['final_test_session', 'final_fail_session', 'final_conc_wh_session'] } } } } });
+    await prisma.order.deleteMany({ where: { cart: { session_id: { in: ['final_test_session', 'final_fail_session', 'final_conc_wh_session'] } } } });
+    await prisma.cartLineItemOptionValue.deleteMany({ where: { cart_line_item: { cart: { session_id: { in: ['final_test_session', 'final_fail_session', 'final_conc_wh_session'] } } } } });
+    await prisma.cartLineItem.deleteMany({ where: { cart: { session_id: { in: ['final_test_session', 'final_fail_session', 'final_conc_wh_session'] } } } });
+    await prisma.cart.deleteMany({ where: { session_id: { in: ['final_test_session', 'final_fail_session', 'final_conc_wh_session'] } } });
+    await prisma.userUpload.deleteMany({ where: { session_id: { in: ['final_test_session', 'final_fail_session', 'final_conc_wh_session'] } } });
+    await prisma.product.deleteMany({ where: { slug: 'mock-product' } });
   });
 
   describe('1. DOUBLE-RAZORPAY FIX (Concurrency)', () => {

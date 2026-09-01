@@ -1,4 +1,6 @@
 import { prisma } from '@repo/database';
+import { notificationService } from './notification/notification.service.js';
+import { logger } from '../utils/logger.js';
 
 export class OrphanedWebhookError extends Error {}
 export class DuplicateWebhookError extends Error {}
@@ -95,6 +97,16 @@ export const paymentService = {
           data: { status: 'CONFIRMED' },
         });
 
+        // 8.1 Create OrderStatusHistory
+        await tx.orderStatusHistory.create({
+          data: {
+            order_id: order.id,
+            previous_status: 'PENDING',
+            new_status: 'CONFIRMED',
+            description: 'Order confirmed via Razorpay payment webhook',
+          },
+        });
+
         // 9. Update UserUpload retention idempotently & securely
         const orderItems = await tx.orderItem.findMany({
           where: { order_id: order.id },
@@ -139,7 +151,7 @@ export const paymentService = {
           data: { processing_status: 'PROCESSED', processed_at: new Date() },
         });
 
-        return { status: 'SUCCESS' };
+        return { status: 'SUCCESS', orderId: order.id };
       }, { timeout: 15000, maxWait: 5000 });
       
       if (txResult.status === 'ORPHANED') {
@@ -151,8 +163,15 @@ export const paymentService = {
       }
       
       if (txResult.status === 'RECONCILIATION_REQUIRED') {
-        console.log(`[PaymentService] ${txResult.message}. Returning 200 for reconciliation.`);
+        logger.info(`[PaymentService] ${txResult.message}. Returning 200 for reconciliation.`);
         return; // Success without throwing, so caller returns 200
+      }
+      
+      if (txResult.status === 'SUCCESS' && txResult.orderId) {
+        // Fire async notification post-transaction
+        notificationService.dispatchOrderConfirmed(txResult.orderId).catch((err) => {
+          logger.error(err, `Failed to dispatch order confirmed notification for order ${txResult.orderId}`);
+        });
       }
       
     } catch (error) {

@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
 import { errorResponse } from '../utils/response.js';
+import { logger } from '../utils/logger.js';
 
 export function errorHandler(
   err: any,
@@ -8,10 +9,7 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ) {
-  const errLog = err instanceof Error
-    ? `${err.constructor.name}: ${err.message}\n${err.stack}`
-    : JSON.stringify(err);
-  console.error('[Error]:', errLog);
+  logger.error(err, 'Unhandled request error');
 
   if (err instanceof ZodError) {
     const issues = err.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(', ');

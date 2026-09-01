@@ -134,6 +134,10 @@ before(async () => {
 });
 
 after(async () => {
+  if (testProduct) {
+    await prisma.orderItem.deleteMany({ where: { product_id: testProduct.id } });
+    await prisma.order.deleteMany({ where: { items: { some: { product_id: testProduct.id } } } });
+  }
   await prisma.order.deleteMany({ where: { cart: { session_id: { startsWith: 'integration-6d-' } } } });
   await prisma.cartLineItem.deleteMany({
     where: { cart: { session_id: { startsWith: 'integration-6d-' } } }
@@ -793,7 +797,7 @@ describe('Step 2C: POST /api/v1/checkout/initialize', () => {
     await prisma.userUpload.deleteMany({ where: { id: upload.id } });
   });
 
-  it('existing PENDING local order + Razorpay paid order → creates fresh Razorpay order and expires old local order', async () => {
+  it('existing PENDING local order + Razorpay paid order → blocks checkout with 409 Conflict to prevent double payment', async () => {
     const agent = makeAgent();
     const cartRes = await agent.get('/api/v1/cart').expect(200);
     const cartId = cartRes.body.data.id;
@@ -827,17 +831,14 @@ describe('Step 2C: POST /api/v1/checkout/initialize', () => {
     };
 
     // Second checkout initialization with same cart
-    const res2 = await agent.post('/api/v1/checkout/initialize').send(body).expect(200);
-    const secondOrderId = res2.body.data.order_id;
-    const secondRzpOrderId = res2.body.data.razorpay_order_id;
+    const res2 = await agent.post('/api/v1/checkout/initialize').send(body).expect(409);
+    
+    assert.strictEqual(res2.body.success, false);
+    assert.ok(res2.body.error.includes('Payment already received'));
 
-    // Must NOT reuse the old order or Razorpay ID
-    assert.notStrictEqual(secondOrderId, firstOrderId, 'Must create a fresh Order when old Razorpay order is paid');
-    assert.notStrictEqual(secondRzpOrderId, firstRzpOrderId, 'Must create a fresh Razorpay order when old one is paid');
-
-    // The first order must now be EXPIRED
+    // The first order must STILL be PENDING (not expired, so the webhook can process it)
     const firstOrderAfter = await prisma.order.findUnique({ where: { id: firstOrderId } });
-    assert.strictEqual(firstOrderAfter?.status, 'EXPIRED', 'Old order must be marked EXPIRED');
+    assert.strictEqual(firstOrderAfter?.status, 'PENDING', 'Old order must remain PENDING for webhook confirmation');
 
     // Cleanup
     await prisma.order.deleteMany({ where: { cart_id: cartId } });

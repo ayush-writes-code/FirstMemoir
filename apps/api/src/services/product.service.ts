@@ -1,4 +1,5 @@
 import { prisma } from '@repo/database';
+import { logger } from '../utils/logger.js';
 import { Prisma } from '@repo/database';
 import { randomBytes } from 'crypto';
 
@@ -233,7 +234,7 @@ export const productService = {
     // 2. Best-effort R2 deletion
     const { storageService } = await import('./storage.service.js');
     storageService.deleteFile(image.file_key).catch(err => {
-      console.error(`Failed to delete orphaned R2 object: ${image.file_key}`, err);
+      logger.error(err, `Failed to delete orphaned R2 object: ${image.file_key}`);
     });
   },
 
@@ -265,7 +266,7 @@ export const productService = {
     const { storageService } = await import('./storage.service.js');
     for (const key of fileKeys) {
       storageService.deleteFile(key).catch(err => {
-        console.error(`Failed to delete cascaded R2 object: ${key}`, err);
+        logger.error(err, `Failed to delete cascaded R2 object: ${key}`);
       });
     }
   },

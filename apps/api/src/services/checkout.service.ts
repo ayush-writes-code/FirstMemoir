@@ -294,6 +294,10 @@ export const checkoutService = {
         const rzpOrder = await razorpayService.fetchOrder(existingPendingOrder.razorpay_order_id);
         const isReusable = rzpOrder && rzpOrder.status === 'created' && (rzpOrder.attempts ?? 0) === 0;
 
+        if (rzpOrder && (rzpOrder.status === 'paid')) {
+          throw { statusCode: 409, message: 'Payment already received for this cart. We are confirming your order. Please check your account shortly.' };
+        }
+
         if (isReusable) {
           // Reusable: return existing order without creating a new one
           return {
@@ -304,7 +308,7 @@ export const checkoutService = {
           };
         }
 
-        // Razorpay order is paid, attempted, expired, or fetch failed:
+        // Razorpay order is attempted, expired, or fetch failed:
         // Mark the stale local order as EXPIRED
         await prisma.order.update({
           where: { id: existingPendingOrder.id },

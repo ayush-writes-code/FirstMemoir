@@ -57,11 +57,16 @@ export const r2Provider: IStorageProvider = {
     return result;
   },
 
-  async generateReadUrl(fileKey: string, expiresIn = 3600): Promise<string> {
-    const command = new GetObjectCommand({
+  async generateReadUrl(fileKey: string, expiresIn = 3600, downloadFilename?: string): Promise<string> {
+    const input: any = {
       Bucket: env.R2_BUCKET_NAME,
       Key: fileKey,
-    });
+    };
+    if (downloadFilename) {
+      input.ResponseContentDisposition = `attachment; filename="${downloadFilename}"`;
+    }
+
+    const command = new GetObjectCommand(input);
 
     return getSignedUrl(client, command, { expiresIn });
   },

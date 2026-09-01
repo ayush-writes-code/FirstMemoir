@@ -32,7 +32,7 @@ export interface IStorageProvider {
    * @param fileKey  The storage key returned during upload.
    * @param expiresIn Expiry in seconds. Defaults to 3600 (1 hour).
    */
-  generateReadUrl(fileKey: string, expiresIn?: number): Promise<string>;
+  generateReadUrl(fileKey: string, expiresIn?: number, downloadFilename?: string): Promise<string>;
 
   /**
    * Verifies that an object exists in storage and matches the required constraints.

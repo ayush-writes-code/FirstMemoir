@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { generateOtp, hashOtp, verifyOtp as verifyOtpHash } from '../utils/otp.js';
 import { signAccessToken, signRefreshToken } from '../utils/jwt.js';
 import { smsService } from './sms.service.js';
+import { logger } from '../utils/logger.js';
 import { env } from '../config/env.js';
 
 function hashToken(token: string) {
@@ -38,7 +39,7 @@ export const authService = {
     });
 
     if (env.NODE_ENV === 'development') {
-      console.log(`[DEV OTP] Generated OTP for ${phoneNumber}: ${otp}`);
+      logger.info(`[DEV OTP] Generated OTP for ${phoneNumber}: ${otp}`);
     }
 
     await smsService.sendOtp(phoneNumber, otp);

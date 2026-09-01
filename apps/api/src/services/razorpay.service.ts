@@ -1,6 +1,7 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { env } from '../config/env.js';
+import { logger } from '../utils/logger.js';
 
 class RazorpayService {
   private razorpay: Razorpay;
@@ -33,7 +34,7 @@ class RazorpayService {
       const order = await this.razorpay.orders.create(options);
       return order;
     } catch (error) {
-      console.error('[RazorpayService] Order creation failed:', error);
+      logger.error(error, '[RazorpayService] Order creation failed');
       throw {
         statusCode: 502,
         message: 'Failed to initialize payment gateway. Please try again.',
@@ -52,7 +53,7 @@ class RazorpayService {
       const order = await this.razorpay.orders.fetch(orderId);
       return order;
     } catch (error) {
-      console.error('[RazorpayService] Fetch order failed for', orderId, error);
+      logger.error(error, `[RazorpayService] Fetch order failed for ${orderId}`);
       return null;
     }
   }

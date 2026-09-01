@@ -1,7 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { storageService } from '../services/storage.service.js';
-import { successResponse } from '../utils/response.js';
+import { successResponse, errorResponse } from '../utils/response.js';
+import { logger } from '../utils/logger.js';
 import type { StorageVisibility } from '../services/storage/storage.interface.js';
 import {
   ALLOWED_IMAGE_MIME_TYPES,
@@ -261,7 +262,7 @@ export const storageController = {
           data: { status: 'FAILED' }
         });
       } catch (cleanupError) {
-        console.error('Failed to mark upload as FAILED', cleanupError);
+        logger.error(cleanupError, 'Failed to mark upload as FAILED');
       }
       next(error);
     }
