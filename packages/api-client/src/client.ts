@@ -8,12 +8,12 @@ export const setApiUrl = (url: string) => {
 
 // Queue for pending requests while refreshing token
 let isRefreshing = false;
-let failedQueue: Array<{ resolve: (value: Promise<Response>) => void; reject: (reason?: any) => void; req: Request }> = [];
+let failedQueue: Array<{ resolve: (value: any) => void; req: Request }> = [];
 
 const processQueue = (error: Error | null) => {
   failedQueue.forEach((prom) => {
     if (error) {
-      prom.reject(error);
+      prom.resolve({ success: false, data: null, error: error.message });
     } else {
       prom.resolve(fetch(prom.req));
     }
@@ -43,10 +43,15 @@ export async function fetchClient<T>(
 
     if (response.status === 401 && endpoint !== '/auth/refresh' && endpoint !== '/auth/logout') {
       if (isRefreshing) {
-        return new Promise<ApiResponse<T>>((resolve, reject) => {
+        return new Promise<ApiResponse<T>>((resolve) => {
           failedQueue.push({ 
-            resolve: async (resPromise: Promise<Response>) => resolve(await handleResponse<T>(await resPromise)), 
-            reject, 
+            resolve: async (res) => {
+              if (res instanceof Promise) {
+                resolve(await handleResponse<T>(await res));
+              } else {
+                resolve(res as ApiResponse<T>);
+              }
+            }, 
             req: new Request(url, reqOptions) 
           });
         });
@@ -66,11 +71,19 @@ export async function fetchClient<T>(
           response = await fetch(url, reqOptions);
         } else {
           processQueue(new Error('Session expired'));
-          throw new Error('Session expired');
+          return {
+            success: false,
+            data: null as unknown as T,
+            error: 'Session expired'
+          };
         }
       } catch (err) {
         processQueue(err as Error);
-        throw err;
+        return {
+          success: false,
+          data: null as unknown as T,
+          error: err instanceof Error ? err.message : 'Session refresh failed'
+        };
       } finally {
         isRefreshing = false;
       }

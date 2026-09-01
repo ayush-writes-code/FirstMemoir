@@ -276,8 +276,10 @@ model Order {
   created_at                DateTime    @default(now())
   updated_at                DateTime    @updatedAt
 
-  items    OrderItem[]
-  payments Payment[]
+  items           OrderItem[]
+  payments        Payment[]
+  status_history  OrderStatusHistory[]
+  notification_logs NotificationLog[]
 
   @@index([user_id])
   @@index([session_id])
@@ -565,3 +567,39 @@ model WebhookEvent {
 
   @@map("webhook_events")
 }
+
+/// Tracks the lifecycle status changes of an order
+model OrderStatusHistory {
+  id              String      @id @default(uuid())
+  order_id        String
+  order           Order       @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  previous_status OrderStatus?
+  new_status      OrderStatus
+  description     String?
+  created_at      DateTime    @default(now())
+
+  @@index([order_id])
+  @@map("order_status_history")
+}
+
+/// Tracks all outgoing notifications (SMS, Email)
+model NotificationLog {
+  id            String   @id @default(uuid())
+  order_id      String?
+  order         Order?   @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  recipient     String
+  channel       String   // "SMS", "EMAIL"
+  event_type    String   // e.g. "ORDER_CONFIRMED", "ORDER_PROCESSING"
+  provider      String   // e.g. "MOCK_SMS", "MOCK_EMAIL"
+  status        String   @default("PENDING") // "PENDING", "SENT", "FAILED"
+  provider_ref  String?
+  error_message String?
+  payload       Json
+  attempt_count Int      @default(0)
+  created_at    DateTime @default(now())
+  sent_at       DateTime?
+
+  @@index([order_id])
+  @@map("notification_logs")
+}
+
