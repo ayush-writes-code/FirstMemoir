@@ -132,3 +132,6 @@ sequenceDiagram
 ## 7. Customer Resilience & Operational Observability Milestone
 Completed phase focused on architecture safety and operational monitoring.
 See `docs/phases/customer_resilience_and_observability_completion.md` for full implementation details, proxy configuration logic, storefront boundary additions, and webhook protection rationale.
+
+## 8. Integration Test Infrastructure Recovery Milestone
+Automated testing environment restored with strict Docker orchestration, isolated Prisma schema migration targeting, and 109 verified tests to ensure webhook and checkout pipeline resilience.

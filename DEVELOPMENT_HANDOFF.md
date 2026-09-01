@@ -137,9 +137,11 @@ npx prisma db push
 # Run full monorepo build
 npm run build
 
-# Run API test suite (88 tests)
-cd apps/api
+# Run API test suite (automatically orchestrates Docker DB)
 npm run test
+
+# Tear down the test environment (useful for a pristine reset)
+npm run test:teardown
 
 # Run local development servers (Storefront :3000, Admin :5173, API :3001)
 npm run dev
