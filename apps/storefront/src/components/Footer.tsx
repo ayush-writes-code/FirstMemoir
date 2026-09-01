@@ -2,55 +2,116 @@ import Link from 'next/link';
 
 export function Footer() {
   return (
-    <footer className="bg-canvas border-t border-hairline mt-16">
-      <div className="max-w-content mx-auto px-4 md:px-8 py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-          <div>
-            <h3 className="font-semibold text-ink mb-4">Shop</h3>
-            <ul className="flex flex-col gap-3">
-              <li><Link href="/products" className="text-muted hover:text-brand">All Prints</Link></li>
-              <li><Link href="/products?category=framed" className="text-muted hover:text-brand">Framed Prints</Link></li>
-              <li><Link href="/products?category=canvas" className="text-muted hover:text-brand">Canvas Prints</Link></li>
-              <li><Link href="/products?category=posters" className="text-muted hover:text-brand">Posters</Link></li>
+    <footer className="bg-canvas border-t border-hairline mt-24 pt-20 pb-10 sm:pt-28 sm:pb-12">
+      <div className="max-w-content mx-auto px-6 sm:px-8 md:px-12">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-y-12 gap-x-8 lg:gap-x-12 mb-20 md:mb-28">
+          
+          {/* Brand Section */}
+          <div className="md:col-span-5 flex flex-col items-start max-w-sm">
+            <Link 
+              href="/" 
+              className="font-serif text-3xl sm:text-4xl tracking-tight text-ink mb-6 hover:opacity-70 transition-opacity duration-300"
+              aria-label="FirstMemoir Homepage"
+            >
+              FirstMemoir
+            </Link>
+            <p className="font-sans text-muted leading-relaxed text-base sm:text-lg font-light">
+              Made to turn the photos you love into timeless pieces you can live with.
+            </p>
+          </div>
+
+          {/* Navigation - Shop */}
+          <div className="md:col-span-2">
+            <h3 className="font-sans text-xs font-semibold tracking-[0.15em] text-ink uppercase mb-8">
+              Shop
+            </h3>
+            <ul className="flex flex-col gap-5">
+              <li>
+                <Link href="/products" className="font-sans text-sm text-muted hover:text-ink transition-colors duration-300">
+                  Collections
+                </Link>
+              </li>
+              <li>
+                <Link href="/cart" className="font-sans text-sm text-muted hover:text-ink transition-colors duration-300">
+                  Cart
+                </Link>
+              </li>
+              <li>
+                <Link href="/checkout" className="font-sans text-sm text-muted hover:text-ink transition-colors duration-300">
+                  Checkout
+                </Link>
+              </li>
             </ul>
           </div>
-          <div>
-            <h3 className="font-semibold text-ink mb-4">Help</h3>
-            <ul className="flex flex-col gap-3">
-              <li><Link href="/faq" className="text-muted hover:text-brand">FAQ</Link></li>
-              <li><Link href="/shipping" className="text-muted hover:text-brand">Shipping</Link></li>
-              <li><Link href="/returns" className="text-muted hover:text-brand">Returns</Link></li>
-              <li><Link href="/contact" className="text-muted hover:text-brand">Contact</Link></li>
+
+          {/* Navigation - Support */}
+          <div className="md:col-span-2">
+            <h3 className="font-sans text-xs font-semibold tracking-[0.15em] text-ink uppercase mb-8">
+              Support
+            </h3>
+            <ul className="flex flex-col gap-5">
+              <li>
+                <Link href="/contact" className="font-sans text-sm text-muted hover:text-ink transition-colors duration-300">
+                  Contact Us
+                </Link>
+              </li>
+              <li>
+                <Link href="/track-order" className="font-sans text-sm text-muted hover:text-ink transition-colors duration-300">
+                  Track Order
+                </Link>
+              </li>
+              <li>
+                <Link href="/account/orders" className="font-sans text-sm text-muted hover:text-ink transition-colors duration-300">
+                  My Orders
+                </Link>
+              </li>
+              <li>
+                <Link href="/account" className="font-sans text-sm text-muted hover:text-ink transition-colors duration-300">
+                  Account
+                </Link>
+              </li>
             </ul>
           </div>
-          <div>
-            <h3 className="font-semibold text-ink mb-4">Company</h3>
-            <ul className="flex flex-col gap-3">
-              <li><Link href="/about" className="text-muted hover:text-brand">About</Link></li>
-              <li><Link href="/blog" className="text-muted hover:text-brand">Blog</Link></li>
-              <li><Link href="/careers" className="text-muted hover:text-brand">Careers</Link></li>
+
+          {/* Navigation - Legal */}
+          <div className="md:col-span-3">
+            <h3 className="font-sans text-xs font-semibold tracking-[0.15em] text-ink uppercase mb-8">
+              Legal
+            </h3>
+            <ul className="flex flex-col gap-5">
+              <li>
+                <Link href="/legal/terms" className="font-sans text-sm text-muted hover:text-ink transition-colors duration-300">
+                  Terms & Conditions
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal/privacy" className="font-sans text-sm text-muted hover:text-ink transition-colors duration-300">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal/refund" className="font-sans text-sm text-muted hover:text-ink transition-colors duration-300">
+                  Refund & Cancellation Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/legal/shipping" className="font-sans text-sm text-muted hover:text-ink transition-colors duration-300">
+                  Shipping Policy
+                </Link>
+              </li>
             </ul>
           </div>
-          <div>
-            <h3 className="font-semibold text-ink mb-4">Legal</h3>
-            <ul className="flex flex-col gap-3">
-              <li><Link href="/privacy" className="text-muted hover:text-brand">Privacy</Link></li>
-              <li><Link href="/terms" className="text-muted hover:text-brand">Terms</Link></li>
-              <li><Link href="/cookies" className="text-muted hover:text-brand">Cookies</Link></li>
-            </ul>
-          </div>
+          
         </div>
         
-        <div className="pt-8 border-t border-hairline flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-muted text-sm">&copy; {new Date().getFullYear()} First Memoir.in. All rights reserved.</p>
-          <div className="flex gap-4">
-            <a href="#" aria-label="Instagram" className="text-muted hover:text-brand">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-            </a>
-            <a href="#" aria-label="Twitter" className="text-muted hover:text-brand">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
-            </a>
-          </div>
+        {/* Bottom Bar */}
+        <div className="pt-8 border-t border-hairline flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <p className="font-sans text-muted-soft text-xs tracking-wide">
+            &copy; {new Date().getFullYear()} FirstMemoir. All rights reserved.
+          </p>
+          <p className="font-sans text-muted-soft text-xs tracking-wide uppercase">
+            Crafted with care in India
+          </p>
         </div>
       </div>
     </footer>
