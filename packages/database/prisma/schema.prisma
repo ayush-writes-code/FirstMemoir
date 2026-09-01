@@ -600,6 +600,7 @@ model NotificationLog {
   sent_at       DateTime?
 
   @@index([order_id])
+  @@unique([order_id, channel, event_type])
   @@map("notification_logs")
 }
 

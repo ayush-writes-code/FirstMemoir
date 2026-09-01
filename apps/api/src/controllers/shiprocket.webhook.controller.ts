@@ -3,6 +3,8 @@ import crypto from 'crypto';
 import { prisma } from '@repo/database';
 import { OrderStatus } from '@repo/database';
 import { env } from '../config/env.js';
+import { logger } from '../utils/logger.js';
+import { notificationService } from '../services/notification/notification.service.js';
 
 export class OrphanedWebhookError extends Error {}
 export class DuplicateWebhookError extends Error {}
@@ -33,13 +35,17 @@ export const shiprocketWebhookController = {
 
       // We only care about tracking updates which contain current_status_id
       if (!payload.current_status_id) {
-        console.log('[ShiprocketWebhook] Ignoring webhook without current_status_id. Returning 200 OK.');
+        logger.info('[ShiprocketWebhook] Ignoring webhook without current_status_id. Returning 200 OK.');
         return res.status(200).send('OK');
       }
 
       const awb = payload.awb;
       const channelOrderId = payload.channel_order_id;
       const currentStatusId = Number(payload.current_status_id);
+
+      // Track successful transition for post-transaction notifications
+      let postTxOrderId: string | null = null;
+      let postTxNextStatus: OrderStatus | null = null;
 
       // We handle everything inside a robust transaction
       await prisma.$transaction(async (tx: any) => {
@@ -125,27 +131,45 @@ export const shiprocketWebhookController = {
             where: { id: targetOrderId },
             data: { status: nextStatus }
           });
-          console.log(`[ShiprocketWebhook] Order ${targetOrderId} transitioned from ${order.status} to ${nextStatus} via status_id ${currentStatusId}`);
+          logger.info(`[ShiprocketWebhook] Order ${targetOrderId} transitioned from ${order.status} to ${nextStatus} via status_id ${currentStatusId}`);
+          
+          // Mark for post-tx notification
+          postTxOrderId = targetOrderId;
+          postTxNextStatus = nextStatus;
         } else {
-          console.log(`[ShiprocketWebhook] Order ${targetOrderId} status ${order.status} unchanged by status_id ${currentStatusId}`);
+          logger.info(`[ShiprocketWebhook] Order ${targetOrderId} status ${order.status} unchanged by status_id ${currentStatusId}`);
         }
 
       }); // end transaction
 
-      // 10. Always return 200 OK
+      // 10. Fire async notifications post-transaction to prevent duplicate emails 
+      // if the transaction were to rollback. Since the status check inside the 
+      // transaction ensures we only trigger this exactly once when the state advances,
+      // it is inherently idempotent.
+      if (postTxOrderId && postTxNextStatus === OrderStatus.SHIPPED) {
+        notificationService.dispatchOrderShipped(postTxOrderId).catch((err) => {
+          logger.error(err, `Failed to dispatch order shipped notification for order ${postTxOrderId}`);
+        });
+      } else if (postTxOrderId && postTxNextStatus === OrderStatus.DELIVERED) {
+        notificationService.dispatchOrderDelivered(postTxOrderId).catch((err) => {
+          logger.error(err, `Failed to dispatch order delivered notification for order ${postTxOrderId}`);
+        });
+      }
+
+      // 11. Always return 200 OK
       return res.status(200).send('OK');
 
     } catch (error) {
       if (error instanceof DuplicateWebhookError) {
-        console.log(`[ShiprocketWebhook] ${error.message}. Returning 200 OK.`);
+        logger.info(`[ShiprocketWebhook] ${error.message}. Returning 200 OK.`);
         return res.status(200).send('OK');
       }
       if (error instanceof OrphanedWebhookError) {
-        console.log(`[ShiprocketWebhook] ${error.message}. Orphaned webhook safely ignored. Returning 200 OK.`);
+        logger.info(`[ShiprocketWebhook] ${error.message}. Orphaned webhook safely ignored. Returning 200 OK.`);
         return res.status(200).send('OK');
       }
 
-      console.error('[ShiprocketWebhook] Error processing webhook:', error);
+      logger.error(error, '[ShiprocketWebhook] Error processing webhook');
       // For unexpected infrastructure error, return 500 to let Shiprocket retry
       return res.status(500).send('Internal Server Error');
     }

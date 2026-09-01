@@ -1,37 +1,78 @@
 import 'dotenv/config';
+import { z } from 'zod';
 
-export const env = {
-  PORT: parseInt(process.env.PORT || '3001', 10),
-  NODE_ENV: process.env.NODE_ENV || 'development',
-  DATABASE_URL: process.env.DATABASE_URL || '',
-  JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || 'access_secret_default',
-  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || 'refresh_secret_default',
-  JWT_ACCESS_EXPIRY: process.env.JWT_ACCESS_EXPIRY || '15m',
-  JWT_REFRESH_EXPIRY: process.env.JWT_REFRESH_EXPIRY || '7d',
-  OTP_EXPIRY_MINUTES: parseInt(process.env.OTP_EXPIRY_MINUTES || '5', 10),
-  OTP_MAX_ATTEMPTS: parseInt(process.env.OTP_MAX_ATTEMPTS || '5', 10),
-  CORS_ORIGIN: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(','),
-
-  // Cloudflare R2 Storage
-  R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID || '',
-  R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID || '',
-  R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY || '',
-  R2_BUCKET_NAME: process.env.R2_BUCKET_NAME || '',
-  R2_PUBLIC_URL: process.env.R2_PUBLIC_URL || '',
+const envSchema = z.object({
+  PORT: z.string().default('3001').transform(val => parseInt(val, 10)),
+  NODE_ENV: z.enum(['development', 'production', 'test', 'staging']).default('development'),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   
-  COOKIE_SECRET: process.env.COOKIE_SECRET || (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' ? 'dev_cookie_secret_override' : undefined),
+  // JWT
+  JWT_ACCESS_SECRET: z.string().min(1, 'JWT_ACCESS_SECRET is required'),
+  JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET is required'),
+  JWT_ACCESS_EXPIRY: z.string().default('15m'),
+  JWT_REFRESH_EXPIRY: z.string().default('7d'),
+  COOKIE_SECRET: z.string().min(1, 'COOKIE_SECRET is required'),
+  
+  // OTP
+  OTP_EXPIRY_MINUTES: z.string().default('5').transform(val => parseInt(val, 10)),
+  OTP_MAX_ATTEMPTS: z.string().default('5').transform(val => parseInt(val, 10)),
+  
+  // CORS
+  CORS_ORIGIN: z.string().default('http://localhost:3000').transform(val => val.split(',')),
+
+  // R2
+  R2_ACCOUNT_ID: z.string().min(1, 'R2_ACCOUNT_ID is required'),
+  R2_ACCESS_KEY_ID: z.string().min(1, 'R2_ACCESS_KEY_ID is required'),
+  R2_SECRET_ACCESS_KEY: z.string().min(1, 'R2_SECRET_ACCESS_KEY is required'),
+  R2_BUCKET_NAME: z.string().min(1, 'R2_BUCKET_NAME is required'),
+  R2_PUBLIC_URL: z.string().optional().default(''),
 
   // Razorpay
-  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || '',
-  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || '',
-  RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET || '',
-  SHIPROCKET_WEBHOOK_TOKEN: process.env.SHIPROCKET_WEBHOOK_TOKEN || 'sr_webhook_mock_token',
+  RAZORPAY_KEY_ID: z.string().min(1, 'RAZORPAY_KEY_ID is required'),
+  RAZORPAY_KEY_SECRET: z.string().min(1, 'RAZORPAY_KEY_SECRET is required'),
+  RAZORPAY_WEBHOOK_SECRET: z.string().min(1, 'RAZORPAY_WEBHOOK_SECRET is required'),
+  
+  // Shiprocket
+  SHIPROCKET_WEBHOOK_TOKEN: z.string().default('sr_webhook_mock_token'),
+  
+  // Resend (Optional for local dev, fallback to mock provider if absent)
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM_EMAIL: z.string().optional(),
+});
+
+// Provide safe developer defaults if NOT in production or staging
+const devDefaults = {
+  JWT_ACCESS_SECRET: 'access_secret_default',
+  JWT_REFRESH_SECRET: 'refresh_secret_default',
+  COOKIE_SECRET: 'dev_cookie_secret_override',
+  R2_ACCOUNT_ID: 'mock',
+  R2_ACCESS_KEY_ID: 'mock',
+  R2_SECRET_ACCESS_KEY: 'mock',
+  R2_BUCKET_NAME: 'mock',
+  RAZORPAY_KEY_ID: 'mock',
+  RAZORPAY_KEY_SECRET: 'mock',
+  RAZORPAY_WEBHOOK_SECRET: 'mock',
 };
 
-if (env.NODE_ENV === 'production' && !env.COOKIE_SECRET) {
-  throw new Error('COOKIE_SECRET environment variable is required in production');
+const processEnv = { ...process.env };
+
+if (process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'staging') {
+  // Apply developer defaults ONLY if not set explicitly
+  Object.keys(devDefaults).forEach(key => {
+    if (!processEnv[key]) {
+      processEnv[key] = devDefaults[key as keyof typeof devDefaults];
+    }
+  });
 }
 
-if (!env.COOKIE_SECRET) {
-  throw new Error('COOKIE_SECRET must be defined');
+const parsedEnv = envSchema.safeParse(processEnv);
+
+if (!parsedEnv.success) {
+  console.error('❌ Invalid environment variables:');
+  parsedEnv.error.issues.forEach(issue => {
+    console.error(`  - ${issue.path.join('.')}: ${issue.message}`);
+  });
+  process.exit(1);
 }
+
+export const env = parsedEnv.data;
