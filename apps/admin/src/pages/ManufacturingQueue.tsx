@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { admin } from '@repo/api-client';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
 export function ManufacturingQueue() {
   const [items, setItems] = useState<any[]>([]);
@@ -7,6 +8,7 @@ export function ManufacturingQueue() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'ALL' | 'CONFIRMED' | 'PROCESSING'>('ALL');
   const [processingState, setProcessingState] = useState<Record<string, boolean>>({});
+  const [completeOrderWarning, setCompleteOrderWarning] = useState<string | null>(null);
 
   useEffect(() => {
     fetchQueue();
@@ -52,6 +54,32 @@ export function ManufacturingQueue() {
         await fetchQueue();
       } else {
         alert(res.error || 'Failed to mark order as processing');
+      }
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setProcessingState(prev => ({ ...prev, [orderId]: false }));
+    }
+  };
+
+  const confirmCompleteProduction = async (orderId: string) => {
+    const orderItemsCount = items.filter(i => i.order.id === orderId).length;
+    if (orderItemsCount > 1) {
+      setCompleteOrderWarning(orderId);
+    } else {
+      await handleCompleteProduction(orderId);
+    }
+  };
+
+  const handleCompleteProduction = async (orderId: string) => {
+    setCompleteOrderWarning(null);
+    try {
+      setProcessingState(prev => ({ ...prev, [orderId]: true }));
+      const res = await admin.completeProduction(orderId);
+      if (res.success) {
+        await fetchQueue();
+      } else {
+        alert(res.error || 'Failed to complete production');
       }
     } catch (err: any) {
       alert(err.message);
@@ -183,12 +211,33 @@ export function ManufacturingQueue() {
                       {processingState[item.order.id] ? 'Processing...' : 'Mark Order as Processing'}
                     </button>
                   )}
+
+                  {item.order.status === 'PROCESSING' && (
+                    <button
+                      onClick={() => confirmCompleteProduction(item.order.id)}
+                      disabled={processingState[item.order.id]}
+                      className="flex-1 md:flex-none rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700 disabled:opacity-50"
+                    >
+                      {processingState[item.order.id] ? 'Completing...' : 'Complete Production'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={!!completeOrderWarning}
+        title="Complete Entire Order?"
+        description={`This order contains multiple items. Marking this as Complete Production will mark the entire parent order (ID: ${completeOrderWarning}) as ready for pickup. Are you sure you want to proceed?`}
+        confirmText="Yes, Complete Entire Order"
+        onConfirm={() => {
+          if (completeOrderWarning) handleCompleteProduction(completeOrderWarning);
+        }}
+        onCancel={() => setCompleteOrderWarning(null)}
+      />
     </div>
   );
 }

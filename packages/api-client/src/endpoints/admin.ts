@@ -33,6 +33,12 @@ export const processOrder = async (id: string) => {
   });
 };
 
+export const completeProduction = async (id: string) => {
+  return fetchClient<any>(`/admin/orders/${id}/complete-production`, {
+    method: 'POST',
+  });
+};
+
 export const generateAwb = async (id: string) => {
   return fetchClient<any>(`/admin/orders/${id}/shiprocket/awb`, {
     method: 'POST',

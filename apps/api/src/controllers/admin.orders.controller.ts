@@ -173,6 +173,51 @@ export const adminOrdersController = {
   },
 
   /**
+   * POST /api/v1/admin/orders/:id/complete-production
+   * Transitions an order from PROCESSING -> READY_FOR_PICKUP
+   * Decoupled from Shiprocket AWB generation.
+   */
+  async completeProduction(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = req.params.id as string;
+
+      const order = await prisma.order.findUnique({ where: { id } });
+
+      if (!order) {
+        return res.status(404).json(errorResponse('Order not found', 404));
+      }
+
+      if (order.status !== 'PROCESSING') {
+        return res.status(400).json(errorResponse(`Cannot complete production for order with status ${order.status}`, 400));
+      }
+
+      const updatedOrder = await prisma.$transaction(async (tx) => {
+        const updated = await tx.order.update({
+          where: { id },
+          data: { status: 'READY_FOR_PICKUP' }
+        });
+
+        await tx.orderStatusHistory.create({
+          data: {
+            order_id: id,
+            previous_status: 'PROCESSING',
+            new_status: 'READY_FOR_PICKUP',
+            description: 'Order production completed by Admin',
+          }
+        });
+
+        return updated;
+      });
+
+      // No new notifications are dispatched here to preserve existing behavior.
+
+      res.status(200).json(successResponse(updatedOrder));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
    * POST /api/v1/admin/orders/:id/shiprocket/awb
    * Generates a Shiprocket Order and AWB for an order in PROCESSING state.
    */
