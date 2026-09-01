@@ -25,18 +25,18 @@ export default async function ProductsPage({
   const pageTitle = currentCategoryObj ? currentCategoryObj.name : 'All Prints';
 
   return (
-    <div className="max-w-content mx-auto px-4 md:px-8 py-12 min-h-screen">
-      <div className="mb-8">
-        <h1 className="text-3xl font-semibold text-ink">{pageTitle}</h1>
-        <p className="text-muted mt-2">{products.length} products</p>
+    <div className="max-w-content mx-auto px-4 md:px-8 py-16 min-h-screen">
+      <div className="mb-12 text-center md:text-left">
+        <h1 className="text-4xl md:text-5xl font-serif text-ink tracking-tight">{pageTitle}</h1>
+        <p className="text-muted mt-3 font-light">{products.length} products</p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 justify-between mb-8 items-start md:items-center">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide w-full md:w-auto">
+      <div className="flex flex-col md:flex-row gap-6 justify-between mb-12 items-center border-b border-hairline pb-4">
+        <div className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide w-full md:w-auto">
           <Link 
             href="/products"
-            className={`whitespace-nowrap rounded-pill px-4 py-2 text-sm font-semibold transition-colors ${
-              !category ? 'bg-ink text-white' : 'bg-surface-soft text-ink hover:bg-hairline'
+            className={`whitespace-nowrap pb-2 text-sm uppercase tracking-wider transition-colors ${
+              !category ? 'text-ink border-b-2 border-ink font-medium' : 'text-muted hover:text-ink border-b-2 border-transparent'
             }`}
           >
             All
@@ -45,8 +45,8 @@ export default async function ProductsPage({
             <Link 
               key={c.id}
               href={`/products?category=${c.slug}`}
-              className={`whitespace-nowrap rounded-pill px-4 py-2 text-sm font-semibold transition-colors ${
-                category === c.slug ? 'bg-ink text-white' : 'bg-surface-soft text-ink hover:bg-hairline'
+              className={`whitespace-nowrap pb-2 text-sm uppercase tracking-wider transition-colors ${
+                category === c.slug ? 'text-ink border-b-2 border-ink font-medium' : 'text-muted hover:text-ink border-b-2 border-transparent'
               }`}
             >
               {c.name}
@@ -54,12 +54,12 @@ export default async function ProductsPage({
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted whitespace-nowrap">Sort by:</span>
-          <div className="flex gap-2">
-            <Link href={`/products?category=${category || ''}&sort=newest`} className="text-sm text-ink hover:text-brand">Newest</Link>
+        <div className="flex items-center gap-3">
+          <span className="text-xs uppercase tracking-wider text-muted whitespace-nowrap">Sort:</span>
+          <div className="flex gap-3">
+            <Link href={`/products?category=${category || ''}&sort=newest`} className="text-sm text-ink hover:opacity-70 transition-opacity">Newest</Link>
             <span className="text-hairline">|</span>
-            <Link href={`/products?category=${category || ''}&sort=price_asc`} className="text-sm text-ink hover:text-brand">Price Low to High</Link>
+            <Link href={`/products?category=${category || ''}&sort=price_asc`} className="text-sm text-ink hover:opacity-70 transition-opacity">Price Low to High</Link>
           </div>
         </div>
       </div>

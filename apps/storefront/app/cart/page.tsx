@@ -86,7 +86,13 @@ export default function CartPage() {
                 <div className="flex items-center justify-between mt-4">
                   <div className="flex items-center gap-4 bg-surface rounded-full p-1 border border-hairline">
                     <button 
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      onClick={() => {
+                        if (item.quantity === 1) {
+                          removeItem(item.id);
+                        } else {
+                          updateQuantity(item.id, item.quantity - 1);
+                        }
+                      }}
                       disabled={isLoading}
                       className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-canvas text-ink transition-colors disabled:opacity-50"
                     >
