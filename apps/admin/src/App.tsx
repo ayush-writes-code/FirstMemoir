@@ -5,6 +5,7 @@ import { Categories } from './pages/Categories';
 import { Products } from './pages/Products';
 import { Orders } from './pages/Orders';
 import { OrderDetail } from './pages/OrderDetail';
+import { ManufacturingQueue } from './pages/ManufacturingQueue';
 import { AdminLayout } from './components/AdminLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -19,6 +20,7 @@ function App() {
           <Route path="categories" element={<Categories />} />
           <Route path="orders" element={<Orders />} />
           <Route path="orders/:id" element={<OrderDetail />} />
+          <Route path="manufacturing" element={<ManufacturingQueue />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

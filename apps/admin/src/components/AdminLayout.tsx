@@ -1,5 +1,5 @@
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Package, Image as ImageIcon, ShoppingBag } from 'lucide-react';
+import { LayoutDashboard, LogOut, Package, Image as ImageIcon, ShoppingBag, Printer } from 'lucide-react';
 import { auth } from '@repo/api-client';
 
 export function AdminLayout() {
@@ -16,6 +16,7 @@ export function AdminLayout() {
     { name: 'Products', href: '/products', icon: Package },
     { name: 'Categories', href: '/categories', icon: ImageIcon },
     { name: 'Orders', href: '/orders', icon: ShoppingBag },
+    { name: 'Manufacturing', href: '/manufacturing', icon: Printer },
   ];
 
   return (

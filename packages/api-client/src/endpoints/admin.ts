@@ -24,3 +24,10 @@ export const generateAwb = async (id: string) => {
     method: 'POST',
   });
 };
+export const getManufacturingQueue = async () => {
+  return fetchClient<any[]>(`/admin/manufacturing/items`);
+};
+
+export const downloadMasterAsset = async (orderId: string, itemId: string) => {
+  return fetchClient<{ url: string }>(`/admin/orders/${orderId}/items/${itemId}/download-asset`);
+};

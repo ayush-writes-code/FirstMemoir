@@ -176,10 +176,12 @@ export function OrderDetail() {
                           </div>
                         )}
 
-                        {customization.master_file_key && (
-                          <div className="pt-1 border-t border-gray-200">
-                            <span className="font-medium text-gray-600">Master File Key: </span>
-                            <span className="font-mono text-[11px] text-gray-800 break-all">{customization.master_file_key}</span>
+                        {customization.crop_width && (
+                          <div>
+                            <span className="font-medium text-gray-600">Crop: </span>
+                            <span className="text-gray-800">
+                              ({customization.crop_x?.toFixed(2)}, {customization.crop_y?.toFixed(2)}) w:{customization.crop_width?.toFixed(2)} h:{customization.crop_height?.toFixed(2)}
+                            </span>
                           </div>
                         )}
 
@@ -187,6 +189,28 @@ export function OrderDetail() {
                           <div>
                             <span className="font-medium text-gray-600">Original File: </span>
                             <span className="text-gray-800">{upload.original_filename} ({upload.width}×{upload.height} px)</span>
+                          </div>
+                        )}
+                        
+                        {customization.master_file_key && (
+                          <div className="pt-2 border-t border-gray-200 mt-2">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const res = await admin.downloadMasterAsset(order.id, item.id);
+                                  if (res.success && res.data?.url) {
+                                    window.location.href = res.data.url;
+                                  } else {
+                                    alert(res.error || 'Failed to generate download URL');
+                                  }
+                                } catch (err: any) {
+                                  alert(err.message);
+                                }
+                              }}
+                              className="rounded bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 flex items-center gap-1.5"
+                            >
+                              <span>Download Master File</span>
+                            </button>
                           </div>
                         )}
                       </div>
