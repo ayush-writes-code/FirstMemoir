@@ -6,6 +6,7 @@ import { Products } from './pages/Products';
 import { Orders } from './pages/Orders';
 import { OrderDetail } from './pages/OrderDetail';
 import { ManufacturingQueue } from './pages/ManufacturingQueue';
+import { Notifications } from './pages/Notifications';
 import { AdminLayout } from './components/AdminLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -21,6 +22,7 @@ function App() {
           <Route path="orders" element={<Orders />} />
           <Route path="orders/:id" element={<OrderDetail />} />
           <Route path="manufacturing" element={<ManufacturingQueue />} />
+          <Route path="notifications" element={<Notifications />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

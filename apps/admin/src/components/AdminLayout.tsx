@@ -1,5 +1,5 @@
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Package, Image as ImageIcon, ShoppingBag, Printer } from 'lucide-react';
+import { LayoutDashboard, LogOut, Package, Image as ImageIcon, ShoppingBag, Printer, Bell } from 'lucide-react';
 import { auth } from '@repo/api-client';
 
 export function AdminLayout() {
@@ -17,6 +17,7 @@ export function AdminLayout() {
     { name: 'Categories', href: '/categories', icon: ImageIcon },
     { name: 'Orders', href: '/orders', icon: ShoppingBag },
     { name: 'Manufacturing', href: '/manufacturing', icon: Printer },
+    { name: 'Notifications', href: '/notifications', icon: Bell },
   ];
 
   return (
@@ -24,7 +25,7 @@ export function AdminLayout() {
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col hidden md:flex">
         <div className="h-16 flex items-center px-6 border-b border-gray-200">
-          <span className="text-xl font-bold text-gray-900 tracking-tight">PrintCraft Admin</span>
+          <span className="text-xl font-bold text-gray-900 tracking-tight">First Memoir Admin</span>
         </div>
         
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
@@ -54,7 +55,7 @@ export function AdminLayout() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6">
-          <div className="md:hidden text-lg font-bold">PrintCraft Admin</div>
+          <div className="md:hidden text-lg font-bold">First Memoir Admin</div>
           <div className="flex-1" />
           <button
             onClick={handleLogout}

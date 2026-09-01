@@ -38,6 +38,15 @@ const envSchema = z.object({
   // Resend (Optional for local dev, fallback to mock provider if absent)
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().optional(),
+  // Trust Proxy for Rate Limiting (false, true, or numeric hops)
+  TRUST_PROXY: z.string().default('false').transform((val): boolean | number => {
+    const trimmed = val.trim();
+    if (trimmed.toLowerCase() === 'true') return true;
+    if (trimmed.toLowerCase() === 'false') return false;
+    if (/^\d+$/.test(trimmed)) return parseInt(trimmed, 10);
+
+    throw new Error(`Invalid TRUST_PROXY value: "${val}". Must be "true", "false", or a positive integer.`);
+  }),
 });
 
 // Provide safe developer defaults if NOT in production or staging

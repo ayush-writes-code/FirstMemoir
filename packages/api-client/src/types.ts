@@ -22,6 +22,34 @@ export interface PaginatedApiResponse<T> extends ApiResponse<T[]> {
   };
 }
 
+export interface AdminMetricsResponse {
+  actionableOrdersCount: number;
+  failedNotificationsCount: number;
+  failedWebhooksCount: number;
+}
+
+export interface AdminNotificationLogDto {
+  id: string;
+  order_id: string | null;
+  recipient: string;
+  channel: string;
+  event_type: string;
+  provider: string;
+  status: string;
+  error_message: string | null;
+  created_at: string;
+}
+
+export interface AdminNotificationsResponse {
+  notifications: AdminNotificationLogDto[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 export interface User {
   id: string;
   phone_number: string;

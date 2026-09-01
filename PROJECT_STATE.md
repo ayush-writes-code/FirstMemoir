@@ -126,3 +126,9 @@ sequenceDiagram
 3. **Transactional Notifications**: Automated email/WhatsApp notifications upon payment capture and order dispatch.
 4. **Shiprocket Shipping Engine**: Implementation of courier dimension calculators and live AWB generation once business rules are finalized.
 5. **Production Cloud Deployment**: Production containerization, CDN routing, and PostgreSQL migration deployment to Neon.
+
+---
+
+## 7. Customer Resilience & Operational Observability Milestone
+Completed phase focused on architecture safety and operational monitoring.
+See `docs/phases/customer_resilience_and_observability_completion.md` for full implementation details, proxy configuration logic, storefront boundary additions, and webhook protection rationale.

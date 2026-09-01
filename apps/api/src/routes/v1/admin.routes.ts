@@ -1,11 +1,15 @@
 import { Router } from 'express';
 import { adminOrdersController } from '../../controllers/admin.orders.controller.js';
+import { adminMetricsController } from '../../controllers/admin.metrics.controller.js';
 import { requireAdmin, authenticate } from '../../middlewares/auth.middleware.js';
 
 const router = Router();
 
 // Apply auth and admin check to all admin routes
 router.use(authenticate, requireAdmin);
+
+router.get('/metrics', adminMetricsController.getMetrics);
+router.get('/notifications', adminMetricsController.getNotifications);
 
 router.get('/orders', adminOrdersController.listOrders);
 router.get('/orders/:id', adminOrdersController.getOrderDetail);

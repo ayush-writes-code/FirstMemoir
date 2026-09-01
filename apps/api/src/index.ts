@@ -11,6 +11,13 @@ import { logger } from './utils/logger.js';
 const app = express();
 const port = env.PORT;
 
+// Proxy configuration: trust proxy based on environment configuration.
+// If deployed behind a reverse proxy (e.g. Cloudflare, Nginx, Render), we must trust the proxy
+// to receive the correct client IP for rate limiting, rather than limiting the proxy's IP.
+if (env.TRUST_PROXY !== false) {
+  app.set('trust proxy', env.TRUST_PROXY);
+}
+
 // Middlewares
 app.use(helmet());
 logger.debug(`CORS_ORIGIN configured as: ${env.CORS_ORIGIN.join(', ')}`);
@@ -18,11 +25,21 @@ app.use(cors({
   origin: env.CORS_ORIGIN,
   credentials: true,
 }));
+
 // We must parse Razorpay webhooks as raw Buffer/String to verify signatures correctly
 app.use('/api/v1/webhooks', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(cookieParser(env.COOKIE_SECRET));
-app.use(globalLimiter);
+
+// Apply global rate limiting to all routes EXCEPT webhooks.
+// Webhooks rely on HMAC signature verification for security and must not be
+// accidentally dropped due to the provider's IP triggering the standard user limits.
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/v1/webhooks')) {
+    return next();
+  }
+  return globalLimiter(req, res, next);
+});
 
 import { prisma } from '@repo/database';
 

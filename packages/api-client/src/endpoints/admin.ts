@@ -1,4 +1,18 @@
 import { fetchClient } from '../client';
+import type { AdminMetricsResponse, AdminNotificationsResponse } from '../types';
+
+export const getMetrics = async () => {
+  return fetchClient<AdminMetricsResponse>('/admin/metrics');
+};
+
+export const getNotifications = async (params?: { page?: number; limit?: number }) => {
+  const query = new URLSearchParams();
+  if (params?.page) query.append('page', params.page.toString());
+  if (params?.limit) query.append('limit', params.limit.toString());
+  const queryString = query.toString() ? `?${query.toString()}` : '';
+
+  return fetchClient<AdminNotificationsResponse>(`/admin/notifications${queryString}`);
+};
 
 export const listOrders = async (params?: { page?: number; limit?: number }) => {
   const query = new URLSearchParams();
