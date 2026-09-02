@@ -324,9 +324,7 @@ export const checkoutService = {
     }
 
     // ── 3. Transaction: order creation + retention lock ─────────
-    let order;
-
-    order = await prisma.$transaction(async (tx) => {
+    const order = await prisma.$transaction(async (tx) => {
       // Ensure any lingering PENDING orders for this cart are expired before creating replacement
       await tx.order.updateMany({
         where: { cart_id: cart.id, status: 'PENDING' },

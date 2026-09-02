@@ -1,6 +1,7 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
+  "globalEnv": ["NODE_ENV", "SHIPROCKET_DRY_RUN", "R2_PUBLIC_URL", "SHIPROCKET_EMAIL", "SHIPROCKET_PASSWORD", "DATABASE_TEST_URL", "DATABASE_URL"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

@@ -32,7 +32,7 @@ export default function CartPage() {
     return (
       <div className="max-w-content mx-auto px-4 py-24 text-center">
         <h1 className="text-3xl font-serif font-bold text-ink mb-4">Your Cart is Empty</h1>
-        <p className="text-muted mb-8">Looks like you haven't added any personalized prints yet.</p>
+        <p className="text-muted mb-8">Looks like you haven&apos;t added any personalized prints yet.</p>
         <Link 
           href="/products" 
           className="inline-flex items-center gap-2 bg-brand hover:bg-brand-pressed text-white px-8 py-3 rounded-pill font-medium transition-colors"

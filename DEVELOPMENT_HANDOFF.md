@@ -125,22 +125,22 @@ WePrintIt.in/
 
 ## 5. Development & Testing Commands
 
+The repository quality gate is enforced in GitHub Actions (`.github/workflows/ci.yml`) and locally via the following sequential validation commands:
+
 ```bash
-# Install dependencies
-npm install
+# 1. Run repository linting across all packages (--max-warnings 0)
+npm run lint
 
-# Run database migrations / generate client
-cd packages/database
-npx prisma generate
-npx prisma db push
+# 2. Verify TypeScript workspace isolation and type safety
+npm run check-types
 
-# Run full monorepo build
+# 3. Compile all applications and packages
 npm run build
 
-# Run API test suite (automatically orchestrates Docker DB)
+# 4. Run integration test suite (automatically orchestrates isolated Docker PostgreSQL DB)
 npm run test
 
-# Tear down the test environment (useful for a pristine reset)
+# 5. Tear down the test database environment
 npm run test:teardown
 
 # Run local development servers (Storefront :3000, Admin :5173, API :3001)

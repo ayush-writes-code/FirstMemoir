@@ -23,6 +23,7 @@ export const paymentService = {
       throw new WebhookSecurityError(`Unsupported currency: ${currency}`);
     }
 
+    // eslint-disable-next-line no-useless-catch
     try {
       const txResult = await prisma.$transaction(async (tx) => {
         // 1. Insert WebhookEvent with unique event_id (idempotency)

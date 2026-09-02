@@ -33,7 +33,7 @@ export default function RefundPage() {
 
       <h2>3. Returns and Refunds</h2>
       <p>
-        Because products are personalized, we do not accept returns or offer refunds for "change of mind" or if a low-resolution image was provided by the customer despite our quality warnings. 
+        Because products are personalized, we do not accept returns or offer refunds for &quot;change of mind&quot; or if a low-resolution image was provided by the customer despite our quality warnings.
       </p>
       <p>
         Refunds (if applicable and approved for defective items where a replacement is not possible) will be processed to the original method of payment within 5-7 business days.

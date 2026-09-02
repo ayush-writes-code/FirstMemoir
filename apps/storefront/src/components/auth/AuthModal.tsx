@@ -39,7 +39,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       } else {
         setError(res.error || 'Failed to send OTP');
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);
@@ -62,7 +62,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       } else {
         setError(res.error || 'Invalid OTP');
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setIsLoading(false);

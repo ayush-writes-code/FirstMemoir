@@ -92,7 +92,7 @@ function SuccessContent() {
       <div className="max-w-content mx-auto px-4 py-24 text-center">
         <Loader2 className="w-12 h-12 text-brand animate-spin mx-auto mb-4" />
         <h1 className="text-2xl font-serif font-bold text-ink mb-2">Payment Received</h1>
-        <p className="text-muted mb-6">Payment received. We're confirming your order. This may take a few seconds.</p>
+        <p className="text-muted mb-6">Payment received. We&apos;re confirming your order. This may take a few seconds.</p>
         <p className="text-sm text-muted">You will receive an email shortly once confirmed. Order ID: {orderId}</p>
         <div className="mt-8">
           <Link href="/" className="text-brand hover:underline font-medium">Return to Home</Link>

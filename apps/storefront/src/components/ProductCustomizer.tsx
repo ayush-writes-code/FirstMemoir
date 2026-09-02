@@ -258,6 +258,7 @@ export function ProductCustomizer({ product }: Props) {
         printQualityStatus: status,
         dpiAcknowledgmentRequired: requiresAck,
       };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [imageWidth, imageHeight, physicalWidth, physicalHeight, cropData]);
 
   const handleUploadSuccess = useCallback(
@@ -280,6 +281,7 @@ export function ProductCustomizer({ product }: Props) {
     setContextZoom(1);
     setContextRotation(0);
     setContextCropTranslation({x: 0, y: 0});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const canAddToCart =

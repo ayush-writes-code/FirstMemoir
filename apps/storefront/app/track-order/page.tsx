@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { orders as ordersApi } from '@repo/api-client';
 import { GuestTrackOrderResponseDTO } from '@repo/shared';
 import { OrderStatusTimeline } from '@/components/orders/OrderStatusTimeline';
-import { Search, Package, MapPin } from 'lucide-react';
+import { Search, Package } from 'lucide-react';
 
 export default function TrackOrderPage() {
   const [orderId, setOrderId] = useState('');
@@ -37,7 +37,7 @@ export default function TrackOrderPage() {
       } else {
         setError(res.error || 'Order not found. Please check your details and try again.');
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);

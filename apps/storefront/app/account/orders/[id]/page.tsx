@@ -26,7 +26,7 @@ export default function OrderDetailPage() {
         } else {
           setError(res.error || 'Failed to load order details');
         }
-      } catch (err) {
+      } catch {
         setError('An error occurred while loading order details');
       } finally {
         setIsLoading(false);

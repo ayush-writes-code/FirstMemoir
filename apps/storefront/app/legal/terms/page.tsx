@@ -16,7 +16,7 @@ export default function TermsPage() {
 
       <h2>1. General Structure</h2>
       <p>
-        The website is operated by {BUSINESS_CONFIG.registeredCompanyName}. Throughout the site, the terms "we", "us" and "our" refer to {BUSINESS_CONFIG.brandName}.
+        The website is operated by {BUSINESS_CONFIG.registeredCompanyName}. Throughout the site, the terms &quot;we&quot;, &quot;us&quot; and &quot;our&quot; refer to {BUSINESS_CONFIG.brandName}.
       </p>
 
       <h2>2. Custom Products</h2>

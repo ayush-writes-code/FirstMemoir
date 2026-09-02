@@ -10,7 +10,7 @@ export default function ContactPage() {
   return (
     <LegalLayout title="Contact Us">
       <p>
-        We're here to help. Whether you have a question about an order, need assistance with your photos, or just want to say hello, feel free to reach out.
+        We&apos;re here to help. Whether you have a question about an order, need assistance with your photos, or just want to say hello, feel free to reach out.
       </p>
 
       <h2>Customer Support</h2>

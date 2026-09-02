@@ -24,7 +24,7 @@ export default function GlobalError({
         </div>
         <h2 className="text-3xl font-serif text-ink tracking-tight">Something went wrong</h2>
         <p className="text-ink/70 text-base mb-8">
-          We're sorry, but we encountered an unexpected error while loading this page.
+          We&apos;re sorry, but we encountered an unexpected error while loading this page.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
