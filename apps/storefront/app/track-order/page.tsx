@@ -65,7 +65,7 @@ export default function TrackOrderPage() {
                   value={orderId}
                   onChange={(e) => setOrderId(e.target.value)}
                   placeholder="e.g., a1b2c3d4-..."
-                  className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-lg focus:bg-white focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
+                  className="w-full px-4 py-3 text-base bg-zinc-50 border border-zinc-200 rounded-lg focus:bg-white focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
                   disabled={isLoading}
                 />
               </div>
@@ -84,7 +84,7 @@ export default function TrackOrderPage() {
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                     placeholder="Enter 10-digit number"
                     maxLength={10}
-                    className="w-full pl-12 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-lg focus:bg-white focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
+                    className="w-full pl-12 pr-4 py-3 text-base bg-zinc-50 border border-zinc-200 rounded-lg focus:bg-white focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
                     disabled={isLoading}
                   />
                 </div>

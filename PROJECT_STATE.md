@@ -175,3 +175,23 @@ Prepared the API authentication architecture to support a completely decoupled, 
 - **Production packaging fix implemented:** Added `tsconfig.json` and a `build` step to `@repo/database`. Updated `turbo.json` outputs to cache `dist/**`. Updated `package.json` `main`, `types`, and `exports` to resolve to the compiled `dist/index.js`.
 - **Verification status:** Built and ran the Docker image locally. The container successfully executes compiled JavaScript and halts correctly at environment validation, proving the TS-execution error is resolved.
 - **Next step:** Redeploy Render.
+
+## 14. Local Client Demo Mode (Pre-Render Mobile UX Pass)
+
+**Checkpoint: Local Environment Verification**
+- **Local demo environment verified:** Yes, successfully stood up the full stack locally via Docker and Turborepo.
+- **Local database used:** Yes, test Docker container (`localhost:54320`).
+- **Demo data source:** Idempotent `prisma/seed.ts` successfully executed.
+- **API status:** Running and healthy at `http://localhost:3001/api/v1`.
+- **Storefront status:** Running at `http://localhost:3000`.
+- **Mobile testing status:** Journey verified; UX audit completed to inform client-demo polish.
+- **Current known limitations:** Mock products/images; Render backend is not yet attached to the Vercel edge deployment.
+- **Render deployment intentionally deferred:** Yes, pending client UI approval.
+- **Next step:** Execute the Mobile UX fixes.
+
+**Checkpoint: Client Demo Mobile Polish (Implementation Pass)**
+- **Sticky CTA Fix:** Implemented `h-[calc(4.5rem+env(safe-area-inset-bottom))]` exact structural spacer to prevent the fixed mobile cart bar from clipping bottom configuration options.
+- **Checkout iOS Zoom Fix:** Enforced strict `text-base` explicitly on `AuthModal.tsx` and `track-order/page.tsx` inputs to maintain parity with `checkout/page.tsx`, universally ensuring iOS Safari won't zoom on input focus.
+- **Touch Targets:** Expanded the remove-item Cart trash icon from `p-2` to an exact `w-11 h-11` centered hit area (44px) matching Apple HIG, and expanded the `AuthModal` close button to 44px as well.
+- **Personalization Verification:** Tested the UI flow up to the point of image upload. As expected in a clean local environment, the client-side `PUT` request to R2 fails because `R2_ACCOUNT_ID="mock"`. This successfully diagnoses that the entire Upload → Crop → Live Preview component heavily depends on an available remote staging R2 bucket. This is accurately classified as an external dependency blocker rather than a bug.
+- **Render deployment:** Intentionally deferred.

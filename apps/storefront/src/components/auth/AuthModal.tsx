@@ -85,7 +85,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
           </h2>
           <button
             onClick={handleClose}
-            className="p-2 text-zinc-400 hover:text-black transition-colors rounded-full hover:bg-zinc-100"
+            className="w-11 h-11 flex items-center justify-center text-zinc-400 hover:text-black transition-colors rounded-full hover:bg-zinc-100"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -115,7 +115,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                     type="tel"
                     value={phone.replace(/^\+91/, '')}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                    className="w-full pl-12 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-lg focus:bg-white focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
+                    className="w-full pl-12 pr-4 py-3 text-base bg-zinc-50 border border-zinc-200 rounded-lg focus:bg-white focus:border-black focus:ring-1 focus:ring-black outline-none transition-all"
                     placeholder="Enter 10-digit number"
                     maxLength={10}
                     disabled={isLoading}

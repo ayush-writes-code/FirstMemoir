@@ -312,7 +312,7 @@ export function ProductCustomizer({ product }: Props) {
   };
 
   return (
-    <div className="space-y-6 pb-28 lg:pb-0">
+    <div className="space-y-6">
       {/* Personalization Trigger */}
       <div>
         <h3 className="text-lg font-semibold text-ink mb-3">
@@ -413,6 +413,9 @@ export function ProductCustomizer({ product }: Props) {
       <p className="text-sm text-center text-muted">
         Estimated delivery: 5–7 business days
       </p>
+
+      {/* Structural clearance for the fixed mobile CTA */}
+      <div className="h-[calc(4.5rem+env(safe-area-inset-bottom))] lg:hidden" aria-hidden="true" />
 
       {/* Sticky Mobile Add To Cart CTA */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-canvas border-t border-hairline px-4 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
