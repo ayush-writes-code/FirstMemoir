@@ -1,4 +1,4 @@
-import { products as productsApi, categories as categoriesApi } from '@repo/api-client';
+import { products as productsApi, categories as categoriesApi } from '@/lib/api-client';
 import { ProductCard } from '@/components/ProductCard';
 import { EmptyState } from '@/components/EmptyState';
 import Link from 'next/link';

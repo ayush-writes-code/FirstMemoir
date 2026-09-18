@@ -1,6 +1,6 @@
 'use client';
 
-import type { ProductOptionDto } from '@repo/api-client';
+import type { ProductOptionDto } from '@/lib/api-client';
 
 interface Props {
   option: ProductOptionDto;

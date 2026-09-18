@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useCartStore } from '@/store/cart.store';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
-import { checkout } from '@repo/api-client';
+import { checkout } from '@/lib/api-client';
 import { State, City } from 'country-state-city';
 
 declare global {
@@ -246,6 +246,8 @@ export default function CheckoutPage() {
                 <input
                   required
                   type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   name="customer_phone"
                   autoComplete="tel-national"
                   value={formData.customer_phone}
@@ -328,6 +330,8 @@ export default function CheckoutPage() {
               <input
                 required
                 type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 name="postal_code"
                 autoComplete="postal-code"
                 value={formData.postal_code}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { orders as ordersApi } from '@repo/api-client';
+import { orders as ordersApi } from '@/lib/api-client';
 import { CustomerOrderDetailDTO } from '@repo/shared';
 import { OrderItemCard } from '@/components/orders/OrderItemCard';
 import { OrderStatusTimeline } from '@/components/orders/OrderStatusTimeline';

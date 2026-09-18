@@ -120,6 +120,7 @@ WePrintIt.in/
 6. **Checkout Processing State Reset**: Enhanced `CheckoutPage.tsx` modal handlers (`modal.ondismiss`, `payment.failed`, and `catch`) so `isProcessing` is immediately reset to allow instant user retries.
 7. **Cart Clearing on Confirmation**: Added atomic `cartLineItem.deleteMany` inside the payment confirmation transaction to ensure purchased cart items are cleared only when payment is captured.
 8. **Webhook Upload Retention Idempotency**: Enhanced upload retention transition in `payment.service.ts` to pre-verify asset existence while tolerating uploads already marked `ORDERED_RETAINED` from prior purchases.
+9. **API Deployment Foundation & Operational Reliability**: Implemented `SIGTERM`/`SIGINT` graceful shutdown (`server.close()` and `prisma.$disconnect()`). Segregated readiness (`/api/health/ready`) and liveness (`/api/health/live`) endpoints. Added a multi-stage `Dockerfile` (`node:20-slim`) strictly for the API workspace. Prisma migrations are documented to be run as an external pre-deployment release command rather than during Docker build or automatic API startup.
 
 ---
 
@@ -146,3 +147,13 @@ npm run test:teardown
 # Run local development servers (Storefront :3000, Admin :5173, API :3001)
 npm run dev
 ```
+
+---
+
+## 6. Demo & Staging Architecture
+
+For the client-facing mobile demonstration, the repository uses the following isolated architecture:
+1. **Storefront**: Deployed to Vercel (benefits from native Turborepo support and Next.js Image optimization for Unsplash assets).
+2. **Backend API**: Deployed via Docker to a stable container platform (e.g., Render) with a managed PostgreSQL instance (e.g., Neon).
+3. **Configuration**: The Storefront is wired to the backend by setting `NEXT_PUBLIC_API_URL` (for Vercel), while the Admin portal uses `VITE_API_URL`. The shared `@repo/api-client` is initialized cleanly via dedicated environment adapters (`apps/storefront/src/lib/api-client.ts` and `apps/admin/src/main.tsx`), ensuring deterministic SSR without React-layer side effects.
+4. **Demo Data**: The catalog is populated using the existing deterministic Prisma seed script (`npx prisma db seed`), which generates a premium set of unbranded demo products using Unsplash placeholders. No fake SKUs or incorrect business logic are injected.

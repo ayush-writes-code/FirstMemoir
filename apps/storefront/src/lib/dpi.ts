@@ -1,4 +1,4 @@
-import type { PrintQualityStatus } from '@repo/api-client';
+import type { PrintQualityStatus } from '@/lib/api-client';
 
 export interface ImageDimensions {
   width: number;

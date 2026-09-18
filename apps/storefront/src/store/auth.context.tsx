@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { auth } from '@repo/api-client';
-import type { User } from '@repo/api-client';
+import { auth } from '@/lib/api-client';
+import type { User } from '@/lib/api-client';
 import { AuthModal } from '../components/auth/AuthModal';
 
 interface AuthContextType {

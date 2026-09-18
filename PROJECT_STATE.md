@@ -138,3 +138,18 @@ Automated testing environment restored with strict Docker orchestration, isolate
 
 ## 9. Continuous Integration & Quality Gate Milestone
 Implemented rigorous repository linting and type-checking pipelines. Configured automated GitHub Actions workflows. Replaced broad technical-debt overrides with exact file-level boundaries to ensure all new source files enforce strict linting rules. Addressed unescaped entities and unused parameters where behavior-preserving.
+
+## 10. API Production Reliability & Deployment Foundation Milestone
+Refactored the Node.js API process for production safety. Implemented `SIGTERM`/`SIGINT` listeners to trigger graceful shutdown logic (`server.close()` and `prisma.$disconnect()`). Segregated health checks into distinct explicit `/api/health/live` and `/api/health/ready` endpoints. Configured a multi-stage Dockerfile (`node:20-slim`) for the API using Turborepo dependency filtering, prioritizing a lightweight production runtime with the Prisma Client explicitly generated for the Debian environment. Documented the Prisma migration strategy as a pre-deploy release-phase command.
+
+## 11. Mobile-First Client Demo & Vercel Readiness Milestone
+Completed the preparation of the storefront for an independent, mobile-first client demo.
+- **Mobile UX Fixes:** Upgraded cart increment/decrement touch targets to 44px (`w-11 h-11`). Configured numeric input modes (`inputMode="numeric" pattern="[0-9]*"`) for the phone and pincode checkout fields. Added layout clearance padding to the `ProductCustomizer` to prevent the sticky mobile CTA from obscuring product options.
+- **Performance:** Removed the `unoptimized` flag from Next.js `<Image>` tags on the homepage, allowing Vercel's edge network to optimize the heavy Unsplash demo images for mobile bandwidth.
+- **Environment & Demo Independence:** Eradicated the hardcoded localhost API assumption. The repository is now Configuration-Ready and Build-Ready for a live deployment. The Storefront dynamically configures the API URL using `NEXT_PUBLIC_API_URL` via a clean environment adapter (`apps/storefront/src/lib/api-client.ts`), ensuring deterministic Next.js SSR execution without React-layer side effects. The Vite Admin app is similarly initialized in `main.tsx` via `VITE_API_URL`. Both `NEXT_PUBLIC_API_URL` and `VITE_API_URL` are registered in Turborepo's `globalEnv`.
+- **Demo Data Strategy:** Inspected the existing `packages/database/prisma/seed.ts` and confirmed it is already idempotent, deterministic, and highly realistic. It seeds 9 premium demo products (using Unsplash placeholders) with full relational options (frames, sizes) and exclusions. No duplicate seed mechanism is required. 
+- **Deployment Strategy:** Recommended Vercel for the Storefront (native Turborepo and Next.js Image support). Recommended deploying the API Docker container to a stable backend provider (e.g., Render Web Services) connected to a hobby PostgreSQL database (e.g., Neon).
+- **Current Blockers:** 
+  - **Client Data:** Real SKUs, packaging volumetric dimensions, tare weights, Courier constraints, and real pricing.
+  - **Production Credentials:** Real Razorpay keys, Shiprocket keys, and production AWS/Cloudflare R2 keys.
+  - **Infrastructure:** Actual provisioning of the Render API and Neon DB for the demo backend.

@@ -1,6 +1,6 @@
 'use client';
 
-import type { ProductDto } from '@repo/api-client';
+import type { ProductDto } from '@/lib/api-client';
 import Link from 'next/link';
 import Image from 'next/image';
 

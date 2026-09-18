@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { ProductWithOptionsDto } from '@repo/api-client';
+import type { ProductWithOptionsDto } from '@/lib/api-client';
 
 interface Props {
   product: ProductWithOptionsDto;

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { orders as ordersApi } from '@repo/api-client';
+import { orders as ordersApi } from '@/lib/api-client';
 import { CustomerOrderSummaryDTO } from '@repo/shared';
 import { OrderCard } from '@/components/orders/OrderCard';
 import { PackageOpen, AlertCircle, RefreshCw, LogIn } from 'lucide-react';

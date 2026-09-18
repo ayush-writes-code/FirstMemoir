@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState } from 'react';
-import type { PrintOrientation } from '@repo/api-client';
+import type { PrintOrientation } from '@/lib/api-client';
 import type { CropRect } from '../utils/cropMath';
 
 interface ProductPreviewState {

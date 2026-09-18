@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { cart as cartApi } from '@repo/api-client';
-import type { CartDto, AddToCartInput } from '@repo/api-client';
+import { cart as cartApi } from '@/lib/api-client';
+import type { CartDto, AddToCartInput } from '@/lib/api-client';
 
 interface CartState {
   cart: CartDto | null;

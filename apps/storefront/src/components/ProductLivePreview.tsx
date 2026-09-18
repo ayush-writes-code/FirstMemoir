@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import type { ProductImageDto } from '@repo/api-client';
+import type { ProductImageDto } from '@/lib/api-client';
 import { useProductPreview } from '../store/ProductPreviewContext';
 import { getMockupCoordinates, getPremiumMockup } from '../config/mockupCoordinates';
 import { canonicalCropToVisualCrop } from '../utils/cropMath';

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { orders as ordersApi } from '@repo/api-client';
+import { orders as ordersApi } from '@/lib/api-client';
 import { GuestTrackOrderResponseDTO } from '@repo/shared';
 import { OrderStatusTimeline } from '@/components/orders/OrderStatusTimeline';
 import { Search, Package } from 'lucide-react';

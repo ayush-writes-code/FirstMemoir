@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { categories as categoriesApi, products as productsApi } from '@repo/api-client';
+import { categories as categoriesApi, products as productsApi } from '@/lib/api-client';
 import { HeroVideoRotation } from '../src/components/HeroVideoRotation';
 
 // Prevent Next.js from prerendering this page at build time since it relies on an external API
@@ -94,7 +94,7 @@ export default async function Home() {
                       fill 
                       sizes="(max-width: 768px) 100vw, 33vw"
                       className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                      unoptimized
+                      
                     />
                   </div>
                   <h3 className="text-xl font-medium text-ink group-hover:text-brand transition-colors">{category.name}</h3>
@@ -121,7 +121,7 @@ export default async function Home() {
               fill 
               sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover"
-              unoptimized
+              
             />
           </div>
           <div className="order-1 lg:order-2 flex flex-col items-start space-y-6">
@@ -151,7 +151,7 @@ export default async function Home() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8">
           <div className="flex flex-col items-center text-center group">
             <div className="relative w-full aspect-square mb-8 bg-surface-soft rounded-full overflow-hidden flex items-center justify-center p-8">
-               <Image src={TEMPORARY_ASSETS.howItWorks[0]!} alt="Choose photo" fill className="object-cover opacity-80 mix-blend-multiply group-hover:scale-105 transition-transform duration-700" unoptimized />
+               <Image src={TEMPORARY_ASSETS.howItWorks[0]!} alt="Choose photo" fill className="object-cover opacity-80 mix-blend-multiply group-hover:scale-105 transition-transform duration-700"  />
             </div>
             <div className="text-brand font-medium tracking-widest text-sm mb-3">01</div>
             <h3 className="text-xl font-medium text-ink mb-3">Choose your photo</h3>
@@ -160,7 +160,7 @@ export default async function Home() {
 
           <div className="flex flex-col items-center text-center group">
             <div className="relative w-full aspect-square mb-8 bg-surface-soft rounded-full overflow-hidden flex items-center justify-center p-8">
-               <Image src={TEMPORARY_ASSETS.howItWorks[1]!} alt="Make it yours" fill className="object-cover opacity-80 mix-blend-multiply group-hover:scale-105 transition-transform duration-700" unoptimized />
+               <Image src={TEMPORARY_ASSETS.howItWorks[1]!} alt="Make it yours" fill className="object-cover opacity-80 mix-blend-multiply group-hover:scale-105 transition-transform duration-700"  />
             </div>
             <div className="text-brand font-medium tracking-widest text-sm mb-3">02</div>
             <h3 className="text-xl font-medium text-ink mb-3">Make it yours</h3>
@@ -169,7 +169,7 @@ export default async function Home() {
 
           <div className="flex flex-col items-center text-center group">
             <div className="relative w-full aspect-square mb-8 bg-surface-soft rounded-full overflow-hidden flex items-center justify-center p-8">
-               <Image src={TEMPORARY_ASSETS.howItWorks[2]!} alt="We make it real" fill className="object-cover opacity-80 mix-blend-multiply group-hover:scale-105 transition-transform duration-700" unoptimized />
+               <Image src={TEMPORARY_ASSETS.howItWorks[2]!} alt="We make it real" fill className="object-cover opacity-80 mix-blend-multiply group-hover:scale-105 transition-transform duration-700"  />
             </div>
             <div className="text-brand font-medium tracking-widest text-sm mb-3">03</div>
             <h3 className="text-xl font-medium text-ink mb-3">We make it real</h3>
@@ -209,7 +209,7 @@ export default async function Home() {
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover opacity-80"
-                  unoptimized
+                  
                 />
             </div>
           </div>
@@ -226,7 +226,7 @@ export default async function Home() {
           fill
           sizes="100vw"
           className="object-cover opacity-30"
-          unoptimized
+          
         />
         <div className="relative z-10 flex flex-col items-center text-center px-4 max-w-2xl">
           <h2 className="text-5xl md:text-6xl font-serif text-ink tracking-tight mb-8">

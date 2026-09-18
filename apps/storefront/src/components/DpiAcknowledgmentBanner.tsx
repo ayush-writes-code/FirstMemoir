@@ -1,7 +1,7 @@
 'use client';
 
 import { QUALITY_LABELS } from '@/lib/dpi';
-import type { PrintQualityStatus } from '@repo/api-client';
+import type { PrintQualityStatus } from '@/lib/api-client';
 
 interface Props {
   status?: PrintQualityStatus;

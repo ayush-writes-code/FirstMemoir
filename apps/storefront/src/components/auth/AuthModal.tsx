@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { auth } from '@repo/api-client';
+import { auth } from '@/lib/api-client';
 import { OtpInput } from './OtpInput';
 
 interface AuthModalProps {

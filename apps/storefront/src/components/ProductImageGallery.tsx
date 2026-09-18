@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Image from 'next/image';
-import type { ProductImageDto } from '@repo/api-client';
+import type { ProductImageDto } from '@/lib/api-client';
 import { ProductLivePreview } from './ProductLivePreview';
 
 export function ProductImageGallery({ images, productName, productSlug }: { images: ProductImageDto[], productName: string, productSlug: string }) {

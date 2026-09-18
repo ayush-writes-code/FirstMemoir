@@ -2,8 +2,8 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { orders } from '@repo/api-client';
-import type { OrderStatus } from '@repo/api-client';
+import { orders } from '@/lib/api-client';
+import type { OrderStatus } from '@/lib/api-client';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 

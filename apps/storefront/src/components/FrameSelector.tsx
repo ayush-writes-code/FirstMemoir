@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import type { FrameMaterial } from '@repo/api-client';
+import type { FrameMaterial } from '@/lib/api-client';
 
 export function FrameSelector({ materials, type, label }: { materials: FrameMaterial[], type: 'FRAME' | 'GLASS', label: string }) {
   const filteredMaterials = materials.filter(m => m.type === type && m.is_active);

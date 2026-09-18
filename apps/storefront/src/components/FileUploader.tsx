@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { UploadCloud, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { storage as storageApi } from '@repo/api-client';
+import { storage as storageApi } from '@/lib/api-client';
 
 export type UploadState = 'IDLE' | 'UPLOADING' | 'PROCESSING' | 'READY' | 'FAILED';
 

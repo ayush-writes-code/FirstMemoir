@@ -312,7 +312,7 @@ export function ProductCustomizer({ product }: Props) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-28 lg:pb-0">
       {/* Personalization Trigger */}
       <div>
         <h3 className="text-lg font-semibold text-ink mb-3">

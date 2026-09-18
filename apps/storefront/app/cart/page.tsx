@@ -94,7 +94,7 @@ export default function CartPage() {
                         }
                       }}
                       disabled={isLoading}
-                      className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-canvas text-ink transition-colors disabled:opacity-50"
+                      className="w-11 h-11 rounded-full flex items-center justify-center hover:bg-canvas text-ink transition-colors disabled:opacity-50"
                     >
                       <Minus size={14} />
                     </button>
@@ -102,7 +102,7 @@ export default function CartPage() {
                     <button 
                       onClick={() => updateQuantity(item.id, item.quantity + 1)}
                       disabled={isLoading}
-                      className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-canvas text-ink transition-colors disabled:opacity-50"
+                      className="w-11 h-11 rounded-full flex items-center justify-center hover:bg-canvas text-ink transition-colors disabled:opacity-50"
                     >
                       <Plus size={14} />
                     </button>
