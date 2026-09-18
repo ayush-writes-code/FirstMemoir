@@ -167,3 +167,11 @@ Prepared the API authentication architecture to support a completely decoupled, 
 - **Latest Commit:** `f070fff`
 - **Storefront Deployment:** The Storefront is successfully deployed and publicly accessible via Vercel (`https://firstmemoir-storefront.vercel.app`).
 - **Next Step:** Deploy the `apps/api` container to Render using the newly configured GitHub repository.
+
+**Checkpoint: Render API Deployment Runtime Fix**
+- **Render Docker build:** Succeeded.
+- **Runtime failure identified:** The API container crashed at startup (`ERR_UNKNOWN_FILE_EXTENSION`).
+- **Root cause:** The `@repo/database` package had no build step and its `package.json` resolved to raw TypeScript (`index.ts`). The API production runtime correctly rejected executing TypeScript.
+- **Production packaging fix implemented:** Added `tsconfig.json` and a `build` step to `@repo/database`. Updated `turbo.json` outputs to cache `dist/**`. Updated `package.json` `main`, `types`, and `exports` to resolve to the compiled `dist/index.js`.
+- **Verification status:** Built and ran the Docker image locally. The container successfully executes compiled JavaScript and halts correctly at environment validation, proving the TS-execution error is resolved.
+- **Next step:** Redeploy Render.
