@@ -158,3 +158,12 @@ Prepared the API authentication architecture to support a completely decoupled, 
 - Added `COOKIE_SAME_SITE` as an environment variable (allowing `lax`, `strict`, or `none`).
 - Configured `none` mode to automatically enforce `secure: true`.
 - **Important:** Vercel + Render requires `COOKIE_SAME_SITE=none` because they operate on different root domains (cross-site). Normal environments (localhost or same-site production domains) deliberately retain the safer `lax` or `strict` defaults to prevent CSRF vulnerabilities. Actual Vercel/Render deployment has NOT yet occurred.
+
+## 13. Public Client Demo Deployment
+
+**Checkpoint: Storefront Vercel Deployment & GitHub Remote Initialization**
+- **GitHub Remote:** Successfully configured and pushed (`origin`).
+- **Branch:** `phase-3-2-categories`
+- **Latest Commit:** `f070fff`
+- **Storefront Deployment:** The Storefront is successfully deployed and publicly accessible via Vercel (`https://firstmemoir-storefront.vercel.app`).
+- **Next Step:** Deploy the `apps/api` container to Render using the newly configured GitHub repository.
