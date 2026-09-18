@@ -151,5 +151,10 @@ Completed the preparation of the storefront for an independent, mobile-first cli
 - **Deployment Strategy:** Recommended Vercel for the Storefront (native Turborepo and Next.js Image support). Recommended deploying the API Docker container to a stable backend provider (e.g., Render Web Services) connected to a hobby PostgreSQL database (e.g., Neon).
 - **Current Blockers:** 
   - **Client Data:** Real SKUs, packaging volumetric dimensions, tare weights, Courier constraints, and real pricing.
-  - **Production Credentials:** Real Razorpay keys, Shiprocket keys, and production AWS/Cloudflare R2 keys.
   - **Infrastructure:** Actual provisioning of the Render API and Neon DB for the demo backend.
+
+## 12. Cross-Site Staging Configuration
+Prepared the API authentication architecture to support a completely decoupled, cross-site Vercel + Render deployment for the initial client demo.
+- Added `COOKIE_SAME_SITE` as an environment variable (allowing `lax`, `strict`, or `none`).
+- Configured `none` mode to automatically enforce `secure: true`.
+- **Important:** Vercel + Render requires `COOKIE_SAME_SITE=none` because they operate on different root domains (cross-site). Normal environments (localhost or same-site production domains) deliberately retain the safer `lax` or `strict` defaults to prevent CSRF vulnerabilities. Actual Vercel/Render deployment has NOT yet occurred.

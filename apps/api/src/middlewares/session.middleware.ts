@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
+import { env } from '../config/env.js';
 
 /**
  * Middleware to ensure a secure, signed HttpOnly session cookie exists for the cart.
@@ -16,9 +17,9 @@ export function ensureCartSession(req: Request, res: Response, next: NextFunctio
     // Set a signed HttpOnly cookie
     res.cookie('cart_session', sessionId, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: env.COOKIE_SAME_SITE === 'none' ? true : env.NODE_ENV === 'production',
       signed: true,
-      sameSite: 'strict',
+      sameSite: env.COOKIE_SAME_SITE,
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
     });
     

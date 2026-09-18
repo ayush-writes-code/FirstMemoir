@@ -12,6 +12,7 @@ const envSchema = z.object({
   JWT_ACCESS_EXPIRY: z.string().default('15m'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
   COOKIE_SECRET: z.string().min(1, 'COOKIE_SECRET is required'),
+  COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).default('lax'),
   
   // OTP
   OTP_EXPIRY_MINUTES: z.string().default('5').transform(val => parseInt(val, 10)),

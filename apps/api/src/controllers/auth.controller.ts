@@ -19,8 +19,8 @@ export const verifyOtpSchema = {
 
 const cookieOptions = {
   httpOnly: true,
-  secure: env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  secure: env.COOKIE_SAME_SITE === 'none' ? true : env.NODE_ENV === 'production',
+  sameSite: env.COOKIE_SAME_SITE,
   path: '/',
 };
 
