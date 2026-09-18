@@ -43,12 +43,18 @@ app.use((req, res, next) => {
 
 import { prisma } from '@repo/database';
 
-// Health check
-app.get('/api/health', async (req, res) => {
+// Liveness probe - process is alive
+app.get('/api/health/live', (req, res) => {
+  res.status(200).json({ status: 'ok', service: 'first-memoir-api' });
+});
+
+// Readiness probe - dependencies are available
+app.get('/api/health/ready', async (req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: 'ok', service: 'first-memoir-api', database: 'connected' });
+    res.status(200).json({ status: 'ok', service: 'first-memoir-api', database: 'connected' });
   } catch (error) {
+    logger.error(error, '[Readiness] Database connection failed');
     res.status(503).json({ status: 'error', service: 'first-memoir-api', database: 'disconnected' });
   }
 });
@@ -59,10 +65,46 @@ app.use('/api', routes);
 // Global Error Handler
 app.use(errorHandler);
 
+let server: ReturnType<typeof app.listen> | undefined;
+
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(port, () => {
+  server = app.listen(port, () => {
     logger.info(`Server is running on port ${port} in ${env.NODE_ENV} mode`);
   });
 }
 
-export { app };
+// Graceful Shutdown Handler
+function gracefulShutdown(signal: string) {
+  logger.info(`Received ${signal}, starting graceful shutdown...`);
+  if (server) {
+    server.close(async (err) => {
+      if (err) {
+        logger.error(err, 'Error closing Express server');
+      } else {
+        logger.info('Express server closed');
+      }
+
+      try {
+        await prisma.$disconnect();
+        logger.info('Prisma disconnected successfully');
+        process.exit(0);
+      } catch (dbErr) {
+        logger.error(dbErr, 'Error disconnecting Prisma');
+        process.exit(1);
+      }
+    });
+
+    // Fallback timeout to force exit if connections hang
+    setTimeout(() => {
+      logger.error('Could not close connections in time, forcefully shutting down');
+      process.exit(1);
+    }, 10000).unref();
+  } else {
+    process.exit(0);
+  }
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+export { app, server };

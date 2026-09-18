@@ -469,7 +469,7 @@ export const checkoutService = {
 
     return { 
       orderId: order.id, 
-      razorpayOrderId,
+      razorpayOrderId: razorpayOrderId as string,
       amount: Math.round(order.total_amount.toNumber() * 100),
       currency: 'INR'
     };
