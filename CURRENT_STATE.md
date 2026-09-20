@@ -101,3 +101,20 @@ This sprint successfully removed temporary architectural hardcoding to make the 
 ### Schema gaps / Technical Blockers:
 - **None.** The schema and APIs are strictly data-driven and ready to accept the business matrix without further source-code alteration. 
 
+
+## 13. Pre-Meeting Forensic Audit (Sept 20, 2026)
+A thorough forensic audit was conducted on the architecture introduced in the Pre-Meeting sprint.
+
+### Confirmed
+* **Product metadata is data-driven**: The API now enforces a strict Zod schema for `mockup_metadata` rejecting malformed/impossible coordinates before reaching the DB.
+* **Mockup hardcoding was removed**: Verified that no `anniversary-canvas` or `family-portrait-frame` legacy logic runs in the application; only valid seed fixtures remain.
+* **Order snapshots remain immutable**: Cart extraction to `customization_data` safely copies state once and ignores subsequent catalog modifications.
+* **Packaging can flow through the selected catalog configuration**: `shiprocket.service.ts` successfully reads packaging metrics from the snapshot. Strong validation guarantees Shiprocket fails instead of dispatching fabricated defaults if metrics are malformed or `NaN`.
+
+### Still unknown until meeting
+* **Packaging cardinality**: It is UNKNOWN if packaging dimensions vary purely by Size, or by combinations of Size + Frame.
+* **Exact manufacturing metadata**: `manufacturing_metadata` is currently a passive storage field with no assumptions hardcoded.
+* **Final mockup structure/assets**: Awaiting real geometry and image URLs.
+* **Real product variants**: Awaiting the final SKU/pricing matrix.
+* **Manufacturer output requirements**: Still waiting on real-world constraints.
+

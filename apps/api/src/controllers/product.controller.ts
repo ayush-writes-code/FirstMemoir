@@ -17,13 +17,35 @@ export const listProductsSchema = {
 
 const priceRegex = /^\d+(\.\d{1,2})?$/;
 
+const percentageRegex = /^\d+(\.\d+)?%$/;
+
+const coordinateSchema = z.object({
+  top: z.string().regex(percentageRegex, "Must be a percentage (e.g. '20%')"),
+  left: z.string().regex(percentageRegex, "Must be a percentage (e.g. '20%')"),
+  width: z.string().regex(percentageRegex, "Must be a percentage (e.g. '20%')"),
+  height: z.string().regex(percentageRegex, "Must be a percentage (e.g. '20%')")
+});
+
+const premiumMockupSchema = z.object({
+  printArea: coordinateSchema,
+  baseAsset: z.string().min(1, "baseAsset URL is required"),
+  overlayAsset: z.string().min(1, "overlayAsset URL is required")
+});
+
+const mockupMetadataSchema = z.object({
+  coordinates: z.record(z.string(), coordinateSchema).optional(),
+  mockups: z.record(z.enum(['portrait', 'landscape', 'square', 'default']), premiumMockupSchema).optional()
+}).refine(data => data.coordinates || data.mockups, {
+  message: "mockup_metadata must contain either 'coordinates' or 'mockups'"
+});
+
 export const createProductSchema = {
   body: z.object({
     name: z.string().trim().min(2).max(100),
     sku: z.string().trim().max(100).optional().nullable(),
     description: z.string().max(1000).optional(),
-    mockup_metadata: z.any().optional().nullable(),
-    manufacturing_metadata: z.any().optional().nullable(),
+    mockup_metadata: mockupMetadataSchema.optional().nullable(),
+    manufacturing_metadata: z.any().optional().nullable(), // Currently unvalidated storage field
     base_price: z.string().regex(priceRegex, "Must be a valid price with up to 2 decimal places").refine(val => Number(val) > 0, "Price must be greater than 0"),
     category_ids: z.array(z.string().uuid()).min(1, "At least one category is required"),
     is_active: z.boolean().optional().default(true)
@@ -35,7 +57,7 @@ export const updateProductSchema = {
     name: z.string().trim().min(2).max(100),
     sku: z.string().trim().max(100).optional().nullable(),
     description: z.string().max(1000).optional().nullable(),
-    mockup_metadata: z.any().optional().nullable(),
+    mockup_metadata: mockupMetadataSchema.optional().nullable(),
     manufacturing_metadata: z.any().optional().nullable(),
     base_price: z.string().regex(priceRegex, "Must be a valid price with up to 2 decimal places").refine(val => Number(val) > 0, "Price must be greater than 0"),
     category_ids: z.array(z.string().uuid()).min(1, "At least one category is required"),

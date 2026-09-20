@@ -45,18 +45,20 @@ This document explicitly defines the engineering integration points for real bus
 
 ## 3. Status
 
-- **Categories**: READY (Needs Client Value)
-- **Products**: READY (Needs Client Value)
-- **SKUs**: READY (Needs Client Value)
-- **Product options**: READY (Needs Client Value)
-- **Pricing**: READY (Needs Client Value)
-- **Images**: READY (Needs Asset)
-- **Customizer**: READY (Needs Client Value)
-- **Mockups**: READY (Needs Asset, Needs Client Value)
-- **Manufacturing snapshot**: READY
-- **Packaging**: READY (Needs Client Value)
-- **Shipping metadata**: READY (Needs Client Value)
-- **Admin catalog**: READY (Supports JSON metadata imports via API/seed)
-- **Validation**: READY (Zod validation enforces structures)
+- **Categories**: READY FOR DATA (NEEDS CLIENT VALUE)
+- **Products**: READY FOR DATA (NEEDS CLIENT VALUE)
+- **SKUs**: READY FOR DATA (NEEDS CLIENT VALUE)
+- **Product options**: READY FOR DATA (NEEDS CLIENT VALUE)
+- **Pricing**: READY FOR DATA (NEEDS CLIENT VALUE)
+- **Images**: READY FOR DATA (NEEDS ASSET)
+- **Customizer**: READY FOR DATA (NEEDS CLIENT VALUE)
+- **Mockups**: READY FOR DATA (NEEDS ASSET, NEEDS BUSINESS DECISION on exact JSON schema variants)
+- **Manufacturing snapshot**: READY FOR DATA
+- **Packaging**: UNKNOWN (Packaging cardinality must be confirmed in the product meeting. Does it vary by size alone, or by size + frame? Current abstraction puts it in Size option but this may need revision).
+- **Shipping metadata**: READY FOR DATA (NEEDS CLIENT VALUE)
+- **Admin catalog**: PARTIALLY READY (Admin UI does not expose JSON metadata fields yet; currently requires developer API/seed manipulation).
+- **Validation**: READY (Zod validation enforces mockup_metadata structure and Shiprocket extracts).
 - **DTO/API path**: READY (JSON metadata fully mapped)
 - **Order snapshot**: READY (Immutable serialization established)
+
+No currently known schema gaps based on requirements available as of September 20, 2026.

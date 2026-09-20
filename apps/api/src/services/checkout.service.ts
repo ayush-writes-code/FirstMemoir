@@ -25,6 +25,12 @@ interface PhysicalDimensions {
   width: number;
   height: number;
   unit: string; // e.g. "in" or "mm"
+  packaging?: {
+    length: number;
+    width: number;
+    height: number;
+    weight: number;
+  };
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

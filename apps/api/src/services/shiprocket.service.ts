@@ -54,13 +54,22 @@ export const shiprocketService = {
     }
 
     if (customization.packaging) {
-      return {
-        length: Number(customization.packaging.length),
-        width: Number(customization.packaging.width),
-        height: Number(customization.packaging.height),
-        weight_kg: Number(customization.packaging.weight),
-      };
+      const length = Number(customization.packaging.length);
+      const width = Number(customization.packaging.width);
+      const height = Number(customization.packaging.height);
+      const weight_kg = Number(customization.packaging.weight);
+
+      if (
+        !isNaN(length) && length > 0 &&
+        !isNaN(width) && width > 0 &&
+        !isNaN(height) && height > 0 &&
+        !isNaN(weight_kg) && weight_kg > 0
+      ) {
+        return { length, width, height, weight_kg };
+      }
+      throw new AppError('Fulfillment data incomplete: Invalid packaging metrics in snapshot', 400);
     }
+
 
     const pWidth = Number(customization.physical_width);
     const pHeight = Number(customization.physical_height);
