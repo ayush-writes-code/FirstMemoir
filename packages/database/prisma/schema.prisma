@@ -189,12 +189,14 @@ model Category {
 
 /// Base product definition
 model Product {
-  id          String   @id @default(uuid())
-  name        String
-  slug        String   @unique
-  sku         String?
-  description String?
-  base_price  Decimal
+  id                    String   @id @default(uuid())
+  name                  String
+  slug                  String   @unique
+  sku                   String?
+  description           String?
+  mockup_metadata       Json?
+  manufacturing_metadata Json?
+  base_price            Decimal
   is_active   Boolean  @default(true)
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt

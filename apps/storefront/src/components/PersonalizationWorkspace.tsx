@@ -138,6 +138,7 @@ export function PersonalizationWorkspace({
                   baseImage={product.images[0]}
                   productSlug={product.slug}
                   productName={product.name}
+                  mockupMetadata={product.mockup_metadata}
                 />
               </div>
             ) : null}

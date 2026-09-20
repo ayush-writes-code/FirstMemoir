@@ -111,6 +111,8 @@ export interface ProductDto {
   slug: string;
   sku: string | null;
   description: string | null;
+  mockup_metadata?: any;
+  manufacturing_metadata?: any;
   base_price: string;
   is_active: boolean;
   created_at: string;
@@ -123,6 +125,8 @@ export interface CreateProductInput {
   name: string;
   sku?: string | null;
   description?: string;
+  mockup_metadata?: any;
+  manufacturing_metadata?: any;
   base_price: string;
   category_ids: string[];
   is_active?: boolean;
@@ -132,6 +136,8 @@ export interface UpdateProductInput {
   name?: string;
   sku?: string | null;
   description?: string | null;
+  mockup_metadata?: any;
+  manufacturing_metadata?: any;
   base_price?: string;
   category_ids?: string[];
   is_active?: boolean;

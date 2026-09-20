@@ -7,14 +7,7 @@ export interface MockupCoordinates {
 
 export type MockupMap = Record<string, Record<number, MockupCoordinates>>;
 
-export const MOCKUP_COORDINATES: MockupMap = {
-  'family-portrait-frame': {
-    0: { top: '25%', left: '30%', width: '40%', height: '50%' },
-  },
-  'wedding-memory-frame': {
-    0: { top: '20%', left: '25%', width: '50%', height: '60%' },
-  },
-};
+export const MOCKUP_COORDINATES: MockupMap = {};
 
 const DEFAULT_COORDINATES: MockupCoordinates = {
   top: '20%',
@@ -30,7 +23,8 @@ export function getMockupCoordinates(slug: string, sortOrder: number): MockupCoo
     return productMap[sortOrder];
   }
 
-  console.warn(`[Live Preview] Missing mockup coordinates for slug: "${slug}", sort_order: ${sortOrder}. Using fallback coordinates.`);
+  // Only warn if we fall back to DEFAULT_COORDINATES here, though now we expect 
+  // most products to be data-driven via mockupMetadata passed to the component directly.
   return DEFAULT_COORDINATES;
 }
 
@@ -43,20 +37,6 @@ export interface PremiumMockupMetadata {
 }
 
 export function getPremiumMockup(slug: string, _orientation: string): PremiumMockupMetadata | null {
-  // Hardcoded proof-of-concept for anniversary-canvas
-  // We ignore orientation check for this POC as requested
-  if (slug === 'anniversary-canvas') {
-    return {
-      orientation: 'portrait', 
-      printArea: {
-        top: '20.53%',
-        left: '39.25%',
-        width: '21.30%',
-        height: '41.80%'
-      },
-      baseAsset: '/mockups/anniversary-canvas/portrait/scene.webp',
-      overlayAsset: '/mockups/anniversary-canvas/portrait/frame-overlay-test.png'
-    };
-  }
+  // Hardcoded proof-of-concept removed. The system is now fully data-driven.
   return null;
 }

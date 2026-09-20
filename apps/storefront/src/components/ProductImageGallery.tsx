@@ -4,7 +4,8 @@ import Image from 'next/image';
 import type { ProductImageDto } from '@/lib/api-client';
 import { ProductLivePreview } from './ProductLivePreview';
 
-export function ProductImageGallery({ images, productName, productSlug }: { images: ProductImageDto[], productName: string, productSlug: string }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function ProductImageGallery({ images, productName, productSlug, mockupMetadata }: { images: ProductImageDto[], productName: string, productSlug: string, mockupMetadata?: any }) {
   const defaultImageUrl = 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=1200';
   const hasImages = images && images.length > 0;
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -18,7 +19,8 @@ export function ProductImageGallery({ images, productName, productSlug }: { imag
           <ProductLivePreview 
             baseImage={mainImageDto} 
             productSlug={productSlug} 
-            productName={productName} 
+            productName={productName}
+            mockupMetadata={mockupMetadata}
           />
         ) : (
           <Image 

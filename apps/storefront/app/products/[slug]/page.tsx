@@ -59,6 +59,7 @@ export default async function ProductDetailPage({
                 images={product.images}
                 productName={product.name}
                 productSlug={product.slug}
+                mockupMetadata={product.mockup_metadata}
               />
 
               {/* Description below gallery on desktop */}

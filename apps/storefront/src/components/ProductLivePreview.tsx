@@ -10,13 +10,32 @@ interface Props {
   baseImage: ProductImageDto;
   productSlug: string;
   productName: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mockupMetadata?: any;
 }
 
-export function ProductLivePreview({ baseImage, productSlug, productName }: Props) {
+export function ProductLivePreview({ baseImage, productSlug, productName, mockupMetadata }: Props) {
   const { previewUrl, cropData, printOrientation, rotation = 0 } = useProductPreview();
   
-  const premiumMockup = getPremiumMockup(productSlug, printOrientation);
-  const coords = premiumMockup ? premiumMockup.printArea : getMockupCoordinates(productSlug, baseImage.sort_order);
+  // Data-driven fallback checking mockupMetadata directly
+  let premiumMockup = null;
+  if (mockupMetadata?.mockups && mockupMetadata.mockups[printOrientation]) {
+    premiumMockup = mockupMetadata.mockups[printOrientation];
+  } else if (mockupMetadata?.mockups?.default) {
+    premiumMockup = mockupMetadata.mockups.default;
+  } else {
+    // Legacy hardcoded fallback
+    premiumMockup = getPremiumMockup(productSlug, printOrientation);
+  }
+
+  // Same for coords
+  let coords = premiumMockup ? premiumMockup.printArea : null;
+  if (!coords && mockupMetadata?.coordinates && mockupMetadata.coordinates[baseImage.sort_order]) {
+    coords = mockupMetadata.coordinates[baseImage.sort_order];
+  }
+  if (!coords) {
+    coords = getMockupCoordinates(productSlug, baseImage.sort_order);
+  }
 
   // Convert canonical unrotated crop back to visual crop on the rotated image
   const vCrop = canonicalCropToVisualCrop(cropData, rotation);

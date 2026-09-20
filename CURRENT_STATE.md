@@ -80,3 +80,24 @@ This audit explicitly verifies the following against commit `a1c0dae`:
   - `/api/v1/health`: Does not exist.
 - **Remaining Blockers:** R2 CORS on Cloudflare, missing physical product dimensions, actual SKUs, pricing, Print geometry guidelines, and Shiprocket credentials.
 - **Explicit Statement:** The full purchase-to-fulfillment flow (including Razorpay production, CMYK/PDF generation, and live Shiprocket AWB generation) is NOT yet fully verified. No BullMQ/Redis pipelines exist.
+
+## 12. Pre-Meeting Completion Sprint (Sept 20, 2026)
+This sprint successfully removed temporary architectural hardcoding to make the catalog system entirely data-driven ahead of the final product matrix meeting.
+
+### What was completed:
+- Extended Prisma `Product` schema with `mockup_metadata` and `manufacturing_metadata` JSON fields.
+- Removed hardcoded mockup fallbacks (`anniversary-canvas`, `family-portrait-frame`) from frontend source (`mockupCoordinates.ts`), migrating them entirely to `ProductLivePreview` JSON-driven logic.
+- Upgraded `ProductImageGallery` and `PersonalizationWorkspace` to pass `mockup_metadata` dynamically.
+- Extended `ProductDto` and API schemas (`createProductSchema`, `updateProductSchema`) to officially accept metadata JSON.
+- Engineered dynamic packaging integration: `checkout.service.ts` now automatically extracts `packaging` metadata from the `Size` option and immutably snapshots it into the `OrderItem`'s `customization_data`.
+- Removed the strict `PACKAGE_FULFILLMENT_METRICS_UNDEFINED` throw in `shiprocket.service.ts` in favor of parsing the immutable snapshot data `length`, `width`, `height`, `weight_kg`.
+- Established `docs/catalog-onboarding/CATALOG_DATA_CONTRACT.md`.
+
+### What remains dependent on meeting data:
+- Final categories, products, SKUs, and pricing.
+- Exact packaging dimension inputs for Shiprocket.
+- Real mockup assets and coordinate configurations.
+
+### Schema gaps / Technical Blockers:
+- **None.** The schema and APIs are strictly data-driven and ready to accept the business matrix without further source-code alteration. 
+

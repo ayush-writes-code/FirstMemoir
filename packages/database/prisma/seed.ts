@@ -92,18 +92,45 @@ async function main() {
   ];
 
   for (const prod of productsData) {
+    let mockup_metadata = null;
+    if (prod.slug === 'anniversary-canvas') {
+      mockup_metadata = {
+        mockups: {
+          portrait: {
+            printArea: { top: '20.53%', left: '39.25%', width: '21.30%', height: '41.80%' },
+            baseAsset: '/mockups/anniversary-canvas/portrait/scene.webp',
+            overlayAsset: '/mockups/anniversary-canvas/portrait/frame-overlay-test.png'
+          }
+        }
+      };
+    } else if (prod.slug === 'family-portrait-frame') {
+      mockup_metadata = {
+        coordinates: {
+          0: { top: '25%', left: '30%', width: '40%', height: '50%' }
+        }
+      };
+    } else if (prod.slug === 'wedding-memory-frame') {
+      mockup_metadata = {
+        coordinates: {
+          0: { top: '20%', left: '25%', width: '50%', height: '60%' }
+        }
+      };
+    }
+
     const product = await prisma.product.upsert({
       where: { slug: prod.slug },
       update: {
         name: prod.name,
         description: prod.desc,
-        base_price: new Prisma.Decimal(prod.base_price)
+        base_price: new Prisma.Decimal(prod.base_price),
+        mockup_metadata
       },
       create: {
         name: prod.name,
         slug: prod.slug,
         description: prod.desc,
-        base_price: new Prisma.Decimal(prod.base_price)
+        base_price: new Prisma.Decimal(prod.base_price),
+        mockup_metadata
       }
     });
 
@@ -138,9 +165,9 @@ async function main() {
         sort_order: 0,
         values: {
           create: [
-            { value: '8x10', modifier_type: 'FLAT', price_modifier: new Prisma.Decimal(0), sort_order: 0 },
-            { value: '12x18', modifier_type: 'FLAT', price_modifier: new Prisma.Decimal(400), sort_order: 1 },
-            { value: '16x20', modifier_type: 'FLAT', price_modifier: new Prisma.Decimal(800), sort_order: 2 }
+            { value: '8x10', modifier_type: 'FLAT', price_modifier: new Prisma.Decimal(0), sort_order: 0, metadata: { width: 8, height: 10, unit: 'in', packaging: { length: 12, width: 10, height: 2, weight: 0.5 } } },
+            { value: '12x18', modifier_type: 'FLAT', price_modifier: new Prisma.Decimal(400), sort_order: 1, metadata: { width: 12, height: 18, unit: 'in', packaging: { length: 20, width: 14, height: 2, weight: 1.2 } } },
+            { value: '16x20', modifier_type: 'FLAT', price_modifier: new Prisma.Decimal(800), sort_order: 2, metadata: { width: 16, height: 20, unit: 'in', packaging: { length: 22, width: 18, height: 2, weight: 1.8 } } }
           ]
         }
       },

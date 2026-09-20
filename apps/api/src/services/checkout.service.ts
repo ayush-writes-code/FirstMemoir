@@ -47,11 +47,22 @@ function resolvePhysicalDimensions(
   if (!sizeValue) return null;
 
   const meta = sizeValue.metadata as any;
+  let packaging;
+  if (meta?.packaging) {
+    packaging = {
+      length: Number(meta.packaging.length),
+      width: Number(meta.packaging.width),
+      height: Number(meta.packaging.height),
+      weight: Number(meta.packaging.weight),
+    };
+  }
+
   if (meta?.width && meta?.height) {
     return {
       width: Number(meta.width),
       height: Number(meta.height),
       unit: meta.unit || 'in',
+      packaging,
     };
   }
 
@@ -62,6 +73,7 @@ function resolvePhysicalDimensions(
       width: Number(match[1]),
       height: Number(match[2]),
       unit: 'in',
+      packaging,
     };
   }
 
@@ -346,6 +358,7 @@ export const checkoutService = {
           physical_width: physicalDimensions.width,
           physical_height: physicalDimensions.height,
           physical_dimension_unit: physicalDimensions.unit,
+          packaging: physicalDimensions.packaging,
           orientation: cartItem.orientation,
           rotation: cartItem.rotation,
           crop: {

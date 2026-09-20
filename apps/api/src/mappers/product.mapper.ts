@@ -23,6 +23,8 @@ export function toProductDto(
     slug: product.slug,
     sku: product.sku,
     description: product.description,
+    mockup_metadata: product.mockup_metadata,
+    manufacturing_metadata: product.manufacturing_metadata,
     base_price: product.base_price.toString(),
     is_active: product.is_active,
     created_at: product.created_at.toISOString(),

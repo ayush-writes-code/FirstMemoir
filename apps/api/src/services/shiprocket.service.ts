@@ -53,18 +53,26 @@ export const shiprocketService = {
       throw new AppError('Fulfillment data incomplete: Missing customization_data', 400);
     }
 
+    if (customization.packaging) {
+      return {
+        length: Number(customization.packaging.length),
+        width: Number(customization.packaging.width),
+        height: Number(customization.packaging.height),
+        weight_kg: Number(customization.packaging.weight),
+      };
+    }
+
     const pWidth = Number(customization.physical_width);
     const pHeight = Number(customization.physical_height);
-    const unit = customization.physical_dimension_unit;
-
+    
     if (isNaN(pWidth) || pWidth <= 0 || isNaN(pHeight) || pHeight <= 0) {
       throw new AppError('Fulfillment data incomplete: Invalid physical dimensions', 400);
     }
 
     // A business rule is required to convert final product physical dimensions into courier package dimensions.
-    // We cannot blindly use product dimensions or generic size metadata.
     throw new AppError('PACKAGE_FULFILLMENT_METRICS_UNDEFINED', 500);
   },
+
 
   async assignAwb(shipmentId: string, token: string): Promise<string> {
     if (process.env.SHIPROCKET_DRY_RUN === 'true') {
