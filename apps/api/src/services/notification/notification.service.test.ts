@@ -32,16 +32,19 @@ describe('NotificationService', () => {
     // 2. Dispatch
     await service.dispatchOrderConfirmed(mockOrder.id);
 
-    // Wait a bit for setImmediate to fire and simulated network delays
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // 3. Deterministic wait
+    let logs: any[] = [];
+    for (let i = 0; i < 20; i++) {
+      logs = await prisma.notificationLog.findMany({ where: { order_id: mockOrder.id } });
+      if (logs.length === 2 && logs.every(l => l.status !== 'PENDING')) {
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
 
-    // 3. Verify
+    // 4. Verify
     assert.strictEqual(smsSpy.mock.callCount(), 1);
     assert.strictEqual(emailSpy.mock.callCount(), 1);
-
-    const logs = await prisma.notificationLog.findMany({
-      where: { order_id: mockOrder.id }
-    });
 
     assert.strictEqual(logs.length, 2);
     assert.strictEqual(logs.every(l => l.status === 'SENT'), true);
@@ -71,15 +74,18 @@ describe('NotificationService', () => {
       assert.fail('Should not throw');
     }
 
-    // Wait for setImmediate and simulated delay
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // 3. Deterministic wait
+    let logs: any[] = [];
+    for (let i = 0; i < 20; i++) {
+      logs = await prisma.notificationLog.findMany({ where: { order_id: mockOrder.id } });
+      if (logs.length === 1 && logs[0] && logs[0].status !== 'PENDING') {
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
 
-    // 3. Verify
+    // 4. Verify
     assert.strictEqual(smsSpy.mock.callCount(), 1);
-
-    const logs = await prisma.notificationLog.findMany({
-      where: { order_id: mockOrder.id }
-    });
 
     assert.strictEqual(logs.length, 1);
     assert.ok(logs[0]);

@@ -133,6 +133,8 @@ export function ProductCustomizer({ product }: Props) {
 
   // Sync to ProductPreviewContext
   const {
+    uploadId: contextUploadId,
+    previewUrl: contextPreviewUrl,
     setUploadData,
     setCropData: setContextCrop,
     setPrintOrientation: setContextOrientation,
@@ -366,7 +368,14 @@ export function ProductCustomizer({ product }: Props) {
             setImageHeight(h);
           }}
           onClose={() => setIsWorkspaceOpen(false)}
-          onSave={() => setIsWorkspaceOpen(false)}
+          onSave={() => {
+            // Sync context upload data back to local state
+            if (contextUploadId && contextPreviewUrl) {
+              setUploadId(contextUploadId);
+              setPreviewUrl(contextPreviewUrl);
+            }
+            setIsWorkspaceOpen(false);
+          }}
         />
       )}
 

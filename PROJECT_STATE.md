@@ -195,3 +195,19 @@ Prepared the API authentication architecture to support a completely decoupled, 
 - **Touch Targets:** Expanded the remove-item Cart trash icon from `p-2` to an exact `w-11 h-11` centered hit area (44px) matching Apple HIG, and expanded the `AuthModal` close button to 44px as well.
 - **Personalization Verification:** Tested the UI flow up to the point of image upload. As expected in a clean local environment, the client-side `PUT` request to R2 fails because `R2_ACCOUNT_ID="mock"`. This successfully diagnoses that the entire Upload → Crop → Live Preview component heavily depends on an available remote staging R2 bucket. This is accurately classified as an external dependency blocker rather than a bug.
 - **Render deployment:** Intentionally deferred.
+
+**Checkpoint: Local Client Demo Recovery**
+- **Incident Resolved:** The "missing" seeded demo products were safely recovered. No database was destroyed or truncated.
+- **Root Cause:** A configuration mismatch where the API was falling back to the Neon staging database (10 products) because the local environment override was stripped by `turbo run dev`, while the Storefront was simultaneously attempting to fetch from an incorrect path (`http://localhost:3001` instead of `/api/v1`), resulting in graceful 404 degradation to `0 products`.
+- **Fixes Applied:** 
+  - Corrected `apps/storefront/.env.local` to point to `http://localhost:3001/api/v1`.
+  - Killed all orphaned node processes.
+  - Restarted the application with the explicit `DATABASE_URL` override bound successfully through turbo's `globalEnv`.
+- **Current State:** 
+  - Storefront connects to Local API.
+  - Local API connects to Local Docker PostgreSQL (`localhost:54320/test_db`).
+  - Local database verified fully intact (6 categories, 9 products, 36 options).
+- **CRITICAL NOTE:** The production Neon Staging database must NOT be targeted by the local API during the client-demo. The Docker test database remains the singular source of truth for local demo execution.
+
+
+**WARNING: This document is superseded by CURRENT_STATE.md for the final launch stabilization phase.**

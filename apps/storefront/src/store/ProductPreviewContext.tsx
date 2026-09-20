@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useState } from 'react';
 import type { PrintOrientation } from '@/lib/api-client';
 import type { CropRect } from '../utils/cropMath';
 
@@ -39,10 +39,10 @@ export function ProductPreviewProvider({ children }: { children: React.ReactNode
   const [zoom, setZoom] = useState<number>(1);
   const [cropTranslation, setCropTranslation] = useState<{x: number, y: number}>({ x: 0, y: 0 });
 
-  const setUploadData = (newUploadId: string | null, newPreviewUrl: string | null) => {
+  const setUploadData = useCallback((newUploadId: string | null, newPreviewUrl: string | null) => {
     setUploadId(newUploadId);
     setPreviewUrl(newPreviewUrl);
-  };
+  }, []);
 
   return (
     <ProductPreviewContext.Provider
