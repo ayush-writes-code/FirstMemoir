@@ -61,3 +61,22 @@ The project is strictly blocked from advancing into a production state until the
 
 ## 10. Next Milestone
 The immediate next milestone is **Catalog Onboarding**. We must wait for the client to deliver the data listed above, and map it directly into the existing architecture rather than inventing new systems or redesigning the schema.
+
+## 11. Stabilization Acceptance (Sept 20, 2026)
+This audit explicitly verifies the following against commit `a1c0dae`:
+
+- **Commit SHA:** `a1c0dae`
+- **Verified Quality Gates:** 
+  - `check-types`: Passed (0 errors)
+  - `lint`: Passed (0 errors)
+  - `build`: Passed (all 9 packages)
+  - `test`: Passed (API integration & unit tests, 110 tests total)
+- **Browser Verification Scope:** Verified Home → Product → Customize → Upload → Crop → Save → Preview via Playwright script using local R2 upload logic. 
+- **R2 Status:** Local proxying is VERIFIED. Production/Vercel CORS is BLOCKED (Cloudflare CORS responds with `403 Forbidden` for Vercel origin `https://firstmemoir-storefront.vercel.app`, but works for `http://localhost:3000`).
+- **Database Safety Status:** VERIFIED. Local `.env` correctly targets `localhost:54320/test_db`. `npm run db:reset` is fail-closed. No production secrets or Neon connection strings are tracked by Git. Local DB data persists correctly across container restarts using the `postgres-test-data` volume.
+- **Health Endpoints:**
+  - `/api/health/live`: Liveness probe (process is up).
+  - `/api/health/ready`: Readiness probe (database is reachable).
+  - `/api/v1/health`: Does not exist.
+- **Remaining Blockers:** R2 CORS on Cloudflare, missing physical product dimensions, actual SKUs, pricing, Print geometry guidelines, and Shiprocket credentials.
+- **Explicit Statement:** The full purchase-to-fulfillment flow (including Razorpay production, CMYK/PDF generation, and live Shiprocket AWB generation) is NOT yet fully verified. No BullMQ/Redis pipelines exist.
