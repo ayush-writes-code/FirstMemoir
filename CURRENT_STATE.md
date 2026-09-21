@@ -99,22 +99,31 @@ This sprint successfully removed temporary architectural hardcoding to make the 
 - Real mockup assets and coordinate configurations.
 
 ### Schema gaps / Technical Blockers:
-- **None.** The schema and APIs are strictly data-driven and ready to accept the business matrix without further source-code alteration. 
+- No currently known schema gaps based on requirements available as of September 20, 2026.
 
+## 13. Pre-Meeting Forensic Audit & Admin Catalog Readiness (Sept 20, 2026)
+A thorough forensic audit was conducted on the architecture introduced in the Pre-Meeting sprint, and the remaining admin catalog editing gap was closed.
 
-## 13. Pre-Meeting Forensic Audit (Sept 20, 2026)
-A thorough forensic audit was conducted on the architecture introduced in the Pre-Meeting sprint.
-
-### Confirmed
-* **Product metadata is data-driven**: The API now enforces a strict Zod schema for `mockup_metadata` rejecting malformed/impossible coordinates before reaching the DB.
+### Completed Engineering Capabilities
+* **Admin Metadata Management**:
+  - `ProductForm` upgraded with a dedicated "Mockup & Metadata" tab (in Edit mode) and expandable advanced section (in Create mode).
+  - Admins can configure and edit `mockup_metadata` using preset templates (3-Layer Scene, Coordinates) with real-time JSON validation matching backend rules.
+  - Admins can configure and edit passive `manufacturing_metadata` JSON.
+  - `ProductOptionsEditor` upgraded with structured physical dimension inputs (width, height, unit), packaging courier inputs (L×W×H, weight), and raw JSON mode.
+  - Added option value editing without requiring record deletion (`PUT /api/v1/products/:id/options/:optionId/values/:valueId`).
+  - Added backend validation for option value metadata (`optionValueMetadataSchema`) preventing negative or malformed metrics.
+* **Product metadata is data-driven**: The API enforces a strict Zod schema for `mockup_metadata` rejecting malformed/impossible coordinates before reaching the DB.
 * **Mockup hardcoding was removed**: Verified that no `anniversary-canvas` or `family-portrait-frame` legacy logic runs in the application; only valid seed fixtures remain.
 * **Order snapshots remain immutable**: Cart extraction to `customization_data` safely copies state once and ignores subsequent catalog modifications.
-* **Packaging can flow through the selected catalog configuration**: `shiprocket.service.ts` successfully reads packaging metrics from the snapshot. Strong validation guarantees Shiprocket fails instead of dispatching fabricated defaults if metrics are malformed or `NaN`.
+* **Packaging flows cleanly to fulfillment**: `shiprocket.service.ts` reads packaging metrics directly from the immutable snapshot with strict positive-number validation, rejecting missing/invalid values cleanly without fabricated fallback defaults.
+
+### Readiness Status
+Engineering-side catalog configuration is prepared as far as current known requirements allow. Remaining unknowns are business/product decisions that must come from the client meeting.
 
 ### Still unknown until meeting
-* **Packaging cardinality**: It is UNKNOWN if packaging dimensions vary purely by Size, or by combinations of Size + Frame.
+* **Packaging cardinality**: It is UNKNOWN whether packaging box dimensions and weights vary purely by Size, or by combinations of Size + Frame, or per product variant.
 * **Exact manufacturing metadata**: `manufacturing_metadata` is currently a passive storage field with no assumptions hardcoded.
 * **Final mockup structure/assets**: Awaiting real geometry and image URLs.
 * **Real product variants**: Awaiting the final SKU/pricing matrix.
-* **Manufacturer output requirements**: Still waiting on real-world constraints.
+* **Manufacturer output requirements**: Still waiting on real-world partner constraints.
 

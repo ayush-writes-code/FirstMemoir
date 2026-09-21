@@ -129,6 +129,17 @@ export const productOptionsService = {
     });
   },
 
+  async updateOptionValue(id: string, data: Partial<CreateOptionValueInput>) {
+    const updateData: any = { ...data };
+    if (data.price_modifier !== undefined) {
+      updateData.price_modifier = new Prisma.Decimal(data.price_modifier);
+    }
+    return prisma.productOptionValue.update({
+      where: { id },
+      data: updateData
+    });
+  },
+
   async deleteOption(id: string) {
     await prisma.productOption.delete({ where: { id } });
   },

@@ -10,6 +10,7 @@ import {
   reorderProductImagesSchema,
   createOptionSchema,
   createOptionValueSchema,
+  updateOptionValueSchema,
   deleteOptionSchema,
   deleteOptionValueSchema,
   addExclusionSchema,
@@ -34,6 +35,7 @@ router.post('/:id/price', validate(calculatePriceSchema), productController.calc
 // Product Options
 router.post('/:id/options', authenticate, requireAdmin, validate(createOptionSchema), productController.createOption);
 router.post('/:id/options/:optionId/values', authenticate, requireAdmin, validate(createOptionValueSchema), productController.createOptionValue);
+router.put('/:id/options/:optionId/values/:valueId', authenticate, requireAdmin, validate(updateOptionValueSchema), productController.updateOptionValue);
 router.delete('/:id/options/:optionId', authenticate, requireAdmin, validate(deleteOptionSchema), productController.deleteOption);
 router.delete('/:id/options/:optionId/values/:valueId', authenticate, requireAdmin, validate(deleteOptionValueSchema), productController.deleteOptionValue);
 

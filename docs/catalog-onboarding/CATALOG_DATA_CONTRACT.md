@@ -43,22 +43,33 @@ This document explicitly defines the engineering integration points for real bus
 - **API/DTO:** `ProductDto.mockup_metadata`
 - **Frontend consumer:** `ProductLivePreview` component directly consumes this to render exact, data-driven multilayer CSS composites.
 
-## 3. Status
+## 3. Catalog Readiness Breakdown
 
-- **Categories**: READY FOR DATA (NEEDS CLIENT VALUE)
-- **Products**: READY FOR DATA (NEEDS CLIENT VALUE)
-- **SKUs**: READY FOR DATA (NEEDS CLIENT VALUE)
-- **Product options**: READY FOR DATA (NEEDS CLIENT VALUE)
-- **Pricing**: READY FOR DATA (NEEDS CLIENT VALUE)
-- **Images**: READY FOR DATA (NEEDS ASSET)
-- **Customizer**: READY FOR DATA (NEEDS CLIENT VALUE)
-- **Mockups**: READY FOR DATA (NEEDS ASSET, NEEDS BUSINESS DECISION on exact JSON schema variants)
-- **Manufacturing snapshot**: READY FOR DATA
-- **Packaging**: UNKNOWN (Packaging cardinality must be confirmed in the product meeting. Does it vary by size alone, or by size + frame? Current abstraction puts it in Size option but this may need revision).
-- **Shipping metadata**: READY FOR DATA (NEEDS CLIENT VALUE)
-- **Admin catalog**: PARTIALLY READY (Admin UI does not expose JSON metadata fields yet; currently requires developer API/seed manipulation).
-- **Validation**: READY (Zod validation enforces mockup_metadata structure and Shiprocket extracts).
-- **DTO/API path**: READY (JSON metadata fully mapped)
-- **Order snapshot**: READY (Immutable serialization established)
+### Ready now (Engineering & Admin UI prepared)
+- **Categories**: Schema, API, and Admin UI fully functional.
+- **Products**: Name, SKU, description, base price, categories, active state managed via Admin UI.
+- **Product Options**: Options (Select, Radio, Button, Swatch) and Values managed via Admin UI.
+- **Option Pricing Modifiers**: FLAT and PERCENTAGE modifiers supported in DB, API, Admin UI, and checkout pricing calculation.
+- **Product Mockup Metadata**: Managed via Admin UI with preset templates and live validation; validated on backend via strict Zod percentage schema.
+- **Manufacturing Metadata (Passive)**: Managed via Admin UI with JSON syntax validation; persisted passively in DB without speculative constraints.
+- **Option Value Metadata & Packaging**: Admin UI provides structured inputs (physical dimensions, packaging L×W×H/weight) plus custom JSON toggle; validated on backend via `optionValueMetadataSchema`; editable in Admin UI without deleting records.
+- **Order Snapshots**: Authoritative snapshotting of customization, pricing, dimensions, and packaging into `OrderItem.customization_data` at checkout time.
+- **Shiprocket Fulfillment Pipeline**: Reads snapshot packaging metrics with strict positive-number validation (clean failure on missing/invalid data, zero hardcoded fallback weights).
+
+### Requires client decision (Product / Business Matrix Meeting)
+- **Packaging Cardinality**: UNKNOWN. Must determine whether packaging box dimensions and weights vary purely by Size, or by combinations of Size + Frame, or per product variant. (Current engineering abstraction allows metadata on any OptionValue, but relational model adjustments await meeting clarification).
+- **Final Product Variants & SKUs**: Canonical SKU naming convention, variant matrix, and pricing tiers.
+- **Option Exclusions**: Complete matrix of disallowed combinations (e.g. Canvas + Glass).
+- **Actual Manufacturing Requirements**: Partner print specifications, DPI thresholds, bleeds, or export profiles.
+
+### Requires client asset
+- **Real Mockups & Scene Backgrounds**: High-resolution base scenes for each orientation/category.
+- **Overlay Assets**: Transparent PNG frames and glass reflection layers.
+- **Canonical Product Images**: Master product gallery images for storefront display.
+
+### Requires credentials
+- **Production Shiprocket API Credentials**: Live token generation for real courier scheduling.
+- **Production Razorpay Key & Webhook Secret**: Live payment gateway credentials.
+- **Cloudflare R2 Production CORS Configuration**: Vercel production origin permission.
 
 No currently known schema gaps based on requirements available as of September 20, 2026.

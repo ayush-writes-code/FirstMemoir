@@ -179,6 +179,15 @@ export const productController = {
     }
   },
 
+  async updateOptionValue(req: Request, res: Response, next: NextFunction) {
+    try {
+      const value = await productOptionsService.updateOptionValue(req.params.valueId as string, req.body);
+      res.json(successResponse(toProductOptionValueDto(value)));
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async deleteOption(req: Request, res: Response, next: NextFunction) {
     try {
       await productOptionsService.deleteOption(req.params.optionId as string);
@@ -260,11 +269,36 @@ export const createOptionSchema = {
   })
 };
 
+export const optionValueMetadataSchema = z.object({
+  width: z.number().positive("width must be greater than 0").optional(),
+  height: z.number().positive("height must be greater than 0").optional(),
+  unit: z.string().optional(),
+  packaging: z.object({
+    length: z.number().positive("packaging.length must be greater than 0"),
+    width: z.number().positive("packaging.width must be greater than 0"),
+    height: z.number().positive("packaging.height must be greater than 0"),
+    weight: z.number().positive("packaging.weight must be greater than 0")
+  }).optional()
+}).passthrough();
+
 export const createOptionValueSchema = {
   params: z.object({ id: z.string().uuid(), optionId: z.string().uuid() }),
   body: z.object({
     value: z.string().min(1),
-    metadata: z.any().optional(),
+    metadata: optionValueMetadataSchema.optional().nullable(),
+    modifier_type: z.enum(['FLAT', 'PERCENTAGE']).optional(),
+    price_modifier: z.number().optional(),
+    global_material_id: z.string().uuid().nullable().optional(),
+    track_inventory: z.boolean().optional(),
+    stock_count: z.number().optional()
+  })
+};
+
+export const updateOptionValueSchema = {
+  params: z.object({ id: z.string().uuid(), optionId: z.string().uuid(), valueId: z.string().uuid() }),
+  body: z.object({
+    value: z.string().min(1).optional(),
+    metadata: optionValueMetadataSchema.optional().nullable(),
     modifier_type: z.enum(['FLAT', 'PERCENTAGE']).optional(),
     price_modifier: z.number().optional(),
     global_material_id: z.string().uuid().nullable().optional(),

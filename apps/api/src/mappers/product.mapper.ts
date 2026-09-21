@@ -60,7 +60,7 @@ export function toProductOptionValueDto(value: ProductOptionValue): ProductOptio
   };
 }
 
-export function toProductOptionDto(option: ProductOption & { values: ProductOptionValue[] }): ProductOptionDto {
+export function toProductOptionDto(option: ProductOption & { values?: ProductOptionValue[] }): ProductOptionDto {
   return {
     id: option.id,
     product_id: option.product_id,
@@ -68,7 +68,7 @@ export function toProductOptionDto(option: ProductOption & { values: ProductOpti
     input_type: option.input_type,
     is_required: option.is_required,
     sort_order: option.sort_order,
-    values: option.values.map(toProductOptionValueDto),
+    values: (option.values || []).map(toProductOptionValueDto),
   };
 }
 

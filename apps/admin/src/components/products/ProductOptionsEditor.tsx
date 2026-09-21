@@ -1,12 +1,44 @@
 import { useState } from 'react';
-import type { ProductWithOptionsDto } from '@repo/api-client';
+import type { ProductWithOptionsDto, ProductOptionValueDto } from '@repo/api-client';
 import { products as productsApi } from '@repo/api-client';
-import { Plus, Trash2, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, Edit2, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Props {
   product: ProductWithOptionsDto;
   onRefresh: () => void;
 }
+
+interface ValueFormState {
+  value: string;
+  price_modifier: number;
+  modifier_type: 'FLAT' | 'PERCENTAGE';
+  showMetadata: boolean;
+  width: string;
+  height: string;
+  unit: string;
+  pkgLength: string;
+  pkgWidth: string;
+  pkgHeight: string;
+  pkgWeight: string;
+  customJson: string;
+  isCustomJsonMode: boolean;
+}
+
+const initialValueFormState: ValueFormState = {
+  value: '',
+  price_modifier: 0,
+  modifier_type: 'FLAT',
+  showMetadata: false,
+  width: '',
+  height: '',
+  unit: 'in',
+  pkgLength: '',
+  pkgWidth: '',
+  pkgHeight: '',
+  pkgWeight: '',
+  customJson: '',
+  isCustomJsonMode: false,
+};
 
 export function ProductOptionsEditor({ product, onRefresh }: Props) {
   const [isAddingOption, setIsAddingOption] = useState(false);
@@ -15,7 +47,8 @@ export function ProductOptionsEditor({ product, onRefresh }: Props) {
   const [error, setError] = useState('');
 
   const [activeOptionId, setActiveOptionId] = useState<string | null>(null);
-  const [newValue, setNewValue] = useState({ value: '', price_modifier: 0, modifier_type: 'FLAT' });
+  const [editingValueId, setEditingValueId] = useState<string | null>(null);
+  const [valueForm, setValueForm] = useState<ValueFormState>(initialValueFormState);
 
   const handleAddOption = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,21 +79,93 @@ export function ProductOptionsEditor({ product, onRefresh }: Props) {
     }
   };
 
-  const handleAddValue = async (e: React.FormEvent, optionId: string) => {
+  const startEditValue = (val: ProductOptionValueDto) => {
+    const meta = val.metadata as any;
+    setValueForm({
+      value: val.value,
+      price_modifier: Number(val.price_modifier) || 0,
+      modifier_type: (val.modifier_type as 'FLAT' | 'PERCENTAGE') || 'FLAT',
+      showMetadata: Boolean(meta),
+      width: meta?.width !== undefined ? String(meta.width) : '',
+      height: meta?.height !== undefined ? String(meta.height) : '',
+      unit: meta?.unit || 'in',
+      pkgLength: meta?.packaging?.length !== undefined ? String(meta.packaging.length) : '',
+      pkgWidth: meta?.packaging?.width !== undefined ? String(meta.packaging.width) : '',
+      pkgHeight: meta?.packaging?.height !== undefined ? String(meta.packaging.height) : '',
+      pkgWeight: meta?.packaging?.weight !== undefined ? String(meta.packaging.weight) : '',
+      customJson: meta ? JSON.stringify(meta, null, 2) : '',
+      isCustomJsonMode: false,
+    });
+    setEditingValueId(val.id);
+    setActiveOptionId(val.option_id);
+    setError('');
+  };
+
+  const handleSaveValue = async (e: React.FormEvent, optionId: string) => {
     e.preventDefault();
     try {
       setLoading(true);
       setError('');
-      await productsApi.createProductOptionValue(product.id, optionId, {
-        value: newValue.value,
-        price_modifier: newValue.price_modifier,
-        modifier_type: newValue.modifier_type,
-      });
-      setNewValue({ value: '', price_modifier: 0, modifier_type: 'FLAT' });
+
+      let metadata: any = null;
+      if (valueForm.isCustomJsonMode && valueForm.customJson.trim()) {
+        try {
+          metadata = JSON.parse(valueForm.customJson);
+        } catch (err: any) {
+          setError('Invalid custom metadata JSON: ' + err.message);
+          setLoading(false);
+          return;
+        }
+      } else if (valueForm.showMetadata) {
+        const metaObj: any = {};
+        if (valueForm.width.trim() || valueForm.height.trim()) {
+          const w = Number(valueForm.width);
+          const h = Number(valueForm.height);
+          if (isNaN(w) || w <= 0 || isNaN(h) || h <= 0) {
+            setError('Physical width and height must be positive numbers if specified.');
+            setLoading(false);
+            return;
+          }
+          metaObj.width = w;
+          metaObj.height = h;
+          metaObj.unit = valueForm.unit.trim() || 'in';
+        }
+        if (valueForm.pkgLength.trim() || valueForm.pkgWidth.trim() || valueForm.pkgHeight.trim() || valueForm.pkgWeight.trim()) {
+          const l = Number(valueForm.pkgLength);
+          const w = Number(valueForm.pkgWidth);
+          const h = Number(valueForm.pkgHeight);
+          const wt = Number(valueForm.pkgWeight);
+          if (isNaN(l) || l <= 0 || isNaN(w) || w <= 0 || isNaN(h) || h <= 0 || isNaN(wt) || wt <= 0) {
+            setError('All packaging fields (length, width, height, weight) must be positive numbers if specified.');
+            setLoading(false);
+            return;
+          }
+          metaObj.packaging = { length: l, width: w, height: h, weight: wt };
+        }
+        if (Object.keys(metaObj).length > 0) {
+          metadata = metaObj;
+        }
+      }
+
+      const payload = {
+        value: valueForm.value.trim(),
+        price_modifier: valueForm.price_modifier,
+        modifier_type: valueForm.modifier_type,
+        metadata,
+      };
+
+      if (editingValueId) {
+        await (productsApi as any).updateProductOptionValue(product.id, optionId, editingValueId, payload);
+      } else {
+        await productsApi.createProductOptionValue(product.id, optionId, payload);
+      }
+
+      setValueForm(initialValueFormState);
       setActiveOptionId(null);
+      setEditingValueId(null);
       onRefresh();
     } catch (err: any) {
-      setError(err.message || 'Failed to add option value');
+      setError(err.message || 'Failed to save option value');
     } finally {
       setLoading(false);
     }
@@ -91,7 +196,7 @@ export function ProductOptionsEditor({ product, onRefresh }: Props) {
       {/* Options List */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-gray-900">ProductDto Options</h3>
+          <h3 className="text-sm font-medium text-gray-900">Product Options</h3>
           {!isAddingOption && (
             <button
               type="button"
@@ -112,7 +217,7 @@ export function ProductOptionsEditor({ product, onRefresh }: Props) {
                   type="text"
                   value={newOption.name}
                   onChange={e => setNewOption({ ...newOption, name: e.target.value })}
-                  placeholder="e.g. Size, Frame"
+                  placeholder="e.g. Size, Frame, Glass"
                   required
                   className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#E8620A]"
                 />
@@ -121,7 +226,7 @@ export function ProductOptionsEditor({ product, onRefresh }: Props) {
                 <label className="block text-xs font-medium text-gray-700 mb-1">Input Type</label>
                 <select
                   value={newOption.input_type}
-                  onChange={e => setNewOption({ ...newOption, input_type: e.target.value })}
+                  onChange={e => setNewOption({ ...newOption, input_type: e.target.value as any })}
                   className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-[#E8620A]"
                 >
                   <option value="SELECT">Select Dropdown</option>
@@ -183,39 +288,94 @@ export function ProductOptionsEditor({ product, onRefresh }: Props) {
                 <div className="p-4 space-y-3">
                   {option.values?.length > 0 ? (
                     <div className="divide-y divide-gray-100 border border-gray-100 rounded-md">
-                      {option.values.map(val => (
-                        <div key={val.id} className="px-3 py-2 flex items-center justify-between hover:bg-gray-50">
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm text-gray-900">{val.value}</span>
-                            {Number(val.price_modifier) > 0 && (
-                              <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-100">
-                                +₹{val.price_modifier} {val.modifier_type === 'PERCENTAGE' ? '%' : ''}
-                              </span>
-                            )}
+                      {option.values.map(val => {
+                        const meta = val.metadata as any;
+                        const hasDims = meta?.width && meta?.height;
+                        const hasPkg = meta?.packaging?.length && meta?.packaging?.weight;
+                        const hasCustom = meta && !hasDims && !hasPkg;
+
+                        return (
+                          <div key={val.id} className="px-3 py-2.5 flex items-center justify-between hover:bg-gray-50 gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-medium text-gray-900">{val.value}</span>
+                              {Number(val.price_modifier) !== 0 && (
+                                <span className={`text-xs px-2 py-0.5 rounded-full border ${
+                                  Number(val.price_modifier) > 0 
+                                    ? 'bg-green-50 text-green-700 border-green-100' 
+                                    : 'bg-red-50 text-red-700 border-red-100'
+                                }`}>
+                                  {Number(val.price_modifier) > 0 ? '+' : ''}₹{val.price_modifier} {val.modifier_type === 'PERCENTAGE' ? '%' : ''}
+                                </span>
+                              )}
+                              {hasDims && (
+                                <span className="text-[11px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100" title="Physical dimensions">
+                                  📐 {meta.width}×{meta.height} {meta.unit || 'in'}
+                                </span>
+                              )}
+                              {hasPkg && (
+                                <span className="text-[11px] bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-100" title="Packaging dimensions & weight">
+                                  📦 {meta.packaging.length}×{meta.packaging.width}×{meta.packaging.height} cm • {meta.packaging.weight}kg
+                                </span>
+                              )}
+                              {hasCustom && (
+                                <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-mono" title={JSON.stringify(meta)}>
+                                  {'{...}'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => startEditValue(val)}
+                                className="text-gray-400 hover:text-[#E8620A] p-1"
+                                title="Edit Value & Metadata"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteValue(option.id, val.id)}
+                                className="text-gray-400 hover:text-red-500 p-1"
+                                title="Delete Value"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </div>
-                          <button
-                            onClick={() => handleDeleteValue(option.id, val.id)}
-                            className="text-gray-400 hover:text-red-500 p-1"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="text-xs text-gray-400 italic">No values added yet.</p>
                   )}
 
                   {activeOptionId === option.id ? (
-                    <form onSubmit={(e) => handleAddValue(e, option.id)} className="bg-gray-50 p-3 rounded border border-gray-200 space-y-3">
+                    <form onSubmit={(e) => handleSaveValue(e, option.id)} className="bg-gray-50 p-3.5 rounded border border-gray-200 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-700">
+                          {editingValueId ? 'Edit Option Value' : 'Add Option Value'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setValueForm(prev => ({ ...prev, showMetadata: !prev.showMetadata }));
+                          }}
+                          className="text-xs text-[#E8620A] hover:underline flex items-center gap-1"
+                        >
+                          {valueForm.showMetadata ? (
+                            <>Hide Metadata <ChevronUp className="w-3 h-3" /></>
+                          ) : (
+                            <>Configure Metadata & Packaging <ChevronDown className="w-3 h-3" /></>
+                          )}
+                        </button>
+                      </div>
+
                       <div className="grid grid-cols-3 gap-3">
                         <div className="col-span-1">
-                          <label className="block text-xs text-gray-600 mb-1">Value</label>
+                          <label className="block text-xs text-gray-600 mb-1">Value Name</label>
                           <input
                             type="text"
-                            value={newValue.value}
-                            onChange={e => setNewValue({ ...newValue, value: e.target.value })}
-                            placeholder="e.g. Small, Red"
+                            value={valueForm.value}
+                            onChange={e => setValueForm({ ...valueForm, value: e.target.value })}
+                            placeholder="e.g. 12x18, Walnut"
                             required
                             className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
                           />
@@ -224,16 +384,16 @@ export function ProductOptionsEditor({ product, onRefresh }: Props) {
                           <label className="block text-xs text-gray-600 mb-1">Price Modifier</label>
                           <input
                             type="number"
-                            value={newValue.price_modifier}
-                            onChange={e => setNewValue({ ...newValue, price_modifier: Number(e.target.value) })}
+                            value={valueForm.price_modifier}
+                            onChange={e => setValueForm({ ...valueForm, price_modifier: Number(e.target.value) })}
                             className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
                           />
                         </div>
                         <div className="col-span-1">
                           <label className="block text-xs text-gray-600 mb-1">Type</label>
                           <select
-                            value={newValue.modifier_type}
-                            onChange={e => setNewValue({ ...newValue, modifier_type: e.target.value as any })}
+                            value={valueForm.modifier_type}
+                            onChange={e => setValueForm({ ...valueForm, modifier_type: e.target.value as any })}
                             className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
                           >
                             <option value="FLAT">Flat (₹)</option>
@@ -241,20 +401,143 @@ export function ProductOptionsEditor({ product, onRefresh }: Props) {
                           </select>
                         </div>
                       </div>
-                      <div className="flex justify-end gap-2">
+
+                      {/* Metadata Sub-form */}
+                      {valueForm.showMetadata && (
+                        <div className="pt-2 border-t border-gray-200 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-semibold text-gray-600 uppercase tracking-wider">
+                              Metadata & Shipping Specs
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setValueForm(prev => ({ ...prev, isCustomJsonMode: !prev.isCustomJsonMode }))}
+                              className="text-[11px] text-gray-500 hover:text-gray-700 underline"
+                            >
+                              {valueForm.isCustomJsonMode ? 'Switch to structured fields' : 'Switch to raw JSON mode'}
+                            </button>
+                          </div>
+
+                          {valueForm.isCustomJsonMode ? (
+                            <div>
+                              <label className="block text-[11px] text-gray-600 mb-1">Raw Metadata JSON</label>
+                              <textarea
+                                value={valueForm.customJson}
+                                onChange={e => setValueForm({ ...valueForm, customJson: e.target.value })}
+                                rows={4}
+                                placeholder='{ "width": 12, "height": 18, "unit": "in", "packaging": { ... } }'
+                                className="w-full font-mono text-xs px-2 py-1.5 border border-gray-300 rounded"
+                              />
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {/* Physical dimensions */}
+                              <div>
+                                <label className="block text-[11px] font-medium text-gray-700 mb-1">
+                                  Physical Dimensions (Print/Frame Size)
+                                </label>
+                                <div className="grid grid-cols-3 gap-2">
+                                  <div>
+                                    <input
+                                      type="number"
+                                      placeholder="Width"
+                                      value={valueForm.width}
+                                      onChange={e => setValueForm({ ...valueForm, width: e.target.value })}
+                                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                    />
+                                  </div>
+                                  <div>
+                                    <input
+                                      type="number"
+                                      placeholder="Height"
+                                      value={valueForm.height}
+                                      onChange={e => setValueForm({ ...valueForm, height: e.target.value })}
+                                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                    />
+                                  </div>
+                                  <div>
+                                    <select
+                                      value={valueForm.unit}
+                                      onChange={e => setValueForm({ ...valueForm, unit: e.target.value })}
+                                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                    >
+                                      <option value="in">Inches (in)</option>
+                                      <option value="cm">Centimeters (cm)</option>
+                                      <option value="mm">Millimeters (mm)</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Packaging specs */}
+                              <div>
+                                <label className="block text-[11px] font-medium text-gray-700 mb-1">
+                                  Packaging Courier Specs (Shiprocket)
+                                </label>
+                                <div className="grid grid-cols-4 gap-2">
+                                  <div>
+                                    <input
+                                      type="number"
+                                      placeholder="L (cm)"
+                                      value={valueForm.pkgLength}
+                                      onChange={e => setValueForm({ ...valueForm, pkgLength: e.target.value })}
+                                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                    />
+                                  </div>
+                                  <div>
+                                    <input
+                                      type="number"
+                                      placeholder="W (cm)"
+                                      value={valueForm.pkgWidth}
+                                      onChange={e => setValueForm({ ...valueForm, pkgWidth: e.target.value })}
+                                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                    />
+                                  </div>
+                                  <div>
+                                    <input
+                                      type="number"
+                                      placeholder="H (cm)"
+                                      value={valueForm.pkgHeight}
+                                      onChange={e => setValueForm({ ...valueForm, pkgHeight: e.target.value })}
+                                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                    />
+                                  </div>
+                                  <div>
+                                    <input
+                                      type="number"
+                                      step="0.1"
+                                      placeholder="Wt (kg)"
+                                      value={valueForm.pkgWeight}
+                                      onChange={e => setValueForm({ ...valueForm, pkgWeight: e.target.value })}
+                                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex justify-end gap-2 pt-1">
                         <button
                           type="button"
-                          onClick={() => setActiveOptionId(null)}
-                          className="text-xs px-2 py-1 text-gray-600 hover:bg-gray-200 rounded"
+                          onClick={() => {
+                            setActiveOptionId(null);
+                            setEditingValueId(null);
+                            setValueForm(initialValueFormState);
+                            setError('');
+                          }}
+                          className="text-xs px-2.5 py-1 text-gray-600 hover:bg-gray-200 rounded"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          disabled={loading || !newValue.value}
-                          className="text-xs px-2 py-1 bg-[#E8620A] text-white rounded hover:bg-[#d05809] disabled:opacity-50"
+                          disabled={loading || !valueForm.value.trim()}
+                          className="text-xs px-3 py-1 bg-[#E8620A] text-white rounded hover:bg-[#d05809] disabled:opacity-50"
                         >
-                          Add Value
+                          {editingValueId ? 'Update Value' : 'Add Value'}
                         </button>
                       </div>
                     </form>
@@ -263,7 +546,9 @@ export function ProductOptionsEditor({ product, onRefresh }: Props) {
                       type="button"
                       onClick={() => {
                         setActiveOptionId(option.id);
-                        setNewValue({ value: '', price_modifier: 0, modifier_type: 'FLAT' });
+                        setEditingValueId(null);
+                        setValueForm(initialValueFormState);
+                        setError('');
                       }}
                       className="text-xs text-gray-500 hover:text-[#E8620A] flex items-center gap-1"
                     >

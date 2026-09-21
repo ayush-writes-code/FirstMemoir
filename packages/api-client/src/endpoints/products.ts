@@ -126,6 +126,13 @@ export const createProductOptionValue = (productId: string, optionId: string, in
   });
 };
 
+export const updateProductOptionValue = (productId: string, optionId: string, valueId: string, input: any): Promise<ApiResponse<ProductOptionValueDto>> => {
+  return fetchClient<ProductOptionValueDto>(`/products/${productId}/options/${optionId}/values/${valueId}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+};
+
 export const deleteProductOption = (productId: string, optionId: string): Promise<ApiResponse<null>> => {
   return fetchClient<null>(`/products/${productId}/options/${optionId}`, {
     method: 'DELETE',
