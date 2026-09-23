@@ -18,10 +18,10 @@ FirstMemoir is the target brand for the storefront. This audit examines whether 
 
 ## Affected Asset Classification
 
-Pending human visual confirmation, we are classifying the current Home/Shop temporary asset set as follows:
+Conceptual Status: **PROGRAMMATICALLY CLEAR BUT FINAL VISUAL/CLIENT APPROVAL PENDING**
 
-- **SAFE FOR STOREFRONT (Prototype Phase)**: The images successfully load and do not break the UI. We will use them for the current development sprint.
-- **REQUIRES CLIENT CONFIRMATION (Production Phase)**: Before finalizing the R2 asset pipeline, the client must visually verify that no competitor/marketplace branding (PosterNet) is visible in the pixels of the final 452 images.
+- **Prototype Phase**: The images successfully load, have passed programmatic checks, and do not break the UI. We will use them for the current development sprint.
+- **Production Phase**: Before finalizing the R2 asset pipeline, the client must visually verify that no competitor/marketplace branding (PosterNet) is visible in the pixels of the final 452 images. We do not claim that PosterNet has been legally or commercially cleared.
 
 ## Recommendation
 If "PosterNet" is merely the supplier's internal brand or a marketplace alias for the client, the assets are safe. If it is an unwanted watermark, **REQUIRES NEW ASSET** workflows must be triggered before the final production upload to R2.

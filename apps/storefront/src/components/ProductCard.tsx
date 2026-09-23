@@ -1,10 +1,10 @@
 'use client';
 
-import type { ProductDto } from '@/lib/api-client';
+import type { StorefrontProduct } from '@/types';
 import Link from 'next/link';
 import Image from 'next/image';
 
-export function ProductCard({ product }: { product: ProductDto }) {
+export function ProductCard({ product }: { product: StorefrontProduct }) {
   const mainImage = product.images?.[0]?.url || 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800';
   
   return (

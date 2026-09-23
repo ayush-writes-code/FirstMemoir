@@ -21,6 +21,20 @@
 
 ---
 
+## Prototype Data Boundary
+
+Due to the pending business decisions regarding variant grouping and pricing, the application currently implements a **Strict Prototype Data Boundary**:
+
+- **No DB Pollution**: Ambiguous source folders have *not* been imported into the Prisma database.
+- **UI-Facing Model**: The storefront operates on a polymorphic `StorefrontProduct` type which standardizes both API (`ProductDto`) and static prototype data.
+- **Prototype Catalog**: A subset of 10 verified items (representing frames, posters, and bookmarks) is hardcoded in `lib/prototype-data.ts` to unblock UI/UX development (Shop Page, PDP).
+- **Cart Isolation**: Prototype products utilize a distinct `<PrototypeAddToCart />` component to prevent broken cart transactions against the actual production database.
+
+**Real-Data Migration Path**:
+Once the business approves the variant structures, pricing, and packaging dimensions, the ingest scripts will populate the DB. The `prototype-data.ts` fallback inside `app/products/page.tsx` and `app/products/[slug]/page.tsx` will be deleted, and all products will natively route through `productsApi.getProducts()`.
+
+---
+
 ## A. Source / Inventory Taxonomy
 
 How the client supplied the files:

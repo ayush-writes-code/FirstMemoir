@@ -187,3 +187,16 @@ Client provided real listing data at `/Users/ayushtomar/Downloads/listingx for w
 * OCR (Tesseract) on representative images did not find "PosterNet" text pixels.
 * **Result**: Assets classified as *SAFE FOR STOREFRONT (Prototype Phase)*, but marked as *REQUIRES CLIENT CONFIRMATION (Production Phase)* to visually rule out subtle watermarks.
 * Documented in `docs/catalog-onboarding/ASSET_BRANDING_AUDIT.md`.
+
+## 16. Production Conversion Sprint — PDP & Prototype Data Boundary (Sept 23, 2026)
+
+### Data Architecture Cleanup
+* Replaced unsafe `as unknown as ProductDto` cast with a stable UI-facing `StorefrontProduct` model.
+* Moved the 10-item static subset to a dedicated `lib/prototype-data.ts` to enforce a strict boundary between verified database data and prototype visual data.
+
+### Product Detail Page (PDP)
+* Refactored `/products/[slug]/page.tsx` to serve BOTH the prototype subset (standard prints) and real API database data (personalized/custom products).
+* Built a responsive `ProductGallery` component for the prototype products.
+* Followed editorial design guidelines (minimal controls, premium whitespace, no fake badges).
+* **Cart Isolation**: Added an isolated `PrototypeAddToCart` component to prevent the prototype catalog from performing fake/broken transactions against the real database cart.
+* Missing prices gracefully disable the Add to Cart flow.
