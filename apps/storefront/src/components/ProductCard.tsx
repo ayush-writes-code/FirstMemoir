@@ -20,7 +20,11 @@ export function ProductCard({ product }: { product: ProductDto }) {
       </div>
       <div className="mt-4 flex flex-col items-center text-center">
         <h3 className="line-clamp-2 text-sm font-medium text-ink tracking-wide">{product.name}</h3>
-        <p className="text-sm font-normal text-muted mt-1">₹{Number(product.base_price).toLocaleString('en-IN')}</p>
+        {product.base_price && Number(product.base_price) > 0 ? (
+          <p className="text-sm font-normal text-muted mt-1">₹{Number(product.base_price).toLocaleString('en-IN')}</p>
+        ) : (
+          <p className="text-sm font-normal text-muted-soft mt-1 italic">Price coming soon</p>
+        )}
       </div>
     </Link>
   );

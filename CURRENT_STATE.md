@@ -171,3 +171,19 @@ Client provided real listing data at `/Users/ayushtomar/Downloads/listingx for w
 * No schema changes required for current catalog
 * MRP/compare-at pricing requires a schema addition ONLY if business confirms strikethrough display
 * Existing `Product`, `ProductOption`, `ProductOptionValue`, `ProductImage` models handle all supplied product types
+
+## 15. Production Conversion Sprint — Shop Page & Asset Branding (Sept 23, 2026)
+
+### Shop / Category Implementation
+* Implemented `/products` Shop page using a static **PROTOTYPE_CATALOG** subset (10 products) instead of polluting the DB.
+* Customer-facing taxonomy established: Frames, Posters, Bookmarks.
+* Product Cards properly handle products with verified prices vs "Price coming soon".
+* Functional real-time sorting (Newest, Price Low-High, Price High-Low) and category filtering.
+* Adhered strictly to Naysha/Zoomin editorial direction (no noisy badges, no fake reviews).
+* **Personalization Architecture Preserved**: The source catalog contains no upload/custom products, but the storefront personalization UI remains intact for future standard vs. personalized split.
+
+### Asset Branding Audit
+* Verified that "PosterNet" is NOT embedded in the binary EXIF/metadata of the catalog images.
+* OCR (Tesseract) on representative images did not find "PosterNet" text pixels.
+* **Result**: Assets classified as *SAFE FOR STOREFRONT (Prototype Phase)*, but marked as *REQUIRES CLIENT CONFIRMATION (Production Phase)* to visually rule out subtle watermarks.
+* Documented in `docs/catalog-onboarding/ASSET_BRANDING_AUDIT.md`.
