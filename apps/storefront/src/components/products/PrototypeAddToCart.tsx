@@ -1,9 +1,20 @@
 'use client';
 
 import { useState } from 'react';
+import { IS_PROTOTYPE_ENABLED } from '@/lib/prototype-data';
 
 export function PrototypeAddToCart({ isMissingPrice }: { isMissingPrice?: boolean }) {
   const [added, setAdded] = useState(false);
+
+  if (!IS_PROTOTYPE_ENABLED) {
+    return (
+      <div className="w-full">
+        <button disabled className="w-full py-4 bg-surface-soft text-muted font-medium tracking-wide rounded-pill cursor-not-allowed">
+          Currently Unavailable
+        </button>
+      </div>
+    );
+  }
 
   if (isMissingPrice) {
     return (

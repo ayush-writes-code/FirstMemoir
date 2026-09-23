@@ -200,3 +200,18 @@ Client provided real listing data at `/Users/ayushtomar/Downloads/listingx for w
 * Followed editorial design guidelines (minimal controls, premium whitespace, no fake badges).
 * **Cart Isolation**: Added an isolated `PrototypeAddToCart` component to prevent the prototype catalog from performing fake/broken transactions against the real database cart.
 * Missing prices gracefully disable the Add to Cart flow.
+
+## 17. Production Pipeline Foundation (Sept 23, 2026)
+
+### Production Prototype Gating
+* Explicitly disabled `PROTOTYPE_CATALOG` from rendering in production builds (`NODE_ENV === 'production'`).
+* `PrototypeAddToCart` fake success is disabled in production environments.
+
+### Catalog Import & R2 Manifest Pipeline
+* Created a deterministic **Dry-Run Catalog Importer** (`apps/api/scripts/dry-run-importer.ts`) that reads the source directory, classifies 80 distinct leaf folders, and generates an ingest report without touching the database.
+* Importer outputs an automated `R2_ASSET_MIGRATION_MANIFEST.md` establishing the exact mapping of source images to Cloudflare R2 keys.
+* Formalized the `CATALOG_IMPORT_CONTRACT.md` detailing how raw source fields map to the Prisma database schema.
+
+### Blocker Triaging
+* Separated development workflow into Track A (Business Dependent) and Track B (Engineering Executable).
+* Created `docs/production/PRODUCTION_BLOCKERS.md` to isolate remaining client decisions (Variant Grouping, Missing Prices, Packaging Rules, SKU Policy, PosterNet Visual Clearance) from actionable engineering configurations.

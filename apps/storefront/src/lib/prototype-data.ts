@@ -1,12 +1,14 @@
 import { StorefrontProduct } from '../types';
 
-export const PROTOTYPE_CATEGORIES = [
+export const IS_PROTOTYPE_ENABLED = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_ENABLE_PROTOTYPE !== 'false';
+
+const RAW_CATEGORIES = [
   { id: 'cat-frames', slug: 'frames', name: 'Wall Frames' },
   { id: 'cat-posters', slug: 'posters', name: 'Posters & Wall Art' },
   { id: 'cat-bookmarks', slug: 'bookmarks', name: 'Bookmarks' },
 ];
 
-export const PROTOTYPE_CATALOG: StorefrontProduct[] = [
+const RAW_CATALOG: StorefrontProduct[] = [
   {
     id: 'prod-porsche',
     slug: 'porsche-gt3-rs-frame',
@@ -112,3 +114,6 @@ export const PROTOTYPE_CATALOG: StorefrontProduct[] = [
     is_prototype: true,
   },
 ];
+
+export const PROTOTYPE_CATEGORIES = IS_PROTOTYPE_ENABLED ? RAW_CATEGORIES : [];
+export const PROTOTYPE_CATALOG: StorefrontProduct[] = IS_PROTOTYPE_ENABLED ? RAW_CATALOG : [];

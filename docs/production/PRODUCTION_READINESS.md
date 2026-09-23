@@ -37,11 +37,7 @@
 | SKU assignment | 📋 BUSINESS DECISION REQUIRED | 41/82 folders have SKUs, format inconsistent | SKU policy needs approval |
 | Product variant structure | 📋 BUSINESS DECISION REQUIRED | "8 variations" vs separate products unclear | Client must decide |
 | Selling price | 🔴 BLOCKED | 13 listings have placeholder text instead of real price, 14 have no info.txt | Client must provide real prices |
-| Catalog import | ⬜ UNVERIFIED | Admin UI and API ready, bulk import not yet built | — |
-| Product images in R2 | ⬜ UNVERIFIED | Images exist locally but not uploaded to R2 | — |
-| Mockup metadata | ✅ VERIFIED | Schema, validation, and admin UI complete | Real mockup coordinates needed per product |
-| Manufacturing metadata | ✅ VERIFIED | Schema supports it, admin UI ready | Real manufacturing specs needed |
-| Packaging metadata | ✅ VERIFIED | Schema and validation ready | Real packaging dimensions needed |
+| Catalog import | 🟡 PARTIALLY VERIFIED | Safe dry-run script works and maps 80 folders | Needs business decisions to unblock real DB mutations |
 
 ## Storefront UI
 
@@ -96,24 +92,16 @@
 
 ---
 
-## P0 Launch Blockers (Must Fix Before Launch)
+## Production Blockers
 
-1. **Production API deployment** — API must be hosted (Render or equivalent)
-2. **Production database** — Must use Neon or equivalent, NOT localhost
-3. **R2 production CORS** — Must allow production storefront domain
-4. **Real selling prices** — 27 of 82 listings lack verified selling prices
-5. **Real product catalog loaded** — Products must exist in production DB with real images in R2
-6. **Production Razorpay credentials** — Live payment gateway
-7. **Production cookie/auth domain** — Cross-domain auth must work
-8. **SKU assignment** — Shiprocket requires SKUs for every product
+For the definitive list of blockers (separated by Engineering vs Business), see [PRODUCTION_BLOCKERS.md](./PRODUCTION_BLOCKERS.md).
 
 ## P1 Important (Should Fix Before Launch)
 
-1. **Home page real images** — Replace Unsplash placeholders with real product photography
-2. **Mobile responsive audit** — Full check with real product content
-3. **Category filtering** — Verify filter behavior with real catalog
-4. **Production Shiprocket credentials** — Live courier scheduling
-5. **Production email/SMS** — Real transactional notifications
+1. **Mobile responsive audit** — Full check with real product content
+2. **Category filtering** — Verify filter behavior with real catalog
+3. **Production Shiprocket credentials** — Live courier scheduling
+4. **Production email/SMS** — Real transactional notifications
 
 ## P2 Enhancement (Should Not Block Launch)
 
