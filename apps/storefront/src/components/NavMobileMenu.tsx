@@ -139,7 +139,35 @@ export function NavMobileMenu() {
                   onClick={() => setIsOpen(false)}
                   className="group flex items-center justify-between py-2 text-2xl sm:text-3xl font-serif text-ink tracking-tight hover:text-brand transition-colors"
                 >
-                  <span>Shop Collection</span>
+                  <span>Shop All</span>
+                  <ArrowRight
+                    size={20}
+                    className="text-zinc-300 group-hover:text-brand group-hover:translate-x-1 transition-all"
+                  />
+                </Link>
+
+                <div className="w-12 h-px bg-zinc-100" />
+
+                <Link
+                  href="/products?category=frames-8x12"
+                  onClick={() => setIsOpen(false)}
+                  className="group flex items-center justify-between py-2 text-2xl sm:text-3xl font-serif text-ink tracking-tight hover:text-brand transition-colors"
+                >
+                  <span>Frames</span>
+                  <ArrowRight
+                    size={20}
+                    className="text-zinc-300 group-hover:text-brand group-hover:translate-x-1 transition-all"
+                  />
+                </Link>
+
+                <div className="w-12 h-px bg-zinc-100" />
+
+                <Link
+                  href="/products?category=posters"
+                  onClick={() => setIsOpen(false)}
+                  className="group flex items-center justify-between py-2 text-2xl sm:text-3xl font-serif text-ink tracking-tight hover:text-brand transition-colors"
+                >
+                  <span>Posters</span>
                   <ArrowRight
                     size={20}
                     className="text-zinc-300 group-hover:text-brand group-hover:translate-x-1 transition-all"

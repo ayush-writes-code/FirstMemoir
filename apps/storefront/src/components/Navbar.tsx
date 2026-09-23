@@ -56,7 +56,19 @@ export function Navbar() {
               href="/products"
               className="text-sm font-medium text-ink hover:text-brand transition-colors py-1"
             >
-              Shop
+              Shop All
+            </Link>
+            <Link
+              href="/products?category=frames-8x12"
+              className="text-sm font-medium text-ink hover:text-brand transition-colors py-1"
+            >
+              Frames
+            </Link>
+            <Link
+              href="/products?category=posters"
+              className="text-sm font-medium text-ink hover:text-brand transition-colors py-1"
+            >
+              Posters
             </Link>
             <Link
               href="/track-order"
