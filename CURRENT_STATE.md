@@ -217,14 +217,27 @@ Client provided real listing data at `/Users/ayushtomar/Downloads/listingx for w
 * Separated development workflow into Track A (Business Dependent) and Track B (Engineering Executable).
 * Created `docs/production/PRODUCTION_BLOCKERS.md` to isolate remaining client decisions (Variant Grouping, Missing Prices, Packaging Rules, SKU Policy, PosterNet Visual Clearance) from actionable engineering configurations.
 
-## 18. Deployment Readiness Verification (Sept 23, 2026)
+## 18. Actual Remote Deployment Verification (Sept 23, 2026)
 
-### Infrastructure & Pipeline Verification
-* **API Health & Resilience**: Verified `GET /api/health/live` correctly responds independently of DB connection status, while `/api/health/ready` appropriately fails when the DB is offline.
-* **Database Safety**: Verified `apps/api/Dockerfile` strictly uses `npx prisma migrate deploy` to safely apply migrations to Neon PostgreSQL, actively blocking destructive push/reset operations.
-* **Webhook Raw Body**: Verified `apps/api/src/index.ts` enforces `express.raw` specifically on `/api/v1/webhooks` ensuring Razorpay HMAC verification succeeds without JSON parsing corruption.
-* **Storefront API Connection**: Verified Vercel architecture securely targets the Render API via `NEXT_PUBLIC_API_URL` allowing instantaneous toggle between mock/prototype isolation and real API data routing.
+The engineering architecture is locally deployment-ready, but **ACTUAL REMOTE DEPLOYMENT IS BLOCKED** due to missing platform access (Render/Vercel) and missing credentials.
 
-### Formalized Deployment Contracts
-* Authored `docs/production/DEPLOYMENT_VERIFICATION_CHECKLIST.md` documenting exact pre-launch verifications.
-* Segmented engineering deployment readiness from blocked client requirements (R2 CORS Dashboard access, Live Razorpay Keys, Live Shiprocket Credentials).
+### Verification Matrix
+
+| Area | Status | Evidence | Next Action |
+|------|--------|----------|-------------|
+| Local API startup | LOCAL VERIFIED | `npm run start -w api` launches successfully | none |
+| Local health | LOCAL VERIFIED | `curl /api/health/live` returns 200 | none |
+| Render deployment | BUSINESS BLOCKED | No Render CLI access / dashboard credentials | Client to provide access |
+| Render → Neon | CONFIGURATION VERIFIED | `Dockerfile` uses safe `prisma migrate deploy` | Execute upon deployment |
+| Vercel → Render | CONFIGURATION VERIFIED | `NEXT_PUBLIC_API_URL` runtime switch exists | Client to deploy |
+| R2 CORS | BUSINESS BLOCKED | S3 API `GetBucketCorsCommand` returns Access Denied | Client to update via Cloudflare Dashboard |
+| R2 upload mechanism | LOCAL VERIFIED | Local script successfully generates manifest | none |
+| Razorpay webhook implementation | LOCAL VERIFIED | Unit/integration tests pass with `express.raw` | none |
+| Razorpay production | BUSINESS BLOCKED | No live credentials | Client to provide |
+| Shiprocket implementation | LOCAL VERIFIED | Integration tests pass | none |
+| Shiprocket production | BUSINESS BLOCKED | No live credentials or packaging rules | Client to provide |
+| Catalog importer | DRY-RUN VERIFIED | Script classifies 82 folders safely | Client business approval |
+| Catalog activation | BUSINESS BLOCKED | Missing variant, pricing, packaging data | Client to provide |
+| 452 asset migration | BUSINESS BLOCKED | Pending PosterNet branding visual clearance | Client to approve |
+
+**Important Note:** The system is `LOCAL DEPLOYMENT READINESS VERIFIED`; but remote verification cannot proceed until access and data are supplied.
