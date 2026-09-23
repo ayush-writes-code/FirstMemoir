@@ -127,3 +127,47 @@ Engineering-side catalog configuration is prepared as far as current known requi
 * **Real product variants**: Awaiting the final SKU/pricing matrix.
 * **Manufacturer output requirements**: Still waiting on real-world partner constraints.
 
+## 14. Production Conversion Sprint — Catalog Forensics (Sept 23, 2026)
+
+Client provided real listing data at `/Users/ayushtomar/Downloads/listingx for website/`.
+
+### Verified Counts
+* **452** image/asset files, **68** info.txt metadata files, **82** leaf folders
+* **14** folders have NO metadata at all (F&F Cars: 8, Split Anime: 6)
+* **48** listings have verified selling prices (₹249–₹299)
+* **13** listings have placeholder prices (`[Generate XXX rupees bank settlement]`)
+* **41** folders have SKUs, **41** do not
+
+### Product Classification
+* 82 leaf folders do NOT represent 82 unique products
+* 4 standalone products, 4 pack-size variants, 67 design variants, 8 asset groups with no metadata
+* Estimated sellable units: 12–82 depending on how design variants are modeled
+* **ZERO** personalization/custom photo upload products in supplied data
+
+### Categories Identified
+* Wall Frames (8×12 framed prints): Football, Motivational Quotes, Cars, Porsche
+* Posters & Wall Art: Anime, Car Split, Ronaldo Split, Split Anime, Football, Cars
+* Bookmarks: Animal, Anime, Panda/Quotes
+
+### Business Decisions Still Required
+* Design variant modeling: separate Products vs. Options on a parent Product
+* MRP/strikethrough pricing: whether to display on website
+* SKU format and assignment policy
+* Brand name: PosterNet (marketplace) vs. FirstMemoir (website)
+* Real selling prices for 27 listings without verified prices
+* Packaging cardinality (unchanged from previous)
+
+### Documentation Created
+* `docs/catalog-onboarding/REAL_CATALOG_INVENTORY.md` — corrected forensic inventory
+* `docs/catalog-onboarding/CATALOG_SOURCE_MAPPING.md` — source-to-schema mapping
+* `docs/catalog-onboarding/SKU_POLICY.md` — proposed SKU format
+* `docs/production/PRODUCTION_READINESS.md` — production readiness tracker
+
+### Navigation Updated
+* Desktop and mobile navigation updated with real categories: Shop All, Frames, Posters
+* Committed as `feat: implement firstmemoir info architecture in navigation`
+
+### Schema Assessment
+* No schema changes required for current catalog
+* MRP/compare-at pricing requires a schema addition ONLY if business confirms strikethrough display
+* Existing `Product`, `ProductOption`, `ProductOptionValue`, `ProductImage` models handle all supplied product types
