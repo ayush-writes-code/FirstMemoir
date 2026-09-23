@@ -18,6 +18,11 @@
 | Folders with SKUs | 41 | Motivation frames (30), Car split (7), Animal bookmarks (3), Football poster (1) |
 | Folders without SKUs | 41 | |
 
+### File Count Reconciliation
+* **Forensic Audit Count**: 82 leaf folders.
+* **Dry-Run Script Count**: Initially reported 80 because it treated `Posters/No category` as a single leaf folder, missing its 3 subfolders (`Car 8`, `Football 10`, `Wanted`).
+* **Resolution**: The `dry-run-importer.ts` script was updated to properly recurse into `No category`. The official leaf folder count is confirmed as **82**.
+
 ## Classification Summary
 
 > [!IMPORTANT]

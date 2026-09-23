@@ -38,7 +38,15 @@
 ---
 
 ## 2. Importer Behavior Rules
-1. **Safety First**: The importer must support a strict `--dry-run` mode.
-2. **No Invention**: If a required field is missing (e.g. price is "Generate XXX rupees"), the importer MUST flag it as `MISSING_DATA` and refuse to import the record unless explicitly bypassed.
-3. **No Destructive Drops**: The importer should `upsert` based on SKU or distinct slug. It should not perform a `TRUNCATE` or `DELETE` on existing catalog records.
-4. **Isolated Environments**: The catalog data is imported into standard PostgreSQL tables. The prototype data in `prototype-data.ts` will be deleted post-import.
+1. **Safety First**: The importer must support a strict `--dry-run` mode (default).
+2. **Mutation Architecture**: 
+   The catalog import follows a strict state machine:
+   `DRY RUN` → `VALIDATED MANIFEST` → `BUSINESS APPROVAL` → `MUTATION IMPORT` → `POST-IMPORT VERIFICATION`
+3. **Safety Switch**: The mutation mode will strictly require an explicit `--apply` flag. It must refuse to run if there are any `MISSING_DATA` or `BUSINESS_CONFIRMATION_REQUIRED` records unless bypassed explicitly per-record.
+4. **No Invention**: If a required field is missing (e.g. price is "Generate XXX rupees"), the importer MUST flag it as `MISSING_DATA`.
+5. **No Destructive Operations**: 
+   - Uses `upsert` based on SKU or distinct slug. 
+   - No `DELETE` commands. 
+   - No `TRUNCATE` commands. 
+   - No database resets (`prisma migrate reset`).
+6. **Isolated Environments**: The catalog data is imported into standard PostgreSQL tables. The prototype data in `prototype-data.ts` will be deleted post-import.

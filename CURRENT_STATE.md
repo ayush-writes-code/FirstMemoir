@@ -203,9 +203,10 @@ Client provided real listing data at `/Users/ayushtomar/Downloads/listingx for w
 
 ## 17. Production Pipeline Foundation (Sept 23, 2026)
 
-### Production Prototype Gating
+### Production Prototype Gating & Clean Exit Plan
 * Explicitly disabled `PROTOTYPE_CATALOG` from rendering in production builds (`NODE_ENV === 'production'`).
 * `PrototypeAddToCart` fake success is disabled in production environments.
+* **Exit Plan**: When Track A business decisions are complete, we will execute the dry-run importer in mutation mode to hydrate the DB. Then `lib/prototype-data.ts` and `<PrototypeAddToCart />` will be safely deleted. The storefront will natively fallback to `ProductDto` → `StorefrontProduct` adapter → Shop/PDP.
 
 ### Catalog Import & R2 Manifest Pipeline
 * Created a deterministic **Dry-Run Catalog Importer** (`apps/api/scripts/dry-run-importer.ts`) that reads the source directory, classifies 80 distinct leaf folders, and generates an ingest report without touching the database.
