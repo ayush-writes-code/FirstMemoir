@@ -18,26 +18,29 @@
 
 | Area | Status | Evidence | Blocker |
 |---|---|---|---|
-| Local PostgreSQL | ✅ VERIFIED | Docker container running, 119/119 tests pass | — |
-| Production Database | ⬜ UNVERIFIED | Neon staging DB exists but not actively used | Production DB URL not configured |
-| Local API (localhost:3001) | ✅ VERIFIED | All endpoints functional, tests pass | — |
-| Production API (Render) | ⬜ UNVERIFIED | Deployment deferred | Render configuration needed |
-| Cloudflare R2 (local) | ✅ VERIFIED | Upload pipeline functional locally | — |
-| Cloudflare R2 (production CORS) | 🔴 BLOCKED | Vercel origin fails R2 CORS | CORS rules must be configured for production domain |
-| Storefront (Vercel) | 🟡 PARTIALLY VERIFIED | Builds and deploys, but API points to localhost | Production API URL needed |
-| Admin Panel | ✅ VERIFIED | Vite build succeeds, catalog metadata management works | — |
+| Local PostgreSQL | VERIFIED | Docker container running, 119/119 tests pass | — |
+| Database Migration Path | VERIFIED | Dockerfile securely uses `migrate deploy` without destructive resets | — |
+| Local API (localhost) | VERIFIED | All endpoints functional, tests pass | — |
+| Render API Infrastructure | VERIFIED | Build succeeds, health endpoints `/api/health/live` & `ready`, proxy trust verified | — |
+| Webhook Raw Body Architecture | VERIFIED | `express.raw` correctly guards Razorpay webhook for HMAC | — |
+| Storefront to API Connection | VERIFIED | Vercel configured for `NEXT_PUBLIC_API_URL` runtime switch | — |
+| Cloudflare R2 (production CORS) | BLOCKED | Vercel origin fails R2 CORS | Engineering config needed via Cloudflare Dashboard |
+| Storefront (Vercel) | VERIFIED | Builds and deploys, prototype gating prevents leakage | — |
+| Admin Panel | VERIFIED | Vite build succeeds, catalog metadata management works | — |
 
 ## Catalog & Products
 
 | Area | Status | Evidence | Blocker |
 |---|---|---|---|
-| Real catalog inventory | 🟡 PARTIALLY VERIFIED | 452 assets, 82 folders crawled and documented | 14 folders missing info.txt entirely |
-| Product schema | ✅ VERIFIED | Handles all known product types | — |
-| MRP / Compare-at pricing | 📋 BUSINESS DECISION REQUIRED | MRP exists in source data | Schema change needed IF business wants strikethrough pricing |
-| SKU assignment | 📋 BUSINESS DECISION REQUIRED | 41/82 folders have SKUs, format inconsistent | SKU policy needs approval |
-| Product variant structure | 📋 BUSINESS DECISION REQUIRED | "8 variations" vs separate products unclear | Client must decide |
-| Selling price | 🔴 BLOCKED | 13 listings have placeholder text instead of real price, 14 have no info.txt | Client must provide real prices |
-| Catalog import | 🟡 PARTIALLY VERIFIED | Safe dry-run script works and maps 80 folders | Needs business decisions to unblock real DB mutations |
+| Real catalog inventory | VERIFIED | 82 leaf folders fully crawled and counted | — |
+| Product schema | VERIFIED | Handles all known product types | — |
+| MRP / Compare-at pricing | BUSINESS DECISION REQUIRED | MRP exists in source data, need instructions | Schema change needed IF business wants strikethrough pricing |
+| SKU assignment | BUSINESS DECISION REQUIRED | 41/82 folders have SKUs, format inconsistent | SKU policy needs approval |
+| Product variant structure | BUSINESS DECISION REQUIRED | "8 variations" vs separate products unclear | Client must decide |
+| Selling price | BUSINESS DECISION REQUIRED | 13 listings placeholder text, 14 no info.txt | Client must provide real prices |
+| Catalog Importer Dry-Run | VERIFIED | Script correctly classifies 82 folders safely | — |
+| Catalog DB Mutation | BUSINESS DECISION REQUIRED | Blocked on missing data | Awaiting prices/variants |
+| R2 Asset Upload | BUSINESS DECISION REQUIRED | Migration manifest generated securely | Awaiting visual sign-off |
 
 ## Storefront UI
 
@@ -57,21 +60,23 @@
 
 | Area | Status | Evidence | Blocker |
 |---|---|---|---|
-| Razorpay (test mode) | ✅ VERIFIED | Order creation, webhook signature, idempotency all tested | — |
-| Razorpay (production) | ⬜ UNVERIFIED | Production keys not configured | Live credentials needed |
-| Order creation flow | ✅ VERIFIED | Cart → Checkout → PENDING order → Razorpay | — |
-| Webhook security | ✅ VERIFIED | 20 webhook integration tests pass | — |
-| Payment confirmation | ✅ VERIFIED | Browser callback does NOT confirm; webhook is authoritative | — |
-| Order immutable snapshots | ✅ VERIFIED | Pricing, dimensions, customization frozen at checkout | — |
+| Razorpay (test mode) | VERIFIED | Order creation, webhook signature, idempotency tested | — |
+| Razorpay Webhook Architecture | VERIFIED | Raw body HMAC validation implemented on `/api/v1/webhooks` | — |
+| Razorpay (production credentials) | BLOCKED | Production keys missing | Live credentials needed |
+| Order creation flow | VERIFIED | Cart → Checkout → PENDING order → Razorpay | — |
+| Webhook security | VERIFIED | 20 webhook integration tests pass | — |
+| Payment confirmation | VERIFIED | Browser callback does NOT confirm; webhook is authoritative | — |
+| Order immutable snapshots | VERIFIED | Pricing, dimensions, customization frozen at checkout | — |
 
 ## Fulfillment & Shipping
 
 | Area | Status | Evidence | Blocker |
 |---|---|---|---|
-| Shiprocket integration | 🟡 PARTIALLY VERIFIED | Service code exists, dry-run tests pass | Production credentials needed |
-| Shiprocket webhooks | ✅ VERIFIED | Status transitions tested (9 tests) | — |
-| Packaging cardinality | 📋 BUSINESS DECISION REQUIRED | Unknown whether packaging varies by Size, Frame, or variant | Client meeting needed |
-| AWB tracking | 🟡 PARTIALLY VERIFIED | Code exists, not tested with real courier | — |
+| Shiprocket Webhook Architecture | VERIFIED | Webhook route correctly mapped for AWB updates | — |
+| Shiprocket Credentials | BLOCKED | Credentials missing | Production credentials needed |
+| Shiprocket API Logic | PARTIALLY VERIFIED | Service code exists, dry-run tests pass | Needs actual live test |
+| Packaging cardinality | BUSINESS DECISION REQUIRED | Unknown whether packaging varies by Size, Frame, or variant | Client meeting needed |
+| AWB tracking | PARTIALLY VERIFIED | Code exists, not tested with real courier | — |
 
 ## Notifications
 

@@ -216,3 +216,15 @@ Client provided real listing data at `/Users/ayushtomar/Downloads/listingx for w
 ### Blocker Triaging
 * Separated development workflow into Track A (Business Dependent) and Track B (Engineering Executable).
 * Created `docs/production/PRODUCTION_BLOCKERS.md` to isolate remaining client decisions (Variant Grouping, Missing Prices, Packaging Rules, SKU Policy, PosterNet Visual Clearance) from actionable engineering configurations.
+
+## 18. Deployment Readiness Verification (Sept 23, 2026)
+
+### Infrastructure & Pipeline Verification
+* **API Health & Resilience**: Verified `GET /api/health/live` correctly responds independently of DB connection status, while `/api/health/ready` appropriately fails when the DB is offline.
+* **Database Safety**: Verified `apps/api/Dockerfile` strictly uses `npx prisma migrate deploy` to safely apply migrations to Neon PostgreSQL, actively blocking destructive push/reset operations.
+* **Webhook Raw Body**: Verified `apps/api/src/index.ts` enforces `express.raw` specifically on `/api/v1/webhooks` ensuring Razorpay HMAC verification succeeds without JSON parsing corruption.
+* **Storefront API Connection**: Verified Vercel architecture securely targets the Render API via `NEXT_PUBLIC_API_URL` allowing instantaneous toggle between mock/prototype isolation and real API data routing.
+
+### Formalized Deployment Contracts
+* Authored `docs/production/DEPLOYMENT_VERIFICATION_CHECKLIST.md` documenting exact pre-launch verifications.
+* Segmented engineering deployment readiness from blocked client requirements (R2 CORS Dashboard access, Live Razorpay Keys, Live Shiprocket Credentials).
