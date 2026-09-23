@@ -4,44 +4,8 @@ import * as path from 'path';
 const SOURCE_DIR = '/Users/ayushtomar/Downloads/listingx for website/LISTING PICTURES (all)';
 const R2_MANIFEST_PATH = path.join(process.cwd(), 'docs/catalog-onboarding/R2_ASSET_MIGRATION_MANIFEST.md');
 
-// Helper to determine product types and business dependencies
-function classifyRecord(folderName: string, parentFolder: string, infoContent: string) {
-  let classification = 'PRODUCT';
-  let decision = 'TECHNICALLY_COMPLETE_PENDING_PACKAGING_AND_ASSETS';
-
-  if (parentFolder.includes('F&F cars') || parentFolder.includes('Motivations Quotes') || parentFolder.includes('Car split') || parentFolder.includes('Ronaldo Split') || parentFolder.includes('Split Anime') || parentFolder.includes('Football jerseys')) {
-    classification = 'DESIGN_VARIANT';
-    decision = 'BUSINESS_CONFIRMATION_REQUIRED';
-  } else if (parentFolder.includes('Anime (4 variations)') || parentFolder.includes('bookmarks (3, 3 variations)')) {
-    classification = 'PRODUCT_VARIANT';
-    decision = 'BUSINESS_CONFIRMATION_REQUIRED';
-  }
-
-  // Check for missing data
-  let price = '0';
-  let isMissingPrice = false;
-  if (!infoContent) {
-    decision = 'MISSING_DATA';
-    isMissingPrice = true;
-  } else if (infoContent.toLowerCase().includes('generate') || infoContent.includes('rupees') && !infoContent.includes('price')) {
-    decision = 'BUSINESS_CONFIRMATION_REQUIRED';
-    isMissingPrice = true;
-  } else {
-    // Attempt basic parse
-    const priceMatch = infoContent.match(/price.*?(\d+)/i);
-    if (priceMatch) {
-      price = priceMatch[1];
-    } else {
-      isMissingPrice = true;
-      decision = 'BUSINESS_CONFIRMATION_REQUIRED';
-    }
-  }
-
-  return { classification, decision, price, isMissingPrice };
-}
-
 async function run() {
-  console.log('--- CATALOG DRY-RUN IMPORTER ---');
+  console.log('--- CATALOG DRY-RUN IMPORTER (BUSINESS ANALYSIS MODE) ---');
   console.log(`Source: ${SOURCE_DIR}`);
   console.log('Mode: DRY RUN (No DB mutations, No R2 mutations)\n');
 
@@ -50,7 +14,6 @@ async function run() {
     process.exit(1);
   }
 
-  let catalogReport = [];
   let r2Manifest = [
     '# R2 Asset Migration Manifest',
     '',
@@ -69,9 +32,30 @@ async function run() {
 
   const categories = fs.readdirSync(SOURCE_DIR).filter(f => fs.statSync(path.join(SOURCE_DIR, f)).isDirectory());
 
+  // Counters
   let totalFolders = 0;
-  let missingData = 0;
-  let businessConfirmation = 0;
+  let totalAssets = 0;
+  
+  let countValidPrice = 0;
+  let countMissingPrice = 0;
+  let countPlaceholderPrice = 0;
+  
+  let countSkuPresent = 0;
+  let countSkuMissing = 0;
+  
+  let countInfoTxtPresent = 0;
+  let countInfoTxtMissing = 0;
+  
+  let countPackagingComplete = 0;
+  let countPackagingMissing = 0;
+  
+  let countMockupComplete = 0;
+  let countMockupMissing = 0;
+  
+  let countAssetApproved = 0;
+  let countAssetReviewRequired = 0;
+  
+  let countAmbiguousVariant = 0;
 
   for (const category of categories) {
     const catPath = path.join(SOURCE_DIR, category);
@@ -81,7 +65,6 @@ async function run() {
       const itemPath = path.join(catPath, item);
       if (!fs.statSync(itemPath).isDirectory()) continue;
 
-      // Handle nesting (e.g. F&F cars has subfolders)
       const isGroupFolder = ['F&F cars (8 variations)', 'Football jerseys (10 variations)', 'Motivations Quotes (30 variations)', 'Anime (4 variations)', 'Car split (7 variations)', 'Ronaldo Split (6 variations)', 'Split Anime (7 variations)', 'bookmarks (3, 3 variations)', 'No category'].includes(item);
 
       if (isGroupFolder) {
@@ -103,52 +86,69 @@ async function run() {
     const infoFile = files.find(f => f.toLowerCase() === 'info.txt');
     
     if (infoFile) {
+      countInfoTxtPresent++;
       infoContent = fs.readFileSync(path.join(dirPath, infoFile), 'utf-8');
+    } else {
+      countInfoTxtMissing++;
     }
 
-    const { classification, decision, price, isMissingPrice } = classifyRecord(folderName, parentName, infoContent);
-    
-    if (decision === 'MISSING_DATA') missingData++;
-    if (decision === 'BUSINESS_CONFIRMATION_REQUIRED') businessConfirmation++;
+    // Pricing parsing
+    if (!infoContent) {
+      countMissingPrice++;
+    } else if (infoContent.toLowerCase().includes('generate') || infoContent.includes('rupees') && !infoContent.match(/price.*?\d+/i)) {
+      countPlaceholderPrice++;
+    } else if (infoContent.match(/price.*?\d+/i)) {
+      countValidPrice++;
+    } else {
+      countMissingPrice++;
+    }
 
-    const title = folderName.replace(/[-_]/g, ' ');
-    const sku = `FM-PEN-${Math.floor(Math.random() * 1000)}`;
+    // SKU parsing
+    if (infoContent.match(/sku.*?\w+/i)) {
+      countSkuPresent++;
+    } else {
+      countSkuMissing++;
+    }
 
-    catalogReport.push({
-      source_path: `${parentName}/${folderName}`,
-      proposed_identity: title,
-      classification,
-      selling_price: isMissingPrice ? 'UNVERIFIED' : `₹${price}`,
-      status: decision,
-      missing_fields: isMissingPrice ? ['price', 'dimensions', 'weight'] : ['dimensions', 'weight'],
-      business_decisions_required: classification === 'DESIGN_VARIANT' ? ['Grouping logic (Variant vs Product)', 'Packaging'] : ['Packaging']
-    });
+    // Ambiguous variant? (Any folder that is part of a series)
+    if (parentName.includes('variations') || parentName.includes('Split') || parentName.includes('jerseys') || parentName.includes('Quotes') || parentName.includes('bookmarks')) {
+      countAmbiguousVariant++;
+    }
+
+    // Packaging parsing - NONE of the files contain explicit L x W x H x W (packed)
+    countPackagingMissing++;
+
+    // Mockup parsing - NONE of the files contain explicit print area geometry/assets
+    countMockupMissing++;
 
     // Asset manifest
     const imageFiles = files.filter(f => f.match(/\.(jpg|jpeg|png)$/i));
     for (const img of imageFiles) {
+      totalAssets++;
+      countAssetReviewRequired++; // Automatically requires review
+      
       const r2Key = `catalog/${parentName.toLowerCase().replace(/[^a-z0-9]/g, '-')}/${img}`;
-      r2Manifest.push(`| \`${parentName}/${folderName}/${img}\` | \`${r2Key}\` | REQUIRES_REVIEW (PosterNet branding check) | DO_NOT_UPLOAD |`);
+      r2Manifest.push(`| \`${parentName}/${folderName}/${img}\` | \`${r2Key}\` | VISUAL_REVIEW_REQUIRED (PosterNet branding check) | DO_NOT_UPLOAD |`);
     }
   }
 
-  console.log(`Found ${totalFolders} total leaf folders.\n`);
-  
-  const readyRecords = catalogReport.filter(r => r.status === 'TECHNICALLY_COMPLETE_PENDING_PACKAGING_AND_ASSETS');
-  
-  console.log(`Status Summary:`);
-  console.log(`- TECHNICALLY_COMPLETE_PENDING_PACKAGING_AND_ASSETS: ${readyRecords.length}`);
-  console.log(`- MISSING_DATA: ${missingData}`);
-  console.log(`- BUSINESS_CONFIRMATION_REQUIRED: ${businessConfirmation}\n`);
-
-  if (readyRecords.length > 0) {
-    console.log('The following records are technically complete (pending packaging and asset approval):');
-    console.log(readyRecords);
-    console.log();
-  }
-
-  console.log('Sample of Catalog Import Report:');
-  console.table(catalogReport.slice(0, 5));
+  console.log(`\n=== AUTHORITATIVE INVENTORY COUNTS ===`);
+  console.log(`Total leaf folders: ${totalFolders}`);
+  console.log(`Total assets/images: ${totalAssets}`);
+  console.log(`info.txt-present count: ${countInfoTxtPresent}`);
+  console.log(`info.txt-missing count: ${countInfoTxtMissing}`);
+  console.log(`valid-price count: ${countValidPrice}`);
+  console.log(`missing-price count: ${countMissingPrice}`);
+  console.log(`placeholder-price count: ${countPlaceholderPrice}`);
+  console.log(`SKU-present count: ${countSkuPresent}`);
+  console.log(`SKU-missing count: ${countSkuMissing}`);
+  console.log(`ambiguous-variant-structure count: ${countAmbiguousVariant}`);
+  console.log(`packaging-complete count: ${countPackagingComplete}`);
+  console.log(`packaging-missing count: ${countPackagingMissing}`);
+  console.log(`mockup-complete count: ${countMockupComplete}`);
+  console.log(`mockup-missing count: ${countMockupMissing}`);
+  console.log(`asset-approved count: ${countAssetApproved}`);
+  console.log(`asset-review-required count: ${countAssetReviewRequired}`);
 
   // Write R2 Manifest
   fs.writeFileSync(R2_MANIFEST_PATH, r2Manifest.join('\n'));

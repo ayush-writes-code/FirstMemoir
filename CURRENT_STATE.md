@@ -217,27 +217,33 @@ Client provided real listing data at `/Users/ayushtomar/Downloads/listingx for w
 * Separated development workflow into Track A (Business Dependent) and Track B (Engineering Executable).
 * Created `docs/production/PRODUCTION_BLOCKERS.md` to isolate remaining client decisions (Variant Grouping, Missing Prices, Packaging Rules, SKU Policy, PosterNet Visual Clearance) from actionable engineering configurations.
 
-## 18. Actual Remote Deployment Verification (Sept 23, 2026)
+## 18. Final Pre-Client Handoff State (Sept 23, 2026)
 
-The engineering architecture is locally deployment-ready, but **ACTUAL REMOTE DEPLOYMENT IS BLOCKED** due to missing platform access (Render/Vercel) and missing credentials.
+**Engineering:**
+- LOCAL VERIFIED: Core startup, API health checks, and webhook security.
+- CONFIGURATION VERIFIED: Docker migration contract, Render/Vercel ENV routing.
+- REMOTE DEPLOYMENT NOT VERIFIED: Remote deployment is intentionally blocked pending client platform access.
 
-### Verification Matrix
+**Catalog:**
+- 82 source leaf folders reconciled.
+- DRY-RUN VERIFIED ONLY: Importer explicitly parses data safely without database writes.
+- NO PRODUCTION MUTATION: Seed records and UI mockups remain segregated from the production environment.
 
-| Area | Status | Evidence | Next Action |
-|------|--------|----------|-------------|
-| Local API startup | LOCAL VERIFIED | `npm run start -w api` launches successfully | none |
-| Local health | LOCAL VERIFIED | `curl /api/health/live` returns 200 | none |
-| Render deployment | BUSINESS BLOCKED | No Render CLI access / dashboard credentials | Client to provide access |
-| Render → Neon | CONFIGURATION VERIFIED | `Dockerfile` uses safe `prisma migrate deploy` | Execute upon deployment |
-| Vercel → Render | CONFIGURATION VERIFIED | `NEXT_PUBLIC_API_URL` runtime switch exists | Client to deploy |
-| R2 CORS | BUSINESS BLOCKED | S3 API `GetBucketCorsCommand` returns Access Denied | Client to update via Cloudflare Dashboard |
-| R2 upload mechanism | LOCAL VERIFIED | Local script successfully generates manifest | none |
-| Razorpay webhook implementation | LOCAL VERIFIED | Unit/integration tests pass with `express.raw` | none |
-| Razorpay production | BUSINESS BLOCKED | No live credentials | Client to provide |
-| Shiprocket implementation | LOCAL VERIFIED | Integration tests pass | none |
-| Shiprocket production | BUSINESS BLOCKED | No live credentials or packaging rules | Client to provide |
-| Catalog importer | DRY-RUN VERIFIED | Script classifies 82 folders safely | Client business approval |
-| Catalog activation | BUSINESS BLOCKED | Missing variant, pricing, packaging data | Client to provide |
-| 452 asset migration | BUSINESS BLOCKED | Pending PosterNet branding visual clearance | Client to approve |
+**Assets:**
+- 452 source assets identified.
+- NO PRODUCTION UPLOAD: Asset migration is blocked pending visual/legal approval.
 
-**Important Note:** The system is `LOCAL DEPLOYMENT READINESS VERIFIED`; but remote verification cannot proceed until access and data are supplied.
+**Business (Client Inputs Required):**
+- **Product Structure:** Ambiguous variant cardinality (78 cases).
+- **Pricing:** 14 missing prices, 20 instructional placeholder prices.
+- **SKU:** 41 missing SKUs.
+- **Fulfillment:** 82 missing packaging dimension/weight sets.
+- **Mockups:** 82 missing coordinate geometries.
+- **Clearance:** PosterNet branding and commercial license verification.
+
+**Platform (Access Required):**
+- **Deployment:** Render CLI / Dashboard access, Vercel Dashboard access.
+- **Cloudflare:** R2 CORS bucket configuration access.
+- **Credentials:** Live Razorpay API Keys, Live Shiprocket account credentials.
+
+*(See `docs/catalog-onboarding/CLIENT_CATALOG_INPUT_CHECKLIST.md` for the explicit handover contract).*
