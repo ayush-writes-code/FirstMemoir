@@ -13,10 +13,10 @@
 | Folders WITH info.txt | 68 | Have at least partial metadata |
 | Folders WITHOUT info.txt | 14 | F&F cars (8) + Split Anime (6) |
 | Verified selling prices | 48 | ₹249 (1), ₹299 (47) |
-| Placeholder selling prices | 13 | "[Generate XXX rupees bank settlement]" |
-| No price data at all | 14 | Folders with no info.txt |
+| Placeholder selling prices | 20 | "[Generate XXX rupees bank settlement]" (Anime 4, Car split 7, Wanted 1, Car 8 1, Split Anime 1, Bookmarks 6) |
+| No price data at all | 14 | Folders with no info.txt (F&F cars 8, Split Anime 6) |
 | Folders with SKUs | 41 | Motivation frames (30), Car split (7), Animal bookmarks (3), Football poster (1) |
-| Folders without SKUs | 41 | |
+| Folders without SKUs | 41 | F&F cars (8), Split Anime (7), Football jerseys (10), Anime mix (4), Bookmarks BM (3), Ronaldo split (6), Porsche (1), Car 8 (1), Wanted (1) |
 
 ### File Count Reconciliation
 * **Forensic Audit Count**: 82 leaf folders.
@@ -88,9 +88,9 @@ Posters/                               (6 groups, 33 leaf folders)
 |---|---|---|
 | ₹299 | 47 | Most common verified price |
 | ₹249 | 1 | Porsche frame only |
-| `[Generate 150 rupees bank settlement]` | 7 | Car split, Anime mix, Wanted, Car 8 |
-| `[Generate 100 rupees bank settlement]` | 6 | Bookmarks (BM-1 through BM-4) |
-| NO DATA | 14 | Folders with no info.txt |
+| `[Generate 150 rupees bank settlement]` | 14 | Car split (7), Anime mix (4), Wanted (1), Car 8 (1), Split Anime (1) |
+| `[Generate 100 rupees bank settlement]` | 6 | Bookmarks (BM Animal 1-3, BM-1, BM-3, BM-4) |
+| NO DATA | 14 | Folders with no info.txt (F&F cars 8, Split Anime 6) |
 
 ## MRP Distribution
 
@@ -135,8 +135,8 @@ Posters/                               (6 groups, 33 leaf folders)
 ## Critical Missing Data
 
 1. **14 folders have NO info.txt at all** — no title, price, SKU, dimensions, weight
-2. **13 folders have placeholder prices** — internal instructions, not real selling prices
+2. **20 folders have placeholder prices** — internal instructions (`[Generate XXX rupees bank settlement]`), not real selling prices
 3. **41 folders have NO SKU**
 4. **All folders list brand as "PosterNet"** — not "FirstMemoir"
-5. **No personalization products** exist in the supplied data
+5. **No personalization products** exist in the supplied data (all 82 are fixed-design catalog items; no mockup geometry required)
 6. **No custom photo print products** exist in the supplied data

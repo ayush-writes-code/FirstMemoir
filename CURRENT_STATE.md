@@ -217,33 +217,34 @@ Client provided real listing data at `/Users/ayushtomar/Downloads/listingx for w
 * Separated development workflow into Track A (Business Dependent) and Track B (Engineering Executable).
 * Created `docs/production/PRODUCTION_BLOCKERS.md` to isolate remaining client decisions (Variant Grouping, Missing Prices, Packaging Rules, SKU Policy, PosterNet Visual Clearance) from actionable engineering configurations.
 
-## 18. Final Pre-Client Handoff State (Sept 23, 2026)
+## 18. Final Pre-Client Handoff State (Sept 24, 2026)
 
 **Engineering:**
 - LOCAL VERIFIED: Core startup, API health checks, and webhook security.
 - CONFIGURATION VERIFIED: Docker migration contract, Render/Vercel ENV routing.
 - REMOTE DEPLOYMENT NOT VERIFIED: Remote deployment is intentionally blocked pending client platform access.
+- ENGINEERING DEFECTS: 0 defects. Build, lint, and types 100% pass.
 
 **Catalog:**
-- 82 source leaf folders reconciled.
-- DRY-RUN VERIFIED ONLY: Importer explicitly parses data safely without database writes.
-- NO PRODUCTION MUTATION: Seed records and UI mockups remain segregated from the production environment.
+- 82 source leaf folders reconciled (78 series folders across 8 parent groups + 4 standalone products).
+- DRY-RUN VERIFIED ONLY: Importer parses source directory safely without database writes.
+- NO PRODUCTION MUTATION: Production database remains completely unmutated.
 
 **Assets:**
-- 452 source assets identified.
-- NO PRODUCTION UPLOAD: Asset migration is blocked pending visual/legal approval.
+- 452 RAW SOURCE ASSETS identified across 82 folders (~5.5 gallery photos per listing).
+- NO PRODUCTION UPLOAD: Asset migration blocked pending visual/legal clearance.
 
 **Business (Client Inputs Required):**
-- **Product Structure:** Ambiguous variant cardinality (78 cases).
-- **Pricing:** 14 missing prices, 20 instructional placeholder prices.
-- **SKU:** 41 missing SKUs.
-- **Fulfillment:** 82 missing packaging dimension/weight sets.
-- **Mockups:** 82 missing coordinate geometries.
-- **Clearance:** PosterNet branding and commercial license verification.
+- **Product Structure:** Grouping policy for 8 parent series (Product with Options vs Collection of Products).
+- **Pricing:** 14 missing prices (missing `info.txt`), 20 instructional placeholder prices (`Generate XXX rupees`).
+- **SKU:** 41 missing SKUs (decision on auto-generation rule vs custom SKUs).
+- **Fulfillment:** 4 packaging profiles (box dimensions/weight by product form factor: Frame, Split Poster, Poster Pack, Bookmarks).
+- **Mockups:** Clarified 0 mockup geometries required (all 82 listings are fixed-design pre-printed items).
+- **Clearance:** Authorization for "PosterNet" watermarked assets and third-party IP commercial rights.
 
 **Platform (Access Required):**
-- **Deployment:** Render CLI / Dashboard access, Vercel Dashboard access.
-- **Cloudflare:** R2 CORS bucket configuration access.
+- **Deployment:** Render Dashboard access, Vercel Dashboard access.
+- **Cloudflare:** R2 CORS bucket configuration access for `weprintit-assets`.
 - **Credentials:** Live Razorpay API Keys, Live Shiprocket account credentials.
 
-*(See `docs/catalog-onboarding/CLIENT_CATALOG_INPUT_CHECKLIST.md` for the explicit handover contract).*
+*(See `docs/catalog-onboarding/CLIENT_CATALOG_INPUT_CHECKLIST.md` for the authoritative client handover contract).*
