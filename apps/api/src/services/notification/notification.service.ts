@@ -35,7 +35,7 @@ export class NotificationService implements INotificationService {
           recipient: recipientPhone,
           channel: 'SMS',
           eventType: 'ORDER_CONFIRMED',
-          payload: { message: `Your WePrintIt order #${order.id.slice(0, 8)} is confirmed!` },
+          payload: { message: `Your First Memoir order #${order.id.slice(0, 8)} is confirmed!` },
         });
       }
 
@@ -73,7 +73,7 @@ export class NotificationService implements INotificationService {
           recipient: recipientPhone,
           channel: 'SMS',
           eventType: 'ORDER_PROCESSING',
-          payload: { message: `Your WePrintIt order #${order.id.slice(0, 8)} is now being printed!` },
+          payload: { message: `Your First Memoir order #${order.id.slice(0, 8)} is now being printed!` },
         });
       }
     } catch (error) {

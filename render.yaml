@@ -18,7 +18,9 @@ services:
         sync: false
       - key: CORS_ORIGIN
         sync: false
-      - key: JWT_SECRET
+      - key: JWT_ACCESS_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
         sync: false
       - key: COOKIE_SECRET
         sync: false
@@ -32,13 +34,15 @@ services:
         sync: false
       - key: SHIPROCKET_PASSWORD
         sync: false
-      - key: CLOUDFLARE_R2_ACCOUNT_ID
+      - key: SHIPROCKET_WEBHOOK_TOKEN
         sync: false
-      - key: CLOUDFLARE_R2_ACCESS_KEY_ID
+      - key: R2_ACCOUNT_ID
         sync: false
-      - key: CLOUDFLARE_R2_SECRET_ACCESS_KEY
+      - key: R2_ACCESS_KEY_ID
         sync: false
-      - key: CLOUDFLARE_R2_BUCKET_NAME
+      - key: R2_SECRET_ACCESS_KEY
         sync: false
-      - key: CLOUDFLARE_R2_PUBLIC_URL
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: R2_PUBLIC_URL
         sync: false
