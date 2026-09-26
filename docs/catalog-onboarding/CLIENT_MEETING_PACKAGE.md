@@ -151,7 +151,7 @@ To execute the deployment immediately after data sign-off, engineering requires 
 |---|---|---|---|
 | **Render** | Deploy Node/Express API service | Dashboard Team Invite or Admin Login | [ ] Invited |
 | **Vercel** | Deploy Next.js Storefront & attach custom domain | Team Member Invite or Admin Login | [ ] Invited |
-| **Cloudflare** | Apply production CORS rule on `weprintit-assets` R2 bucket | Dashboard Access or API Token | [ ] Configured / Shared |
+| **Cloudflare** | Provision production R2 bucket (`firstmemoir-assets`) with CORS | Dashboard Access or API Token | [ ] Configured / Shared |
 | **Razorpay** | Production payment gateway integration | API Keys via 1Password / Secure Vault | [ ] `KEY_ID` & `KEY_SECRET` <br>[ ] `WEBHOOK_SECRET` |
 | **Shiprocket** | Live AWB courier generation & tracking | Account Credentials via Secure Vault | [ ] Account Login <br>[ ] Pickup Location ID |
 

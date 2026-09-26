@@ -86,7 +86,7 @@ Packaging is governed by the physical form factor of the product, not individual
 |---|---|---|---|
 | **Render** | Deploy Express API & manage environment variables | Dashboard invite or Admin credentials | BLOCKED |
 | **Vercel** | Deploy Storefront & bind production custom domain | Dashboard invite or Admin credentials | BLOCKED |
-| **Cloudflare** | Configure CORS policy on R2 bucket `weprintit-assets` | Cloudflare Dashboard access | BLOCKED |
+| **Cloudflare** | Provision production R2 bucket (e.g. `firstmemoir-assets`) with CORS | Cloudflare Dashboard access | BLOCKED |
 
 ---
 

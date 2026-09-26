@@ -244,7 +244,29 @@ Client provided real listing data at `/Users/ayushtomar/Downloads/listingx for w
 
 **Platform (Access Required):**
 - **Deployment:** Render Dashboard access, Vercel Dashboard access.
-- **Cloudflare:** R2 CORS bucket configuration access for `weprintit-assets`.
+- **Cloudflare:** Client to create separate production R2 bucket (`firstmemoir-assets`) with production CORS.
 - **Credentials:** Live Razorpay API Keys, Live Shiprocket account credentials.
 
 *(See `docs/catalog-onboarding/CLIENT_CATALOG_INPUT_CHECKLIST.md` for the authoritative client handover contract).*
+
+## 19. Infrastructure Ownership Architecture & Environment Separation (Sept 26, 2026)
+
+### Developer-Owned / Development (PERMANENTLY PRESERVED)
+- **GitHub:** `ayush-writes-code/FirstMemoir` (Preserves all commits, branches, development history).
+- **Vercel:** Development project `firstmemoir-storefront` (`prj_uWYEPSY69cr3YgB9Ht483yH1E3lU`).
+- **Render:** Development/reference API configuration in `render.yaml`.
+- **Cloudflare R2:** Bucket `weprintit-assets` under developer Cloudflare account (LOCKED; never deleted, renamed, or migrated).
+- **Razorpay:** Development TEST account and test credentials in local `.env`.
+- **Shiprocket:** Development/test account (`SHIPROCKET_DRY_RUN=true`).
+- **Database:** Neon Staging database (`ep-wispy-glitter-axsmkbyo`) + Local Docker PostgreSQL (`localhost:54320`).
+
+### Client-Owned / Production (SEPARATELY PROVISIONED)
+- **GitHub:** New production repository under client organization (e.g. `client-org/FirstMemoir`).
+- **Vercel:** New production project with custom domain `firstmemoir.in`.
+- **Render:** New production Render Web Service pointing to client production database.
+- **Cloudflare R2:** New production bucket `firstmemoir-assets` with custom domain `cdn.firstmemoir.in`.
+- **Razorpay:** Client LIVE production account with completed commercial KYC.
+- **Shiprocket:** Client LIVE account with registered warehouse pickup location.
+- **Database:** Dedicated production database instance running `npx prisma migrate deploy`.
+
+*(See `docs/production/INFRASTRUCTURE_CLEANUP_AUDIT.md` for the authoritative architecture contract).*
