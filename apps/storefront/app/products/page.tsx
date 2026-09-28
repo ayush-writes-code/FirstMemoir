@@ -3,6 +3,7 @@ import { EmptyState } from '@/components/EmptyState';
 import Link from 'next/link';
 import { PROTOTYPE_CATALOG, PROTOTYPE_CATEGORIES } from '@/lib/prototype-data';
 
+
 export const dynamic = 'force-dynamic';
 
 export default async function ProductsPage({

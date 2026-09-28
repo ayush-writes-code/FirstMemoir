@@ -1,6 +1,6 @@
 import { StorefrontProduct } from '../types';
 
-export const IS_PROTOTYPE_ENABLED = process.env.NODE_ENV !== 'production' && process.env.NEXT_PUBLIC_ENABLE_PROTOTYPE !== 'false';
+export const IS_PROTOTYPE_ENABLED = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
 const RAW_CATEGORIES = [
   { id: 'cat-frames', slug: 'frames', name: 'Wall Frames' },
