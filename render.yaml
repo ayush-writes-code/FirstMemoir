@@ -1,8 +1,9 @@
 services:
   - type: web
     name: firstmemoir-api
-    env: docker
-    dockerfilePath: apps/api/Dockerfile
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
     region: singapore
     plan: free
     autoDeploy: false
