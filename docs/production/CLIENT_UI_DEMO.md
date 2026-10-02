@@ -19,7 +19,7 @@ The primary objective is to allow the client to review their products, brand aes
 - **Project Name:** `firstmemoir-demo`
 - **Application deployed:** `apps/storefront` ONLY.
 - **Data Source:** Static `PROTOTYPE_CATALOG` (`apps/storefront/src/lib/prototype-data.ts`) loaded with the optimized listing assets from Phase 3.1.
-- **Environment Gating:** Driven entirely by `NEXT_PUBLIC_DEMO_MODE=true`, which forces the prototype catalog to render even in `NODE_ENV=production`.
+- **Environment Gating:** Driven entirely by `NEXT_PUBLIC_DEMO_MODE=true`, which forces the prototype catalog to render even in `NODE_ENV=production`. *Note: This must be explicitly set as a Production Environment Variable in the Vercel Project dashboard/CLI for the static build to evaluate it.*
 - **Missing Prices:** Products with placeholder or missing prices in the source data will display "Price coming soon" rather than hallucinated or fake prices.
 
 ## URL
