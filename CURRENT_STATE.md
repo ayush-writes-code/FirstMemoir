@@ -44,13 +44,11 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 ---
 
 ## 4. Current Milestone & Next Slice
-- **Completed Milestone:** **Slice 4 — Real Commerce Pilot**
+- **Completed Milestone:** **Slice 5 — Admin Operations Verification**
 - **Accomplishments:**
-  - **Real Database Integration**: Seeded real test PostgreSQL database using docker infrastructure with the exact 82-item canonical catalogue.
-  - **End-to-End Cart & Checkout**: Proven against real DB that `cartService.addToCart()` and `checkoutService.initializeCheckout()` work flawlessly.
-  - **Standard Product Flow**: Tested standard products (e.g. `FM-FRM-FFC-CAMARO`) being added to cart without uploads, creating correct line items, and persisting OrderItem snapshots with `product_type: STANDARD` and `master_file_key: null`.
-  - **Personalized Product Flow**: Tested personalized products (created with `custom-prints` category), asserting upload requirements, lifecycle state transitions (`READY` → `LINKED_TO_CART` → `CHECKOUT_LOCKED`), and correctly serialized `master_file_key` in the `PERSONALIZED` Order snapshot.
-  - **Price Authority Validation**: Proved that the checkout price is firmly sourced from the backend database (e.g. DB `base_price`), ignoring malicious client inputs.
-  - **Clear Test Layers**: Maintained separation between mock-persistence unit tests (`checkout-safety.test.ts`) and real-database integration tests (`commerce-pilot.integration.test.ts`).
-  - **Idempotency & Isolation**: Created a robust, idempotent test harness (`verify-slice4.sh`) that safely cleans test data (`startsWith: slice4-`) without destroying the core seeded catalogue or breaking concurrent tests.
-- **Next Active Slice:** **Slice 5 — Admin Operations Verification & Refinement** (or next prioritized objective based on client feedback).
+  - **Catalogue Visibility**: Proven the Admin API successfully surfaces the exactly 82-item canonical catalogue and properly distinguishes the 34 provisional estimates from the 48 confirmed source prices through `manufacturing_metadata.provisional_price`.
+  - **Order Integrity**: Created a real standard checkout order using `test_db` PostgreSQL and confirmed the Admin API accurately exposes the order, standard product type, SKU, and Rupee-converted total amount.
+  - **Manufacturing Queue Alignment**: Confirmed the Admin `/api/v1/admin/manufacturing/items` correctly transforms confirmed orders into item-centric manufacturing tasks (rather than monolithic order tasks), correctly retaining quantities, names, and specs.
+  - **Security Baseline**: Validated that `CUSTOMER` and unauthenticated sessions cannot breach the protected `/api/v1/admin` operations boundary.
+  - **Zero-Mutation Scope Control**: Proved the Admin UI + API layer requires zero net-new features or db-rearchitecture to handle the canonical catalogue; it scales natively out of the box for operations verification.
+- **Next Active Slice:** **Slice 6 — Production Configuration & Go-Live** (or next prioritized objective based on client feedback).
