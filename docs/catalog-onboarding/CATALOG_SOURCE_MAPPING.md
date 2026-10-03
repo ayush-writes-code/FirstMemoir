@@ -59,26 +59,28 @@ LISTING PICTURES (all)/
 
 ## B. Product Data Taxonomy
 
-How listings should be represented in the database:
+How listings are represented in the database:
 
-| # | Source Group | Classification | Count | Proposed DB Structure | Status |
+> [!NOTE]
+> **CONFIRMED DECISION**: All grouped designs are modeled as **SEPARATE PRODUCTS** organized under shared/similar categories and collections, each with its own dedicated Product Detail Page (PDP). They will not be collapsed into multi-variant dropdowns.
+
+| # | Source Group | Classification | Count | DB Structure | Status |
 |---|---|---|---|---|---|
-| 1 | F&F cars (8 variations) | DESIGN variants of 1 collection | 8 designs | BUSINESS DECISION REQUIRED: 8 separate Products in a collection OR 1 Product with design option | MISSING DATA (no info.txt, no price, no SKU, no dimensions) |
-| 2 | Football jerseys (10 variations) | DESIGN variants of 1 collection | 10 designs | BUSINESS DECISION REQUIRED: 10 separate Products OR 1 Product with player option | CONFIGURATION REQUIRED (info.txt present for each) |
-| 3 | Motivations Quotes (30 variations) | DESIGN variants of 1 collection | 30 designs | BUSINESS DECISION REQUIRED: 30 separate Products OR 1 Product with design option | DIRECT FIT (info.txt + SKU present for each) |
-| 4 | Porsche frame listing pics | PRODUCT (single) | 1 product | 1 Product | CONFIGURATION REQUIRED |
-| 5 | Anime (4 variations) | PRODUCT variants (different pack sizes: 10/12/20/24) | 4 products | 4 separate Products (different sizes/prices/dimensions) | CONFIGURATION REQUIRED |
-| 6 | Car split (7 variations) | DESIGN variants of 1 collection | 7 designs | BUSINESS DECISION REQUIRED: 7 separate Products OR 1 Product with car option | CONFIGURATION REQUIRED |
-| 7 | Ronaldo Split (6 variations) | DESIGN variants of 1 collection | 6 designs | BUSINESS DECISION REQUIRED: 6 separate Products OR 1 Product with team option | CONFIGURATION REQUIRED |
-| 8 | Split Anime (7 variations) | DESIGN variants of 1 collection | 7 designs | BUSINESS DECISION REQUIRED: 7 separate Products OR 1 Product with character option | MISSING DATA (6 of 7 have no info.txt) |
-| 9 | bookmarks (3, 3 variations) | PRODUCT variants (different themes) | 7 products | 7 separate Products (different themes/designs) OR BUSINESS DECISION REQUIRED | CONFIGURATION REQUIRED |
-| 10 | No category / Car 8 | PRODUCT (single) | 1 product | 1 Product (poster set of 8 cars) | CONFIGURATION REQUIRED |
-| 11 | No category / Football 10 | PRODUCT (single) | 1 product | 1 Product (poster set of 10 football) | CONFIGURATION REQUIRED |
-| 12 | No category / Wanted | PRODUCT (single) | 1 product | 1 Product (One Piece wanted posters set) | CONFIGURATION REQUIRED |
+| 1 | F&F cars (8 variations) | Individual car designs in collection | 8 products | 8 separate Products | CONFIRMED: Separate Products (prices missing) |
+| 2 | Football jerseys (10 variations) | Individual player designs in collection | 10 products | 10 separate Products | DIRECT FIT (₹299 verified) |
+| 3 | Motivations Quotes (30 variations) | Individual quote designs in collection | 30 products | 30 separate Products | DIRECT FIT (₹299 verified + SKUs present) |
+| 4 | Porsche frame listing pics | Standalone product | 1 product | 1 Product | DIRECT FIT (₹249 verified) |
+| 5 | Anime (4 variations) | Individual pack size products | 4 products | 4 separate Products | CONFIRMED: Separate Products (placeholder price) |
+| 6 | Car split (7 variations) | Individual car 3-piece split sets | 7 products | 7 separate Products | CONFIRMED: Separate Products (placeholder price) |
+| 7 | Ronaldo Split (6 variations) | Individual club 3-piece split sets | 6 products | 6 separate Products | DIRECT FIT (₹299 verified) |
+| 8 | Split Anime (7 variations) | Individual character sets | 7 products | 7 separate Products | CONFIRMED: Separate Products (prices missing/placeholder) |
+| 9 | bookmarks (3, 3 variations) | Individual bookmark packs | 6 products | 6 separate Products | CONFIRMED: Separate Products (placeholder price) |
+| 10 | No category / Car 8 | Standalone poster set | 1 product | 1 Product | CONFIRMED: Separate Product (placeholder price) |
+| 11 | No category / Football 10 | Standalone poster set | 1 product | 1 Product | DIRECT FIT (₹299 verified) |
+| 12 | No category / Wanted | Standalone poster set | 1 product | 1 Product | CONFIRMED: Separate Product (placeholder price) |
 
-**Total leaf folders (raw count):** 82
-**Actual distinct sellable units (estimated range):** 12–82 depending on business decisions
-**Recommended minimum distinct Products:** ~12–20 (treating design variants as separate products within collections)
+**Total distinct sellable Products:** **82 Products** (all 82 leaf listings are individual products).
+
 
 ---
 
@@ -364,6 +366,7 @@ Every info.txt contains an MRP field. MRP values: ₹499, ₹599, ₹699, ₹799
 - 3 Animal bookmarks have SKU IDs
 - 1 Football poster set has a SKU
 - **41 out of 82 folders have SKUs; 41 do not**
+- **CONFIRMED RESOLUTION**: Engineering will generate deterministic, standardized SKUs (`FM-[CAT]-[SLUG]`) for the 41 missing items. All SKUs remain editable via admin. Client is not required to provide manual SKUs.
 
 ### Personalization
 
@@ -375,7 +378,8 @@ Most listing images are 4688×4688px square JPEGs (marketplace product photograp
 
 ### Brand Name
 
-All info.txt files list brand name as "PosterNet". FirstMemoir is the brand for the website. PosterNet appears to be a marketplace brand name. **BUSINESS DECISION REQUIRED**: Confirm whether FirstMemoir replaces PosterNet branding entirely.
+All info.txt files list brand name as "PosterNet".
+- **CONFIRMED RESOLUTION**: The client confirmed that "PosterNet" is their own brand. PosterNet watermarks and branding are approved as-is for FirstMemoir production assets. No replacement assets or legal clearance required.
 
 ### Manufacturer
 

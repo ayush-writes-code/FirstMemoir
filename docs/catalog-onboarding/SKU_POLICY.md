@@ -1,8 +1,9 @@
-# SKU Policy (PROPOSED)
+# SKU Policy (CONFIRMED)
 
-> [!IMPORTANT]
-> This policy is PROPOSED. It must be confirmed by the business before implementation.
-> Do NOT generate production SKUs until this policy is approved.
+> [!NOTE]
+> **CONFIRMED DECISION**: Engineering will automatically generate deterministic, standardized SKUs for all listings that currently lack them.
+> SKUs will remain fully editable through the admin/catalogue system later.
+> Generating SKUs is **NOT** a client blocker. The client is not required to provide manual SKUs.
 
 ## Why SKU Is Needed
 
@@ -10,7 +11,7 @@
 2. **Inventory tracking**: Each distinct sellable item needs a unique identifier for stock management.
 3. **Manufacturing**: Print/production partners need SKUs to identify what to produce.
 4. **Admin operations**: Internal order management, returns, and analytics require stable product identifiers.
-5. **Marketplace consistency**: If products are also listed on Flipkart/Amazon, SKUs should be consistent across channels.
+5. **Marketplace consistency**: If products are also listed on external channels, SKUs provide a stable mapping key.
 
 ## Current State of SKUs in Source Data
 
@@ -20,24 +21,20 @@
 - **1 Football poster set**: Has SKU (`Football_10`)
 - **41 out of 82 folders have NO SKU**
 
-Existing SKU formats are inconsistent:
-- `Motivation_frame_01` (category_type_number)
-- `AlfaRomeo_car` (design_category)
-- `AnimalBM1` (themeAbbrevNumber)
-- `Football_10` (category_count)
+## Standardized SKU Format
 
-## Proposed SKU Format
+For listings without an existing SKU, engineering will generate standard SKUs using:
 
 ```
-FM-{CATEGORY}-{SUBCATEGORY}-{SEQUENCE}
+FM-{CATEGORY}-{SLUG}
 ```
 
 Examples:
-- `FM-FRM-MOT-001` → Frame, Motivational, design #1
-- `FM-FRM-FBL-001` → Frame, Football, Ronaldo
-- `FM-PST-ANI-010` → Poster, Anime, pack of 10
-- `FM-PST-CSP-001` → Poster, Car Split, Alfa Romeo
-- `FM-BKM-ANM-001` → Bookmark, Animal, design #1
+- `FM-FRM-FBL-RONALDO` → Frame, Football, Ronaldo
+- `FM-FRM-FFC-CAMARO` → Frame, Fast & Furious, Camaro
+- `FM-PST-ANI-10` → Poster, Anime, Pack of 10
+- `FM-PST-SPL-EREN` → Poster, Split Anime, Eren
+- `FM-BKM-QTE-BM1` → Bookmark, Quotes, BM-1
 
 Category codes:
 - `FRM` — Framed prints (8×12)
@@ -45,45 +42,28 @@ Category codes:
 - `BKM` — Bookmarks
 - `CPP` — Custom Photo Prints (future)
 
-## Uniqueness Rule
-
-Every SKU must be globally unique across the entire catalog. No two products or variants may share a SKU.
+Existing valid source SKUs (e.g., `Motivation_frame_01`, `AlfaRomeo_car`) may be preserved or normalized into this scheme.
 
 ## Product vs. Variant SKU Behavior
 
-This depends on the business decision about how design variants are modeled:
+**Decision Confirmed**: All 82 listings are treated as **SEPARATE PRODUCTS**.
+- Every product has its own individual, flat SKU.
+- No multi-attribute variant suffixes are required for the current catalogue.
+- SKUs are globally unique across the entire catalog.
 
-### If each design is a separate Product:
-Each product gets its own SKU. Simple and flat.
+## Admin Editability
 
-### If designs are options on a single Product:
-The parent Product gets a base SKU. Each design option value gets a variant suffix.
-Example: `FM-FRM-FBL` (parent) → `FM-FRM-FBL-RON` (Ronaldo variant)
-
-**BUSINESS DECISION REQUIRED**: Which model to use.
+Generated SKUs are not treated as immutable business data:
+- They will be populated in the database upon catalogue import.
+- The client and admin users can modify any SKU at any time via the Admin Panel prior to order fulfillment.
 
 ## Usage Across Systems
 
 | System | SKU Usage |
 |---|---|
-| Admin panel | Product identification, search, inventory |
-| Storefront | Not displayed to customers (internal only) |
+| Admin panel | Product identification, search, inventory, editable field |
+| Storefront | Internal identifier (not prominently displayed to customers) |
 | Shiprocket | Required for order manifest — maps to `product_sku` |
-| Razorpay | Not directly used (order references order_id) |
+| Razorpay | Not directly used (order references `order_id`) |
 | Manufacturing | Identifies what to print/produce |
 | Analytics | Sales tracking, inventory reports |
-
-## When SKUs Should Be Generated
-
-1. **After** the business confirms the product/variant structure.
-2. **After** the SKU format is approved.
-3. **Before** any real orders are placed.
-4. SKUs should be assigned during catalog import/seeding, NOT invented ad-hoc.
-
-## What Requires Client Confirmation
-
-- [ ] Approve or modify the proposed SKU format
-- [ ] Decide whether existing marketplace SKUs (Motivation_frame_XX, etc.) should be preserved or replaced
-- [ ] Decide product-vs-variant SKU structure
-- [ ] Confirm whether SKUs should be visible to customers
-- [ ] Confirm category code abbreviations
