@@ -3,7 +3,7 @@
 *Maps each source folder from the client's listing data to the FirstMemoir product schema.*
 
 > [!NOTE]
-> Source: `/Users/ayushtomar/Downloads/listingx for website/LISTING PICTURES (all)/`
+> Source: `listingx for website/LISTING PICTURES (all)/`
 >
 > This document was generated from forensic analysis of every info.txt and folder in the client-supplied listing data.
 > Fields marked MISSING or BUSINESS DECISION REQUIRED must not be invented.
@@ -66,17 +66,17 @@ How listings are represented in the database:
 
 | # | Source Group | Classification | Count | DB Structure | Status |
 |---|---|---|---|---|---|
-| 1 | F&F cars (8 variations) | Individual car designs in collection | 8 products | 8 separate Products | CONFIRMED: Separate Products (prices missing) |
-| 2 | Football jerseys (10 variations) | Individual player designs in collection | 10 products | 10 separate Products | DIRECT FIT (₹299 verified) |
-| 3 | Motivations Quotes (30 variations) | Individual quote designs in collection | 30 products | 30 separate Products | DIRECT FIT (₹299 verified + SKUs present) |
-| 4 | Porsche frame listing pics | Standalone product | 1 product | 1 Product | DIRECT FIT (₹249 verified) |
+| 1 | F&F cars (8 variations) | Individual car designs in collection | 8 products | 8 separate Products | CONFIRMED: Separate Products (prices missing in source) |
+| 2 | Football jerseys (10 variations) | Individual player designs in collection | 10 products | 10 separate Products | DIRECT FIT (₹299 in source catalogue) |
+| 3 | Motivations Quotes (30 variations) | Individual quote designs in collection | 30 products | 30 separate Products | DIRECT FIT (₹299 in source catalogue + SKUs present) |
+| 4 | Porsche frame listing pics | Standalone product | 1 product | 1 Product | DIRECT FIT (₹249 in source catalogue) |
 | 5 | Anime (4 variations) | Individual pack size products | 4 products | 4 separate Products | CONFIRMED: Separate Products (placeholder price) |
 | 6 | Car split (7 variations) | Individual car 3-piece split sets | 7 products | 7 separate Products | CONFIRMED: Separate Products (placeholder price) |
-| 7 | Ronaldo Split (6 variations) | Individual club 3-piece split sets | 6 products | 6 separate Products | DIRECT FIT (₹299 verified) |
+| 7 | Ronaldo Split (6 variations) | Individual club 3-piece split sets | 6 products | 6 separate Products | DIRECT FIT (₹299 in source catalogue) |
 | 8 | Split Anime (7 variations) | Individual character sets | 7 products | 7 separate Products | CONFIRMED: Separate Products (prices missing/placeholder) |
 | 9 | bookmarks (3, 3 variations) | Individual bookmark packs | 6 products | 6 separate Products | CONFIRMED: Separate Products (placeholder price) |
 | 10 | No category / Car 8 | Standalone poster set | 1 product | 1 Product | CONFIRMED: Separate Product (placeholder price) |
-| 11 | No category / Football 10 | Standalone poster set | 1 product | 1 Product | DIRECT FIT (₹299 verified) |
+| 11 | No category / Football 10 | Standalone poster set | 1 product | 1 Product | DIRECT FIT (₹299 in source catalogue) |
 | 12 | No category / Wanted | Standalone poster set | 1 product | 1 Product | CONFIRMED: Separate Product (placeholder price) |
 
 **Total distinct sellable Products:** **82 Products** (all 82 leaf listings are individual products).
@@ -345,15 +345,12 @@ FirstMemoir.in
 
 ## E. Critical Observations
 
-### Selling Price Problem
+### Selling Price Analysis
 
-13 of 68 info.txt files contain `[Generate XXX rupees bank settlement]` instead of an actual selling price. This appears to be an internal instruction to the listing platform, NOT a real price. These products have **NO verified selling price**.
-
-- 47 listings have verified selling price: ₹299
-- 1 listing has verified selling price: ₹249
-- 7 listings say `[Generate 150 rupees bank settlement]`
-- 6 listings say `[Generate 100 rupees bank settlement]`
-- 14 folders have NO info.txt at all (F&F cars: 8, Split Anime: 6)
+- **48 listings** have explicit prices found in the source catalogue (47 @ ₹299, 1 @ ₹249). These reflect supplier/marketplace text and await final client confirmation for the web storefront.
+- **20 listings** contain placeholder bank settlement instructions rather than retail prices (`[Generate 150 rupees bank settlement]` across 14 listings, `[Generate 100 rupees bank settlement]` across 6 listings).
+- **14 listings** have no `info.txt` file and lack all pricing metadata (F&F cars: 8, Split Anime: 6).
+- **Total requiring client price confirmation:** **34 listings** (20 placeholder + 14 missing).
 
 ### MRP / Compare-at-Price
 

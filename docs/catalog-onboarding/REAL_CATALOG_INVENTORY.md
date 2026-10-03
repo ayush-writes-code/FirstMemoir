@@ -1,6 +1,6 @@
 # Real Catalog Inventory
 
-*Source: `/Users/ayushtomar/Downloads/listingx for website/LISTING PICTURES (all)/`*
+*Source: `listingx for website/LISTING PICTURES (all)/`*
 *Forensic analysis date: September 23, 2026*
 
 ## Verified Counts
@@ -12,7 +12,7 @@
 | Total leaf folders | 82 | Lowest-level folders containing images |
 | Folders WITH info.txt | 68 | Have at least partial metadata |
 | Folders WITHOUT info.txt | 14 | F&F cars (8) + Split Anime (6) |
-| Verified selling prices | 48 | ₹249 (1), ₹299 (47) |
+| Explicit prices found in source catalogue | 48 | ₹249 (1), ₹299 (47) (pending client confirmation) |
 | Placeholder selling prices | 20 | "[Generate XXX rupees bank settlement]" (Anime 4, Car split 7, Wanted 1, Car 8 1, Split Anime 1, Bookmarks 6) |
 | No price data at all | 14 | Folders with no info.txt (F&F cars 8, Split Anime 6) |
 | Folders with SKUs | 41 | Motivation frames (30), Car split (7), Animal bookmarks (3), Football poster (1) |
@@ -86,8 +86,8 @@ Posters/                               (6 groups, 33 leaf folders)
 
 | Selling Price | Count | Notes |
 |---|---|---|
-| ₹299 | 47 | Most common verified price |
-| ₹249 | 1 | Porsche frame only |
+| ₹299 | 47 | Most common explicit price found in source catalogue (pending confirmation) |
+| ₹249 | 1 | Porsche frame only (pending confirmation) |
 | `[Generate 150 rupees bank settlement]` | 14 | Car split (7), Anime mix (4), Wanted (1), Car 8 (1), Split Anime (1) |
 | `[Generate 100 rupees bank settlement]` | 6 | Bookmarks (BM Animal 1-3, BM-1, BM-3, BM-4) |
 | NO DATA | 14 | Folders with no info.txt (F&F cars 8, Split Anime 6) |

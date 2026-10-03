@@ -8,9 +8,10 @@
 ## 1. Executive Summary
 FirstMemoir is transitioning into an **Iterative Product Delivery** model toward production.
 - **Active Visual Demo:** Live at [https://firstmemoir-demo.vercel.app](https://firstmemoir-demo.vercel.app) with 10 representative prototype products across Frames, Posters, and Bookmarks.
-- **Authoritative Master Plan:** [docs/production/MASTER_DELIVERY_PLAN.md](file:///Users/ayushtomar/Downloads/WePrintIt.in/docs/production/MASTER_DELIVERY_PLAN.md)
-- **Client Feedback Log:** [docs/production/CLIENT_FEEDBACK_LOG.md](file:///Users/ayushtomar/Downloads/WePrintIt.in/docs/production/CLIENT_FEEDBACK_LOG.md)
-- **Client Catalogue Clarifications:** [docs/catalog-onboarding/CLIENT_CATALOG_CLARIFICATIONS.md](file:///Users/ayushtomar/Downloads/WePrintIt.in/docs/catalog-onboarding/CLIENT_CATALOG_CLARIFICATIONS.md)
+- **Authoritative Master Plan:** `docs/production/MASTER_DELIVERY_PLAN.md`
+- **Client Feedback Log:** `docs/production/CLIENT_FEEDBACK_LOG.md`
+- **Client Catalogue Clarifications:** `docs/catalog-onboarding/CLIENT_CATALOG_CLARIFICATIONS.md`
+- **Provisional Packaging Profiles:** `docs/catalog-onboarding/PROVISIONAL_PACKAGING_PROFILES.md`
 - **Delivery Model:** Small vertical slices verified locally, deployed to demo/staging, reviewed by client, refined iteratively. One active slice at a time.
 
 ---
