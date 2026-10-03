@@ -11,7 +11,7 @@ const originalCreateOrder = razorpayService.createOrder;
 const originalFetchOrder = razorpayService.fetchOrder;
 
 let standardProduct: any;
-let personalizedProduct: any;
+let testFixturePersonalizedProduct: any;
 let sizeOptionValue: any;
 
 const validShipping = {
@@ -100,12 +100,14 @@ before(async () => {
     throw new Error('Standard product FM-FRM-FFC-CAMARO not found in test DB. Was db:seed run?');
   }
 
-  // 2. Create a test personalized product
-  personalizedProduct = await prisma.product.create({
+  // 2. Create a test-only synthetic personalized product fixture
+  // Note: The real 82-product production catalogue currently contains 0 personalized products.
+  // This fixture is used solely to verify the personalization integration pathways.
+  testFixturePersonalizedProduct = await prisma.product.create({
     data: {
-      name: 'Slice4 Custom Photo Print',
+      name: 'Slice4 Custom Photo Print (TEST FIXTURE)',
       slug: 'test-slice4-custom-print',
-      sku: 'FM-CST-POS-01',
+      sku: 'TEST-CST-POS-01',
       base_price: '500.00',
       is_active: true,
       categories: {
@@ -139,7 +141,7 @@ before(async () => {
     }
   });
 
-  sizeOptionValue = personalizedProduct.options[0].values[0];
+  sizeOptionValue = testFixturePersonalizedProduct.options[0].values[0];
 });
 
 after(() => {
@@ -150,6 +152,7 @@ after(() => {
 describe('Slice 4: Real Commerce Pilot', () => {
 
   it('Step 3: Real DB Cart Test — Standard Product', async () => {
+    // Traverse: HTTP route → controller → service → Prisma → PostgreSQL
     const agent = makeAgent();
     // 1. Create session via cart fetch (agent tracks cookie)
     const cartRes = await agent.get('/api/v1/cart').expect(200);
@@ -170,7 +173,6 @@ describe('Slice 4: Real Commerce Pilot', () => {
     const lineItem = await prisma.cartLineItem.findFirst({ where: { cart_id: cartId } });
     assert.ok(lineItem, 'CartLineItem must be persisted');
     assert.strictEqual(lineItem.upload_id, null, 'upload_id must be null for standard');
-    console.log('LINE ITEM:', lineItem);
 
     // 3. Checkout Initialization
     const checkoutRes = await agent.post('/api/v1/checkout/initialize')
@@ -198,7 +200,9 @@ describe('Slice 4: Real Commerce Pilot', () => {
     assert.ok(snap.packaging, 'Packaging must be preserved');
   });
 
-  it('Step 4: Real DB Cart Test — Personalized Product', async () => {
+  it('Step 4: Real DB Cart Test — Synthetic Personalized Fixture', async () => {
+    // Traverse: HTTP route → controller → service → Prisma → PostgreSQL
+    // Uses a test-only fixture since the production catalogue contains no personalized items
     const agent = makeAgent();
     const cartRes = await agent.get('/api/v1/cart').expect(200);
     const cartId = cartRes.body.data.id;
@@ -209,7 +213,7 @@ describe('Slice 4: Real Commerce Pilot', () => {
     // Add to cart with upload
     const addRes = await agent.post('/api/v1/cart/items')
       .send({
-        product_id: personalizedProduct.id,
+        product_id: testFixturePersonalizedProduct.id,
         quantity: 1,
         selected_option_value_ids: [sizeOptionValue.id],
         upload_id: upload.id,
@@ -271,7 +275,7 @@ describe('Slice 4: Real Commerce Pilot', () => {
     
     const res = await agent.post('/api/v1/cart/items')
       .send({
-        product_id: personalizedProduct.id,
+        product_id: testFixturePersonalizedProduct.id,
         quantity: 1,
         selected_option_value_ids: [sizeOptionValue.id],
       })
