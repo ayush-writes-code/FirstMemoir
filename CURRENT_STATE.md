@@ -44,13 +44,13 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 ---
 
 ## 4. Current Milestone & Next Slice
-- **Completed Milestone:** **Slice 3.2 — Verification Evidence Hardening**
+- **Completed Milestone:** **Slice 4 — Real Commerce Pilot**
 - **Accomplishments:**
-  - **Deterministic Price Equality**: Proven that all 48 source-priced listings match canonical `base_price` Rupee-for-Rupee (48 exact matches, 0 mismatches); 34 unpriced listings verified with `provisional_price: true` and `pricing_status: "PROVISIONAL_ESTIMATE"`.
-  - **Repository Portability**: Generated repository-owned `packages/database/prisma/catalogue/source-manifest.json` with audited source facts; removed mandatory dependencies on machine-specific local paths (`/Users/ayushtomar/...`), enabling tests to run portably in CI and across developer checkouts.
-  - **Real Service-Level Commerce Invocations**: Upgraded `checkout-safety.test.ts` to execute real implementations of `cartService.addToCart` and `checkoutService.initializeCheckout`:
-    - Case A: Verified standard catalogue products from the 82-item catalogue (`FM-FRM-POR-GT3`) enter cart without upload/crop/DPI and initialize checkout cleanly with `product_type: "STANDARD"`, `master_file_key: null`, and provisional packaging snapshot.
-    - Case B: Verified personalized products strictly reject missing `upload_id` with HTTP 400 Bad Request without writing to the database.
-    - Case C: Verified personalized products with valid uploads pass validation, lock upload retention, and create immutable order snapshots with `product_type: "PERSONALIZED"` and `master_file_key`.
-  - **Comprehensive Quality Gates**: 8/8 automated regression tests passing, typechecks clean across monorepo (`storefront`, `api`, `admin`).
-- **Next Active Slice:** **Slice 4 — Real Commerce Pilot** (End-to-end cart and checkout against real database pilot products with backend-authoritative pricing).
+  - **Real Database Integration**: Seeded real test PostgreSQL database using docker infrastructure with the exact 82-item canonical catalogue.
+  - **End-to-End Cart & Checkout**: Proven against real DB that `cartService.addToCart()` and `checkoutService.initializeCheckout()` work flawlessly.
+  - **Standard Product Flow**: Tested standard products (e.g. `FM-FRM-FFC-CAMARO`) being added to cart without uploads, creating correct line items, and persisting OrderItem snapshots with `product_type: STANDARD` and `master_file_key: null`.
+  - **Personalized Product Flow**: Tested personalized products (created with `custom-prints` category), asserting upload requirements, lifecycle state transitions (`READY` → `LINKED_TO_CART` → `CHECKOUT_LOCKED`), and correctly serialized `master_file_key` in the `PERSONALIZED` Order snapshot.
+  - **Price Authority Validation**: Proved that the checkout price is firmly sourced from the backend database (e.g. DB `base_price`), ignoring malicious client inputs.
+  - **Clear Test Layers**: Maintained separation between mock-persistence unit tests (`checkout-safety.test.ts`) and real-database integration tests (`commerce-pilot.integration.test.ts`).
+  - **Idempotency & Isolation**: Created a robust, idempotent test harness (`verify-slice4.sh`) that safely cleans test data (`startsWith: slice4-`) without destroying the core seeded catalogue or breaking concurrent tests.
+- **Next Active Slice:** **Slice 5 — Admin Operations Verification & Refinement** (or next prioritized objective based on client feedback).
