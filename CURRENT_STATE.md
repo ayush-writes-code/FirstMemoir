@@ -44,14 +44,14 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 ---
 
 ## 4. Current Milestone & Next Slice
-- **Completed Milestone:** **Slice 6A — Production Readiness & Deployment Rehearsal**
+- **Completed Milestone:** **Slice 6B — Staging Configuration Contracts**
+- **Attempted Milestone:** **Slice 6C — Staging Infrastructure Provisioning**
 - **Accomplishments:**
-  - **Readiness Matrix**: Audited environment variables, DB safety (forward-only migrations + point-in-time recovery plans), R2 cleanup guards, Razorpay webhook architectures, and administrative security boundaries.
-  - **Fresh Rehearsal**: Successfully executed a from-scratch PostgreSQL DB deployment and canonical seed (`migrate deploy` + `db:seed`), verifying strictly 82 canonical products (48 source prices, 34 provisional).
-  - **Smoke Test & Rollback Plans**: Created structured `/docs/production` artifacts governing post-deployment verifications and disaster recovery / rollback methodologies.
-  - **Test Consistency**: Confirmed Slice 4 commerce tests and Slice 5 admin access control tests remain green against the pristine deployment candidate.
+  - **Status**: The infrastructure provisioning phase is formally **BLOCKED**.
+  - **Reason**: Adhering to strict environment isolation protocols, the deployment requires an external Staging Postgres node (e.g. Supabase/Neon), isolated Cloudflare R2 staging buckets, and Razorpay Sandbox credentials. None of these have been provided via `.env.staging` or hosting platform dashboards.
+  - **Regression Safety**: Local regression suite executed successfully, confirming the repository itself remains pristine, perfectly deployable, and fundamentally untainted by missing remote infrastructure.
 - **External Blockers**:
-  - Requires actual production DB provision (e.g. Supabase/Neon/AWS).
-  - Requires domain, live Razorpay keys, and live Shiprocket keys.
-  - Requires live Cloudflare R2 bucket configuration + CORS setup.
-- **Next Active Slice:** **Slice 6B — Production Configuration & Go-Live** (or next prioritized objective based on client feedback and external credential acquisition).
+  - Requires actual staging DB provision (Supabase/Neon).
+  - Requires staging domain, sandbox Razorpay keys, and test Shiprocket keys.
+  - Requires staging Cloudflare R2 bucket configuration + CORS setup.
+- **Next Active Slice:** **Slice 6C (Continued) — Procurement & Secret Injection** (The user must officially procure the cloud resources and inject them into the deployment provider, at which point the staging smoke tests can be executed).
