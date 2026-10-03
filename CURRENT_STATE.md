@@ -44,11 +44,14 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 ---
 
 ## 4. Current Milestone & Next Slice
-- **Completed Milestone:** **Slice 5 — Admin Operations Verification**
+- **Completed Milestone:** **Slice 6A — Production Readiness & Deployment Rehearsal**
 - **Accomplishments:**
-  - **Catalogue Visibility**: Proven the Admin API successfully surfaces the exactly 82-item canonical catalogue and properly distinguishes the 34 provisional estimates from the 48 confirmed source prices through `manufacturing_metadata.provisional_price`.
-  - **Order Integrity**: Created a real standard checkout order using `test_db` PostgreSQL and confirmed the Admin API accurately exposes the order, standard product type, SKU, and Rupee-converted total amount.
-  - **Manufacturing Queue Alignment**: Confirmed the Admin `/api/v1/admin/manufacturing/items` correctly transforms confirmed orders into item-centric manufacturing tasks (rather than monolithic order tasks), correctly retaining quantities, names, and specs.
-  - **Security Baseline**: Validated that `CUSTOMER` and unauthenticated sessions cannot breach the protected `/api/v1/admin` operations boundary.
-  - **Zero-Mutation Scope Control**: Proved the Admin UI + API layer requires zero net-new features or db-rearchitecture to handle the canonical catalogue; it scales natively out of the box for operations verification.
-- **Next Active Slice:** **Slice 6 — Production Configuration & Go-Live** (or next prioritized objective based on client feedback).
+  - **Readiness Matrix**: Audited environment variables, DB safety (forward-only migrations + point-in-time recovery plans), R2 cleanup guards, Razorpay webhook architectures, and administrative security boundaries.
+  - **Fresh Rehearsal**: Successfully executed a from-scratch PostgreSQL DB deployment and canonical seed (`migrate deploy` + `db:seed`), verifying strictly 82 canonical products (48 source prices, 34 provisional).
+  - **Smoke Test & Rollback Plans**: Created structured `/docs/production` artifacts governing post-deployment verifications and disaster recovery / rollback methodologies.
+  - **Test Consistency**: Confirmed Slice 4 commerce tests and Slice 5 admin access control tests remain green against the pristine deployment candidate.
+- **External Blockers**:
+  - Requires actual production DB provision (e.g. Supabase/Neon/AWS).
+  - Requires domain, live Razorpay keys, and live Shiprocket keys.
+  - Requires live Cloudflare R2 bucket configuration + CORS setup.
+- **Next Active Slice:** **Slice 6B — Production Configuration & Go-Live** (or next prioritized objective based on client feedback and external credential acquisition).
