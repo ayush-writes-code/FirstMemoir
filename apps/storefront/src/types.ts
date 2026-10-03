@@ -10,6 +10,8 @@ export interface StorefrontProduct {
   name: string;
   base_price: string;
   is_missing_price?: boolean;
+  is_provisional_price?: boolean;
+  sku?: string;
   images: {
     id: string;
     url: string;
@@ -43,7 +45,9 @@ export function adaptApiProductToStorefront(apiProduct: ProductDto): StorefrontP
     id: apiProduct.id,
     slug: apiProduct.slug,
     name: apiProduct.name,
+    sku: apiProduct.sku || undefined,
     base_price: apiProduct.base_price,
+    is_provisional_price: Boolean(apiProduct.manufacturing_metadata?.provisional_price),
     images: apiProduct.images?.map(img => ({
       id: img.id,
       url: img.url,

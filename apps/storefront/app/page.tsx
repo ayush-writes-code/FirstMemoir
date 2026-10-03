@@ -17,7 +17,7 @@ const CATALOG_IMAGES = {
     { src: '/catalog/frames/porsche-1.jpg', alt: 'Porsche GT3 RS Wall Frame', label: 'Porsche GT3 RS Frame', price: '₹249' },
     { src: '/catalog/frames/football-mbappe-1.jpg', alt: 'Mbappé Jersey Frame', label: 'Football Legends Frame', price: '₹299' },
     { src: '/catalog/posters/carsplit-lambo-1.jpg', alt: 'Lamborghini Split Poster', label: 'Car Split Poster Set', price: '₹299' },
-    { src: '/catalog/posters/anime-pack12-1.jpg', alt: 'Anime Poster Pack', label: 'Anime Mix Poster Pack', price: null },
+    { src: '/catalog/posters/anime-pack12-1.jpg', alt: 'Anime Poster Pack', label: 'Anime Mix Poster Pack', price: '₹199' },
   ],
   editorial: '/catalog/frames/motivation-09-1.jpg',
   collection: '/catalog/frames/cars-supra-1.jpg',

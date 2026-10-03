@@ -101,9 +101,28 @@ export default async function ProductDetailPage({
               {prototypeProduct.is_missing_price ? (
                 <p className="text-lg text-muted-soft italic">Price coming soon</p>
               ) : (
-                <p className="text-2xl text-ink font-medium tracking-wide">
-                  ₹{Number(prototypeProduct.base_price).toLocaleString("en-IN")}
-                </p>
+                <div>
+                  <div className="flex items-baseline gap-3">
+                    <p className="text-2xl text-ink font-medium tracking-wide">
+                      ₹{Number(prototypeProduct.base_price).toLocaleString("en-IN")}
+                    </p>
+                    {prototypeProduct.is_provisional_price && (
+                      <span className="inline-flex items-center text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                        Provisional Estimate
+                      </span>
+                    )}
+                  </div>
+                  {prototypeProduct.is_provisional_price && (
+                    <p className="text-xs text-muted mt-2">
+                      Initial estimated selling price — editable via catalogue/admin.
+                    </p>
+                  )}
+                  {prototypeProduct.sku && (
+                    <p className="text-xs text-muted-soft mt-1.5 font-mono">
+                      SKU: {prototypeProduct.sku}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 

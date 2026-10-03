@@ -4,6 +4,9 @@ import { nextJsConfig } from "@repo/eslint-config/next-js";
 export default [
   ...nextJsConfig,
   {
+    ignores: [".next/**", ".vercel/**", "out/**", "build/**"],
+  },
+  {
     files: [
       "app/account/orders/page.tsx",
       "app/checkout/page.tsx",

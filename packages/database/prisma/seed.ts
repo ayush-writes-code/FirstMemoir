@@ -15,12 +15,15 @@ async function main() {
 
   // 2. Seed Categories
   const categoryData = [
-    { name: 'Wall Art', slug: 'wall-art', sort_order: 1 },
-    { name: 'Photo Frames', slug: 'photo-frames', sort_order: 2 },
-    { name: 'Canvas Prints', slug: 'canvas-prints', sort_order: 3 },
-    { name: 'Acrylic Prints', slug: 'acrylic-prints', sort_order: 4 },
-    { name: 'Fine Art Prints', slug: 'fine-art-prints', sort_order: 5 },
-    { name: 'Metal Prints', slug: 'metal-prints', sort_order: 6 }
+    { name: 'Wall Frames', slug: 'frames', sort_order: 1 },
+    { name: 'Posters & Wall Art', slug: 'posters', sort_order: 2 },
+    { name: 'Bookmarks', slug: 'bookmarks', sort_order: 3 },
+    { name: 'Wall Art', slug: 'wall-art', sort_order: 4 },
+    { name: 'Photo Frames', slug: 'photo-frames', sort_order: 5 },
+    { name: 'Canvas Prints', slug: 'canvas-prints', sort_order: 6 },
+    { name: 'Acrylic Prints', slug: 'acrylic-prints', sort_order: 7 },
+    { name: 'Fine Art Prints', slug: 'fine-art-prints', sort_order: 8 },
+    { name: 'Metal Prints', slug: 'metal-prints', sort_order: 9 }
   ];
 
   const categories: Record<string, string> = {};
@@ -272,6 +275,215 @@ async function main() {
     }
   }
   console.log(`✅ Upserted ${productsData.length} Premium Products with Realistic Options & Exclusions`);
+
+  // 5. Seed Real Pilot Products (FirstMemoir Authentic Catalogue)
+  const realPilotProducts = [
+    {
+      name: 'Porsche GT3 RS Wall Frame',
+      slug: 'porsche-gt3-rs-frame',
+      sku: 'FM-FRM-POR-GT3RS',
+      desc: 'Set of 3 - Porsche GT3 RS Wall Poster Frame | 8x12 inch (A4 Size). Printed on 300 GSM archival photographic paper with high-clarity protective acrylic.',
+      base_price: 249,
+      cats: ['frames', 'wall-art'],
+      images: ['/catalog/frames/porsche-1.jpg'],
+      manufacturing_metadata: {
+        pricing_status: 'CONFIRMED_SOURCE',
+        provisional_price: false,
+        packaging_profile: 'Profile A',
+        dimensions: { length: 35, width: 25, height: 4, unit: 'cm' },
+        weight: { value: 0.45, unit: 'kg' },
+      },
+    },
+    {
+      name: 'Cristiano Ronaldo Jersey Frame',
+      slug: 'cristiano-ronaldo-jersey-frame',
+      sku: 'FM-FRM-FBL-RONALDO',
+      desc: 'Cristiano Ronaldo signed jersey wall poster frame (8x12 inch). World Cup special series printed on 300 GSM photographic paper.',
+      base_price: 299,
+      cats: ['frames', 'wall-art'],
+      images: ['/catalog/frames/football-ronaldo-1.jpg'],
+      manufacturing_metadata: {
+        pricing_status: 'CONFIRMED_SOURCE',
+        provisional_price: false,
+        packaging_profile: 'Profile A',
+        dimensions: { length: 35, width: 25, height: 4, unit: 'cm' },
+        weight: { value: 0.45, unit: 'kg' },
+      },
+    },
+    {
+      name: 'Kylian Mbappé Jersey Frame',
+      slug: 'kylian-mbappe-jersey-frame',
+      sku: 'FM-FRM-FBL-MBAPPE',
+      desc: 'Kylian Mbappé signed jersey wall poster frame (8x12 inch). World Cup special series printed on 300 GSM photographic paper.',
+      base_price: 299,
+      cats: ['frames', 'wall-art'],
+      images: ['/catalog/frames/football-mbappe-1.jpg'],
+      manufacturing_metadata: {
+        pricing_status: 'CONFIRMED_SOURCE',
+        provisional_price: false,
+        packaging_profile: 'Profile A',
+        dimensions: { length: 35, width: 25, height: 4, unit: 'cm' },
+        weight: { value: 0.45, unit: 'kg' },
+      },
+    },
+    {
+      name: 'Hustle Hard Motivation Frame',
+      slug: 'hustle-hard-motivation-frame',
+      sku: 'FM-FRM-MOT-03',
+      desc: 'Wall Framed Poster (8x12 inch) featuring Motivational Quote design. Printed on 300 GSM photographic paper with lightweight durable frame.',
+      base_price: 299,
+      cats: ['frames', 'wall-art'],
+      images: ['/catalog/frames/motivation-03-1.jpg'],
+      manufacturing_metadata: {
+        pricing_status: 'CONFIRMED_SOURCE',
+        provisional_price: false,
+        packaging_profile: 'Profile A',
+        dimensions: { length: 35, width: 25, height: 4, unit: 'cm' },
+        weight: { value: 0.45, unit: 'kg' },
+      },
+    },
+    {
+      name: 'Focus Motivation Frame',
+      slug: 'focus-motivation-frame',
+      sku: 'FM-FRM-MOT-09',
+      desc: 'Wall Framed Poster (8x12 inch) featuring Focus Motivational design. Printed on 300 GSM photographic paper with lightweight durable frame.',
+      base_price: 299,
+      cats: ['frames', 'wall-art'],
+      images: ['/catalog/frames/motivation-09-1.jpg'],
+      manufacturing_metadata: {
+        pricing_status: 'CONFIRMED_SOURCE',
+        provisional_price: false,
+        packaging_profile: 'Profile A',
+        dimensions: { length: 35, width: 25, height: 4, unit: 'cm' },
+        weight: { value: 0.45, unit: 'kg' },
+      },
+    },
+    {
+      name: 'Toyota Supra Wall Frame',
+      slug: 'toyota-supra-wall-frame',
+      sku: 'FM-FRM-FFC-SUPRA',
+      desc: 'Iconic Fast & Furious Toyota Supra 8x12 inch framed wall art. Printed on 300 GSM archival paper with modern frame moulding.',
+      base_price: 299,
+      cats: ['frames', 'wall-art'],
+      images: ['/catalog/frames/cars-supra-1.jpg'],
+      manufacturing_metadata: {
+        pricing_status: 'PROVISIONAL_ESTIMATE',
+        provisional_price: true,
+        packaging_profile: 'Profile A',
+        dimensions: { length: 35, width: 25, height: 4, unit: 'cm' },
+        weight: { value: 0.45, unit: 'kg' },
+      },
+    },
+    {
+      name: 'Cristiano Ronaldo Real Madrid Split Poster',
+      slug: 'ronaldo-real-madrid-split-poster',
+      sku: 'FM-PST-SPL-RONALDO-RM',
+      desc: 'Set of 3 - Cristiano Ronaldo Split Design Posters | Full Size 36x18 inch (12x18 inch per panel). Printed on 170 GSM fine art paper, unframed.',
+      base_price: 299,
+      cats: ['posters', 'wall-art'],
+      images: ['/catalog/posters/ronaldo-split-realmadrid-1.jpg'],
+      manufacturing_metadata: {
+        pricing_status: 'CONFIRMED_SOURCE',
+        provisional_price: false,
+        packaging_profile: 'Profile B',
+        dimensions: { length: 48, width: 10, height: 10, unit: 'cm' },
+        weight: { value: 0.25, unit: 'kg' },
+      },
+    },
+    {
+      name: 'Anime Mix Poster Pack (Set of 12)',
+      slug: 'anime-mix-poster-pack-12',
+      sku: 'FM-PST-ANI-12',
+      desc: 'Anime Universe: Anime poster Set of 12 Mix Anime Wall Posters for room decor (12x4.5 inch). Printed on 300 GSM photographic paper, unframed.',
+      base_price: 199,
+      cats: ['posters'],
+      images: ['/catalog/posters/anime-pack12-1.jpg'],
+      manufacturing_metadata: {
+        pricing_status: 'PROVISIONAL_ESTIMATE',
+        provisional_price: true,
+        packaging_profile: 'Profile C',
+        dimensions: { length: 32, width: 24, height: 2.5, unit: 'cm' },
+        weight: { value: 0.30, unit: 'kg' },
+      },
+    },
+    {
+      name: 'Lamborghini Pink Split Poster Set',
+      slug: 'lamborghini-split-poster-set',
+      sku: 'FM-PST-SPL-LAMBO-PNK',
+      desc: 'Pack of 3 - Lamborghini Super Car Split Poster Set (12x18 inch each, 36x18 inch display). Printed on 170 GSM photographic paper, unframed.',
+      base_price: 299,
+      cats: ['posters'],
+      images: ['/catalog/posters/carsplit-lambo-1.jpg'],
+      manufacturing_metadata: {
+        pricing_status: 'PROVISIONAL_ESTIMATE',
+        provisional_price: true,
+        packaging_profile: 'Profile B',
+        dimensions: { length: 48, width: 10, height: 10, unit: 'cm' },
+        weight: { value: 0.25, unit: 'kg' },
+      },
+    },
+    {
+      name: 'Animal Theme Bookmarks (Set of 10)',
+      slug: 'animal-theme-bookmarks-set',
+      sku: 'FM-BKM-ANM-01',
+      desc: 'Bookmarks For Animal Lovers (Set Of 10 Pcs, 21x6 cm). Vibrant double-sided prints on durable 300 GSM coated cardstock.',
+      base_price: 149,
+      cats: ['bookmarks'],
+      images: ['/catalog/bookmarks/animal-bm1-1.jpg'],
+      manufacturing_metadata: {
+        pricing_status: 'PROVISIONAL_ESTIMATE',
+        provisional_price: true,
+        packaging_profile: 'Profile D',
+        dimensions: { length: 23, width: 8, height: 2, unit: 'cm' },
+        weight: { value: 0.12, unit: 'kg' },
+      },
+    },
+  ];
+
+  for (const pilotProd of realPilotProducts) {
+    const product = await prisma.product.upsert({
+      where: { slug: pilotProd.slug },
+      update: {
+        name: pilotProd.name,
+        sku: pilotProd.sku,
+        description: pilotProd.desc,
+        base_price: new Prisma.Decimal(pilotProd.base_price),
+        manufacturing_metadata: pilotProd.manufacturing_metadata,
+        is_active: true
+      },
+      create: {
+        name: pilotProd.name,
+        slug: pilotProd.slug,
+        sku: pilotProd.sku,
+        description: pilotProd.desc,
+        base_price: new Prisma.Decimal(pilotProd.base_price),
+        manufacturing_metadata: pilotProd.manufacturing_metadata,
+        is_active: true
+      }
+    });
+
+    await prisma.productCategory.deleteMany({ where: { product_id: product.id } });
+    for (const catSlug of pilotProd.cats) {
+      if (categories[catSlug]) {
+        await prisma.productCategory.create({
+          data: { product_id: product.id, category_id: categories[catSlug] }
+        });
+      }
+    }
+
+    await prisma.productImage.deleteMany({ where: { product_id: product.id } });
+    for (let i = 0; i < pilotProd.images.length; i++) {
+      await prisma.productImage.create({
+        data: {
+          product_id: product.id,
+          file_key: pilotProd.images[i],
+          sort_order: i,
+          alt_text: pilotProd.name
+        }
+      });
+    }
+  }
+  console.log(`✅ Upserted ${realPilotProducts.length} Real FirstMemoir Pilot Products with SKUs & Metadata`);
 
   console.log('🎉 Seed completed successfully!');
 }

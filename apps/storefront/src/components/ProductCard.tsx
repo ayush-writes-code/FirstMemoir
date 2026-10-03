@@ -21,7 +21,12 @@ export function ProductCard({ product }: { product: StorefrontProduct }) {
       <div className="mt-4 flex flex-col items-center text-center">
         <h3 className="line-clamp-2 text-sm font-medium text-ink tracking-wide">{product.name}</h3>
         {product.base_price && Number(product.base_price) > 0 ? (
-          <p className="text-sm font-normal text-muted mt-1">₹{Number(product.base_price).toLocaleString('en-IN')}</p>
+          <div className="flex items-center gap-1.5 mt-1">
+            <p className="text-sm font-normal text-muted">₹{Number(product.base_price).toLocaleString('en-IN')}</p>
+            {product.is_provisional_price && (
+              <span className="text-[11px] text-amber-700/80 font-normal">(Est.)</span>
+            )}
+          </div>
         ) : (
           <p className="text-sm font-normal text-muted-soft mt-1 italic">Price coming soon</p>
         )}
