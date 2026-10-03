@@ -297,8 +297,8 @@ model OrderItem {
   order              Order      @relation(fields: [order_id], references: [id], onDelete: Cascade)
   product_id         String
   product            Product    @relation(fields: [product_id], references: [id], onDelete: Restrict)
-  upload_id          String
-  upload             UserUpload @relation(fields: [upload_id], references: [id], onDelete: Restrict)
+  upload_id          String?
+  upload             UserUpload? @relation(fields: [upload_id], references: [id], onDelete: Restrict)
   quantity           Int        @default(1)
   unit_price         Decimal
   customization_data Json
@@ -502,24 +502,24 @@ model CartLineItem {
   selected_option_values CartLineItemOptionValue[]
 
   // Image asset reference
-  upload_id   String
-  upload      UserUpload @relation(fields: [upload_id], references: [id], onDelete: Restrict)
-  preview_url String // Served to browser canvas (~800px proxy)
+  upload_id   String?
+  upload      UserUpload? @relation(fields: [upload_id], references: [id], onDelete: Restrict)
+  preview_url String? // Served to browser canvas (~800px proxy)
 
   // Orientation and Crop metadata
-  orientation       PrintOrientation
-  crop_x            Float // Left edge (normalized 0.0-1.0 in canonical space)
-  crop_y            Float // Top edge (normalized 0.0-1.0 in canonical space)
-  crop_width        Float // Width of crop window
-  crop_height       Float // Height of crop window
-  crop_aspect_ratio String // e.g., "8:10", "12:12" — derived from Size option
-  rotation          Float            @default(0) // Degrees
-  zoom              Float            @default(1.0) // Scale factor
+  orientation       PrintOrientation?
+  crop_x            Float? // Left edge (normalized 0.0-1.0 in canonical space)
+  crop_y            Float? // Top edge (normalized 0.0-1.0 in canonical space)
+  crop_width        Float? // Width of crop window
+  crop_height       Float? // Height of crop window
+  crop_aspect_ratio String? // e.g., "8:10", "12:12" — derived from Size option
+  rotation          Float?            @default(0) // Degrees
+  zoom              Float?            @default(1.0) // Scale factor
 
   // Print quality
-  effective_dpi        Int
-  print_quality_status PrintQualityStatus
-  dpi_acknowledged     Boolean            @default(false)
+  effective_dpi        Int?
+  print_quality_status PrintQualityStatus?
+  dpi_acknowledged     Boolean?            @default(false)
 
   // Pricing version snapshot — used to detect stale carts
   pricing_version Int

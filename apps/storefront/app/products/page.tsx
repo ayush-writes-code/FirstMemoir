@@ -1,8 +1,8 @@
 import { ProductCard } from '@/components/ProductCard';
 import { EmptyState } from '@/components/EmptyState';
 import Link from 'next/link';
-import { PROTOTYPE_CATALOG, PROTOTYPE_CATEGORIES } from '@/lib/prototype-data';
-
+import { products as productsApi, categories as categoriesApi } from '@/lib/api-client';
+import { adaptApiProductToStorefront } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,15 +12,16 @@ export default async function ProductsPage({
   searchParams: Promise<{ category?: string; sort?: string }>;
 }) {
   const { category, sort } = await searchParams;
-  
-  // Use verified prototype data instead of API for now
-  let products = [...PROTOTYPE_CATALOG];
-  const categories = PROTOTYPE_CATEGORIES;
-  
-  // Basic filtering
-  if (category) {
-    products = products.filter(p => p.categories?.some(c => c.slug === category));
-  }
+
+  // Fetch real catalog data from the API
+  const [productsRes, categoriesRes] = await Promise.all([
+    productsApi.getProducts({ category, sort }),
+    categoriesApi.getCategories()
+  ]);
+
+  let products = productsRes.data || [];
+  const categories = categoriesRes.data || [];
+
 
   // Basic sorting
   products.sort((a, b) => {
@@ -50,7 +51,7 @@ export default async function ProductsPage({
 
       <div className="flex flex-col md:flex-row gap-6 justify-between mb-12 items-center border-b border-hairline pb-4">
         <div className="flex gap-6 overflow-x-auto pb-2 scrollbar-hide w-full md:w-auto">
-          <Link 
+          <Link
             href="/products"
             className={`whitespace-nowrap pb-2 text-sm uppercase tracking-wider transition-colors ${
               !category ? 'text-ink border-b-2 border-ink font-medium' : 'text-muted hover:text-ink border-b-2 border-transparent'
@@ -59,7 +60,7 @@ export default async function ProductsPage({
             All
           </Link>
           {categories.map(c => (
-            <Link 
+            <Link
               key={c.id}
               href={`/products?category=${c.slug}`}
               className={`whitespace-nowrap pb-2 text-sm uppercase tracking-wider transition-colors ${
@@ -86,11 +87,11 @@ export default async function ProductsPage({
       {products.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={adaptApiProductToStorefront(product)} />
           ))}
         </div>
       ) : (
-        <EmptyState 
+        <EmptyState
           title="No products found"
           description={category ? `We couldn't find any products in the ${pageTitle} category.` : "We're currently updating our catalog."}
           cta={{ label: "View All Prints", href: "/products" }}

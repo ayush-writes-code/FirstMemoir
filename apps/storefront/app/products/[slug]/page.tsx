@@ -1,13 +1,10 @@
-import { products as productsApi } from "@repo/api-client";
+import { ShieldCheck, Package, Award } from "lucide-react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Package, Award, ShieldCheck } from "lucide-react";
+import { products as productsApi } from "@/lib/api-client";
 import { ProductImageGallery } from "@/components/ProductImageGallery";
 import { ProductCustomizer } from "@/components/ProductCustomizer";
 import { ProductPreviewProvider } from "@/store/ProductPreviewContext";
-import { PROTOTYPE_CATALOG } from "@/lib/prototype-data";
-import { ProductGallery } from "@/components/products/ProductGallery";
-import { PrototypeAddToCart } from "@/components/products/PrototypeAddToCart";
 import type { Metadata } from "next";
 
 export async function generateMetadata({
@@ -16,172 +13,29 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  
-  // Check Prototype Catalog First
-  const prototypeProduct = PROTOTYPE_CATALOG.find((p) => p.slug === slug);
-  if (prototypeProduct) {
+
+  // Real API Product
+  const res = await productsApi.getProductBySlug(slug).catch(() => ({ success: false, data: null }));
+  if (res.success && res.data) {
     return {
-      title: `${prototypeProduct.name} | First Memoir`,
-      description: "Order premium prints and wall art from First Memoir.in",
-      openGraph: {
-        title: prototypeProduct.name,
-        images: prototypeProduct.images[0] ? [{ url: prototypeProduct.images[0].url }] : [],
-      },
+      title: `${res.data.name} | FirstMemoir`,
+      description: res.data.description,
     };
   }
 
-  // Fallback to real API
-  const res = await productsApi.getProductBySlug(slug).catch(() => ({ success: false, data: null }));
-
-  if (!res.success || !res.data) {
-    return { title: "Product Not Found | First Memoir" };
-  }
-
-  const product = res.data;
   return {
-    title: `${product.name} | First Memoir`,
-    description: product.description ?? `Order a premium personalised ${product.name} from First Memoir.in`,
-    openGraph: {
-      title: product.name,
-      description: product.description ?? "",
-      images: product.images?.[0] ? [{ url: product.images[0].url }] : [],
-    },
+    title: "Product Not Found | FirstMemoir",
   };
 }
 
-export default async function ProductDetailPage({
+export default async function ProductPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
 
-  // 1. Check Prototype Catalog (Isolated Data Boundary)
-  const prototypeProduct = PROTOTYPE_CATALOG.find((p) => p.slug === slug);
-
-  if (prototypeProduct) {
-    const primaryCategory = prototypeProduct.categories?.[0];
-
-    return (
-      <div className="max-w-content mx-auto px-4 md:px-8 py-8 md:py-16 pb-32 lg:pb-16">
-        <div className="flex flex-col lg:flex-row gap-12 lg:gap-20">
-          {/* Left Column — Gallery */}
-          <div className="w-full lg:w-3/5 lg:sticky lg:top-28 lg:self-start lg:max-h-[calc(100vh-112px)]">
-            <ProductGallery images={prototypeProduct.images} />
-            
-            {/* Description (Desktop) */}
-            <div className="hidden lg:block mt-12 border-t border-hairline pt-12">
-              <h2 className="text-xl font-medium text-ink mb-6">Product Information</h2>
-              <div className="text-body font-light leading-relaxed whitespace-pre-wrap max-w-2xl">
-                {prototypeProduct.description || "Premium printed wall art on 300 GSM photographic paper. This product is currently in the prototype catalog pending final business verification for dimensions and marketing copy."}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column — Buy Box */}
-          <div className="w-full lg:w-2/5 flex flex-col pt-2 lg:pt-0">
-            {/* Breadcrumbs */}
-            <div className="flex items-center gap-2 text-xs uppercase tracking-widest text-muted mb-8">
-              <Link href="/products" className="hover:text-ink transition-colors">All Prints</Link>
-              {primaryCategory && (
-                <>
-                  <span className="text-hairline">/</span>
-                  <Link href={`/products?category=${primaryCategory.slug}`} className="hover:text-ink transition-colors">
-                    {primaryCategory.name}
-                  </Link>
-                </>
-              )}
-            </div>
-
-            <h1 className="text-4xl lg:text-5xl font-serif text-ink tracking-tight mb-4 leading-[1.1]">
-              {prototypeProduct.name}
-            </h1>
-
-            <div className="mb-10">
-              {prototypeProduct.is_missing_price ? (
-                <p className="text-lg text-muted-soft italic">Price coming soon</p>
-              ) : (
-                <div>
-                  <div className="flex items-baseline gap-3">
-                    <p className="text-2xl text-ink font-medium tracking-wide">
-                      ₹{Number(prototypeProduct.base_price).toLocaleString("en-IN")}
-                    </p>
-                    {prototypeProduct.is_provisional_price && (
-                      <span className="inline-flex items-center text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
-                        Provisional Estimate
-                      </span>
-                    )}
-                  </div>
-                  {prototypeProduct.is_provisional_price && (
-                    <p className="text-xs text-muted mt-2">
-                      Initial estimated selling price — editable via catalogue/admin.
-                    </p>
-                  )}
-                  {prototypeProduct.sku && (
-                    <p className="text-xs text-muted-soft mt-1.5 font-mono">
-                      SKU: {prototypeProduct.sku}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <PrototypeAddToCart 
-              isMissingPrice={prototypeProduct.is_missing_price} 
-            />
-
-            {/* Factual Information (Verified constraints only) */}
-            <div className="mt-12 space-y-4 text-sm">
-              <div className="flex justify-between py-3 border-b border-hairline">
-                <span className="text-muted">Material</span>
-                <span className="text-ink font-medium text-right">300 GSM Photographic Paper</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-hairline">
-                <span className="text-muted">Origin</span>
-                <span className="text-ink font-medium text-right">Made in India</span>
-              </div>
-              <div className="flex justify-between py-3 border-b border-hairline">
-                <span className="text-muted">Dispatch</span>
-                <span className="text-ink font-medium text-right">Within 24-48 hours</span>
-              </div>
-            </div>
-
-            {/* Trust Badges */}
-            <div className="grid grid-cols-3 gap-4 mt-12 pt-8 border-t border-hairline">
-              <div className="flex flex-col items-center text-center group">
-                <div className="w-12 h-12 rounded-full bg-surface-soft flex items-center justify-center mb-4 text-ink">
-                  <Package size={20} strokeWidth={1} />
-                </div>
-                <span className="text-xs text-muted">Secure<br/>Packaging</span>
-              </div>
-              <div className="flex flex-col items-center text-center group">
-                <div className="w-12 h-12 rounded-full bg-surface-soft flex items-center justify-center mb-4 text-ink">
-                  <Award size={20} strokeWidth={1} />
-                </div>
-                <span className="text-xs text-muted">Premium<br/>Quality</span>
-              </div>
-              <div className="flex flex-col items-center text-center group">
-                <div className="w-12 h-12 rounded-full bg-surface-soft flex items-center justify-center mb-4 text-ink">
-                  <ShieldCheck size={20} strokeWidth={1} />
-                </div>
-                <span className="text-xs text-muted">Secure<br/>Checkout</span>
-              </div>
-            </div>
-
-            {/* Description (Mobile) */}
-            <div className="lg:hidden mt-12 border-t border-hairline pt-8">
-              <h2 className="text-xl font-medium text-ink mb-4">Product Information</h2>
-              <div className="text-body font-light leading-relaxed whitespace-pre-wrap">
-                {prototypeProduct.description || "Premium printed wall art on 300 GSM photographic paper. This product is currently in the prototype catalog pending final business verification for dimensions and marketing copy."}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 2. Fallback to Real API (Personalized/Database Products)
+  // Fetch real API product
   const res = await productsApi.getProductBySlug(slug).catch(() => ({ success: false, data: null }));
 
   if (!res.success || !res.data) {
@@ -227,9 +81,26 @@ export default async function ProductDetailPage({
             <h1 className="text-4xl lg:text-5xl font-serif text-ink tracking-tight mb-2 leading-tight">
               {product.name}
             </h1>
-            <p className="text-muted text-base mb-8">
-              Starting from <span className="font-medium text-ink">₹{Number(product.base_price).toLocaleString("en-IN")}</span>
-            </p>
+            <div className="mb-8">
+              <p className="text-muted text-base">
+                Starting from <span className="font-medium text-ink">₹{Number(product.base_price).toLocaleString("en-IN")}</span>
+              </p>
+              {product.manufacturing_metadata?.provisional_price && (
+                <div className="mt-2">
+                  <span className="inline-flex items-center text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                    Provisional Estimate
+                  </span>
+                  <p className="text-xs text-muted mt-1">
+                    Initial estimated selling price — editable via catalogue/admin.
+                  </p>
+                </div>
+              )}
+              {product.sku && (
+                <p className="text-xs text-muted-soft mt-1.5 font-mono">
+                  SKU: {product.sku}
+                </p>
+              )}
+            </div>
 
             <ProductCustomizer product={product} />
 

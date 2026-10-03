@@ -9,7 +9,7 @@ import type {
 
 type FullOrderItem = OrderItem & { 
   product: Pick<Product, 'name'>; 
-  upload: Pick<UserUpload, 'preview_r2_key'>;
+  upload: Pick<UserUpload, 'preview_r2_key'> | null;
 };
 
 type FullOrder = Order & {
@@ -36,9 +36,7 @@ export const orderMapper = {
       unit_price: item.unit_price.toString(),
       print_asset_url: item.print_asset_url,
       // For preview, construct a proxy URL or just return the key for now.
-      // Assuming frontend knows how to build the full URL if given the key, or we give the path.
-      // In a real app we might sign a URL here. For now, returning the key or path.
-      preview_url: item.upload.preview_r2_key ? `/api/v1/uploads/preview/${item.upload.preview_r2_key}` : '',
+      preview_url: item.upload?.preview_r2_key ? `/api/v1/uploads/preview/${item.upload.preview_r2_key}` : '',
       customization_summary: item.customization_data,
     };
   },

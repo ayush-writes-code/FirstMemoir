@@ -297,7 +297,7 @@ export const adminOrdersController = {
             id: item.id,
             product_name: item.product.name,
             quantity: item.quantity,
-            preview_url: item.upload.preview_r2_key ? `/api/v1/uploads/preview/${item.upload.preview_r2_key}` : null,
+            preview_url: item.upload?.preview_r2_key ? `/api/v1/uploads/preview/${item.upload.preview_r2_key}` : null,
             snapshot: {
               options: customization?.selected_product_options || customization?.selected_options || [],
               physical_width: customization?.physical_width,

@@ -283,17 +283,16 @@ export interface CartDto {
 export interface AddToCartInput {
   product_id: string;
   quantity: number;
-  selected_option_value_ids: string[];
-  upload_id: string;
-  preview_url: string;
-  orientation: PrintOrientation;
-  crop: CropData;
-  rotation: number;
-  zoom: number;
-  effective_dpi: number;
-  print_quality_status: PrintQualityStatus;
-  /** Must be true when print_quality_status is LOW_QUALITY or NOT_RECOMMENDED */
-  dpi_acknowledged: boolean;
+  selected_option_value_ids?: string[];
+  upload_id?: string;
+  preview_url?: string;
+  orientation?: PrintOrientation;
+  crop?: CropData;
+  rotation?: number;
+  zoom?: number;
+  effective_dpi?: number;
+  print_quality_status?: PrintQualityStatus;
+  dpi_acknowledged?: boolean;
 }
 
 export interface CheckoutInitInput {

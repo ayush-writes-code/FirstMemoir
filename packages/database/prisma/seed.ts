@@ -1,144 +1,66 @@
 import { PrismaClient, Prisma } from '@prisma/client';
+import { catalogue } from './catalogue/data';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting First Memoir.in Development Seed...');
+  console.log('🌱 Starting database seed with canonical catalogue...');
 
-  // 1. Seed Admin User
-  await prisma.user.upsert({
-    where: { phone_number: '9999999999' },
-    update: { role: 'ADMIN', first_name: 'Super', last_name: 'Admin' },
-    create: { phone_number: '9999999999', role: 'ADMIN', first_name: 'Super', last_name: 'Admin' }
-  });
-  console.log('✅ Upserted Admin user (9999999999)');
-
-  // 2. Seed Categories
-  const categoryData = [
-    { name: 'Wall Frames', slug: 'frames', sort_order: 1 },
-    { name: 'Posters & Wall Art', slug: 'posters', sort_order: 2 },
-    { name: 'Bookmarks', slug: 'bookmarks', sort_order: 3 },
-    { name: 'Wall Art', slug: 'wall-art', sort_order: 4 },
-    { name: 'Photo Frames', slug: 'photo-frames', sort_order: 5 },
-    { name: 'Canvas Prints', slug: 'canvas-prints', sort_order: 6 },
-    { name: 'Acrylic Prints', slug: 'acrylic-prints', sort_order: 7 },
-    { name: 'Fine Art Prints', slug: 'fine-art-prints', sort_order: 8 },
-    { name: 'Metal Prints', slug: 'metal-prints', sort_order: 9 }
+  // 1. Ensure core categories exist
+  const coreCategories = [
+    { name: 'Wall Frames', slug: 'frames', description: '8x12 inch Framed Prints' },
+    { name: 'Posters & Wall Art', slug: 'posters', description: 'High quality wall posters and split designs' },
+    { name: 'Bookmarks', slug: 'bookmarks', description: 'Premium coated bookmarks for book lovers' },
+    { name: 'Custom Photo Prints', slug: 'custom-prints', description: 'Personalized printing' },
+    { name: 'All Wall Art', slug: 'wall-art', description: 'Complete collection of wall art' }
   ];
 
   const categories: Record<string, string> = {};
-
-  for (const cat of categoryData) {
+  for (const cat of coreCategories) {
     const created = await prisma.category.upsert({
       where: { slug: cat.slug },
-      update: { name: cat.name, sort_order: cat.sort_order },
-      create: cat,
+      update: { name: cat.name, description: cat.description },
+      create: { name: cat.name, slug: cat.slug, description: cat.description }
     });
     categories[cat.slug] = created.id;
   }
-  console.log(`✅ Upserted ${categoryData.length} Categories`);
+  console.log(`✅ Upserted ${coreCategories.length} Categories`);
 
-  // 3. Seed Frame Materials (Legacy mapping fallback if needed)
-  const frameMaterialsData = [
-    { name: 'Natural Oak Frame', type: 'FRAME', price_modifier: 499 },
-    { name: 'Matte Black Frame', type: 'FRAME', price_modifier: 449 },
-    { name: 'Rustic Walnut Frame', type: 'FRAME', price_modifier: 599 },
-    { name: 'White Frame', type: 'FRAME', price_modifier: 349 },
-    { name: 'Standard Glass', type: 'GLASS', price_modifier: 199 },
-    { name: 'Anti-Glare Glass', type: 'GLASS', price_modifier: 349 }
-  ];
+  // 2. Ingest all 82 products idempotently
+  let createdCount = 0;
+  let updatedCount = 0;
 
-  for (const fm of frameMaterialsData) {
-    const existing = await prisma.frameMaterial.findFirst({
-      where: { name: fm.name, type: fm.type as any }
+  for (const item of catalogue) {
+    const product = await prisma.product.upsert({
+      where: { slug: item.slug },
+      update: {
+        name: item.name,
+        sku: item.sku,
+        description: item.desc,
+        base_price: new Prisma.Decimal(item.base_price),
+        manufacturing_metadata: item.manufacturing_metadata,
+        is_active: true
+      },
+      create: {
+        name: item.name,
+        slug: item.slug,
+        sku: item.sku,
+        description: item.desc,
+        base_price: new Prisma.Decimal(item.base_price),
+        manufacturing_metadata: item.manufacturing_metadata,
+        is_active: true
+      }
     });
 
-    if (existing) {
-      await prisma.frameMaterial.update({
-        where: { id: existing.id },
-        data: { price_modifier: new Prisma.Decimal(fm.price_modifier) }
-      });
+    if (product.created_at.getTime() === product.updated_at.getTime()) {
+      createdCount++;
     } else {
-      await prisma.frameMaterial.create({
-        data: {
-          name: fm.name,
-          type: fm.type as any,
-          price_modifier: new Prisma.Decimal(fm.price_modifier)
-        }
-      });
-    }
-  }
-  console.log(`✅ Upserted ${frameMaterialsData.length} Frame Materials`);
-
-  // 4. Seed Products
-  const photos = [
-    'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=1080&q=80',
-    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1080&q=80',
-    'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=1080&q=80',
-    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1080&q=80',
-    'https://images.unsplash.com/photo-1549887534-1541e9326642?w=1080&q=80',
-    'https://images.unsplash.com/photo-1494526585095-c41746248156?w=1080&q=80',
-    'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=1080&q=80',
-    'https://images.unsplash.com/photo-1533134486753-c833f0ed4866?w=1080&q=80'
-  ];
-
-  const productsData = [
-    { name: 'Family Portrait Frame', slug: 'family-portrait-frame', desc: 'Preserve your cherished family moments.', base_price: 1499, cats: ['photo-frames', 'wall-art'], imgIdx: 0 },
-    { name: 'Wedding Memory Frame', slug: 'wedding-memory-frame', desc: 'Elegant archival framing for your most special day.', base_price: 1899, cats: ['photo-frames'], imgIdx: 1 },
-    { name: 'Baby Milestone Print', slug: 'baby-milestone-print', desc: 'Beautiful fine art prints to celebrate every milestone.', base_price: 899, cats: ['fine-art-prints'], imgIdx: 2 },
-    { name: 'Graduation Memory Frame', slug: 'graduation-memory-frame', desc: 'A classic frame with matting to honor your achievements.', base_price: 1299, cats: ['photo-frames'], imgIdx: 3 },
-    { name: 'Travel Poster', slug: 'travel-poster', desc: 'Vibrant colors and premium paper for your favorite travel memories.', base_price: 799, cats: ['wall-art'], imgIdx: 4 },
-    { name: 'Anniversary Canvas', slug: 'anniversary-canvas', desc: 'Gallery-wrapped premium canvas prints for timeless display.', base_price: 2499, cats: ['canvas-prints', 'wall-art'], imgIdx: 5 },
-    { name: 'Couple Acrylic Print', slug: 'couple-acrylic-print', desc: 'Modern, high-gloss acrylic prints that make colors pop.', base_price: 2999, cats: ['acrylic-prints'], imgIdx: 6 },
-    { name: 'Pet Portrait Frame', slug: 'pet-portrait-frame', desc: 'Celebrate your furry friends with our standard gallery frames.', base_price: 1199, cats: ['photo-frames'], imgIdx: 7 },
-    { name: 'Industrial Metal Print', slug: 'industrial-metal-print', desc: 'Sleek metal prints for an industrial aesthetic.', base_price: 2199, cats: ['metal-prints', 'wall-art'], imgIdx: 0 }
-  ];
-
-  for (const prod of productsData) {
-    let mockup_metadata = null;
-    if (prod.slug === 'anniversary-canvas') {
-      mockup_metadata = {
-        mockups: {
-          portrait: {
-            printArea: { top: '20.53%', left: '39.25%', width: '21.30%', height: '41.80%' },
-            baseAsset: '/mockups/anniversary-canvas/portrait/scene.webp',
-            overlayAsset: '/mockups/anniversary-canvas/portrait/frame-overlay-test.png'
-          }
-        }
-      };
-    } else if (prod.slug === 'family-portrait-frame') {
-      mockup_metadata = {
-        coordinates: {
-          0: { top: '25%', left: '30%', width: '40%', height: '50%' }
-        }
-      };
-    } else if (prod.slug === 'wedding-memory-frame') {
-      mockup_metadata = {
-        coordinates: {
-          0: { top: '20%', left: '25%', width: '50%', height: '60%' }
-        }
-      };
+      updatedCount++;
     }
 
-    const product = await prisma.product.upsert({
-      where: { slug: prod.slug },
-      update: {
-        name: prod.name,
-        description: prod.desc,
-        base_price: new Prisma.Decimal(prod.base_price),
-        mockup_metadata
-      },
-      create: {
-        name: prod.name,
-        slug: prod.slug,
-        description: prod.desc,
-        base_price: new Prisma.Decimal(prod.base_price),
-        mockup_metadata
-      }
-    });
-
+    // Upsert categories mapping
     await prisma.productCategory.deleteMany({ where: { product_id: product.id } });
-    for (const catSlug of prod.cats) {
+    for (const catSlug of item.cats) {
       if (categories[catSlug]) {
         await prisma.productCategory.create({
           data: { product_id: product.id, category_id: categories[catSlug] }
@@ -146,344 +68,20 @@ async function main() {
       }
     }
 
+    // Upsert images
     await prisma.productImage.deleteMany({ where: { product_id: product.id } });
-    const mainImg = photos[prod.imgIdx];
-    const secondImg = photos[(prod.imgIdx + 1) % photos.length];
-    
-    await prisma.productImage.createMany({
-      data: [
-        { product_id: product.id, file_key: mainImg, sort_order: 0 },
-        { product_id: product.id, file_key: secondImg, sort_order: 1 }
-      ]
-    });
-
-    await prisma.productOption.deleteMany({ where: { product_id: product.id } });
-
-    const sizeOption = await prisma.productOption.create({
-      data: {
-        product_id: product.id,
-        name: 'Size',
-        input_type: 'RADIO',
-        is_required: true,
-        sort_order: 0,
-        values: {
-          create: [
-            { value: '8x10', modifier_type: 'FLAT', price_modifier: new Prisma.Decimal(0), sort_order: 0, metadata: { width: 8, height: 10, unit: 'in', packaging: { length: 12, width: 10, height: 2, weight: 0.5 } } },
-            { value: '12x18', modifier_type: 'FLAT', price_modifier: new Prisma.Decimal(400), sort_order: 1, metadata: { width: 12, height: 18, unit: 'in', packaging: { length: 20, width: 14, height: 2, weight: 1.2 } } },
-            { value: '16x20', modifier_type: 'FLAT', price_modifier: new Prisma.Decimal(800), sort_order: 2, metadata: { width: 16, height: 20, unit: 'in', packaging: { length: 22, width: 18, height: 2, weight: 1.8 } } }
-          ]
-        }
-      },
-      include: { values: true }
-    });
-
-    const frameOption = await prisma.productOption.create({
-      data: {
-        product_id: product.id,
-        name: 'Frame',
-        input_type: 'SWATCH',
-        is_required: true,
-        sort_order: 1,
-        values: {
-          create: [
-            { value: 'None', modifier_type: 'FLAT', price_modifier: new Prisma.Decimal(0), sort_order: 0 },
-            { value: 'Matte Black', modifier_type: 'FLAT', price_modifier: new Prisma.Decimal(449), sort_order: 1 },
-            { value: 'Natural Oak', modifier_type: 'FLAT', price_modifier: new Prisma.Decimal(499), sort_order: 2 },
-            { value: 'Walnut', modifier_type: 'FLAT', price_modifier: new Prisma.Decimal(599), sort_order: 3 }
-          ]
-        }
-      },
-      include: { values: true }
-    });
-
-    const glassOption = await prisma.productOption.create({
-      data: {
-        product_id: product.id,
-        name: 'Glass',
-        input_type: 'RADIO',
-        is_required: true,
-        sort_order: 2,
-        values: {
-          create: [
-            { value: 'Standard', modifier_type: 'FLAT', price_modifier: new Prisma.Decimal(199), sort_order: 0 },
-            { value: 'Anti-Glare', modifier_type: 'FLAT', price_modifier: new Prisma.Decimal(349), sort_order: 1 }
-          ]
-        }
-      },
-      include: { values: true }
-    });
-
-    const paperOption = await prisma.productOption.create({
-      data: {
-        product_id: product.id,
-        name: 'Paper',
-        input_type: 'RADIO',
-        is_required: true,
-        sort_order: 3,
-        values: {
-          create: [
-            { value: 'Matte', modifier_type: 'PERCENTAGE', price_modifier: new Prisma.Decimal(0), sort_order: 0 },
-            { value: 'Lustre', modifier_type: 'PERCENTAGE', price_modifier: new Prisma.Decimal(10), sort_order: 1 }
-          ]
-        }
-      },
-      include: { values: true }
-    });
-
-    if (prod.cats.includes('canvas-prints')) {
-      const standardGlass = glassOption.values.find(v => v.value === 'Standard');
-      
-      if (standardGlass) {
-        await prisma.optionExclusion.create({
-          data: {
-            product_id: product.id,
-            option_value_1_id: sizeOption.values[0].id,
-            option_value_2_id: standardGlass.id
-          }
-        });
-      }
-    }
-
-    if (prod.cats.includes('acrylic-prints')) {
-      const mattePaper = paperOption.values.find(v => v.value === 'Matte');
-      const noneFrame = frameOption.values.find(v => v.value === 'None');
-      
-      if (mattePaper && noneFrame) {
-        await prisma.optionExclusion.create({
-          data: {
-            product_id: product.id,
-            option_value_1_id: mattePaper.id,
-            option_value_2_id: noneFrame.id
-          }
-        });
-      }
-    }
-
-    if (prod.cats.includes('metal-prints')) {
-      const oakFrame = frameOption.values.find(v => v.value === 'Natural Oak');
-      const size8x10 = sizeOption.values.find(v => v.value === '8x10');
-      
-      if (oakFrame && size8x10) {
-        await prisma.optionExclusion.create({
-          data: {
-            product_id: product.id,
-            option_value_1_id: oakFrame.id,
-            option_value_2_id: size8x10.id
-          }
-        });
-      }
-    }
-  }
-  console.log(`✅ Upserted ${productsData.length} Premium Products with Realistic Options & Exclusions`);
-
-  // 5. Seed Real Pilot Products (FirstMemoir Authentic Catalogue)
-  const realPilotProducts = [
-    {
-      name: 'Porsche GT3 RS Wall Frame',
-      slug: 'porsche-gt3-rs-frame',
-      sku: 'FM-FRM-POR-GT3RS',
-      desc: 'Set of 3 - Porsche GT3 RS Wall Poster Frame | 8x12 inch (A4 Size). Printed on 300 GSM archival photographic paper with high-clarity protective acrylic.',
-      base_price: 249,
-      cats: ['frames', 'wall-art'],
-      images: ['/catalog/frames/porsche-1.jpg'],
-      manufacturing_metadata: {
-        pricing_status: 'CONFIRMED_SOURCE',
-        provisional_price: false,
-        packaging_profile: 'Profile A',
-        dimensions: { length: 35, width: 25, height: 4, unit: 'cm' },
-        weight: { value: 0.45, unit: 'kg' },
-      },
-    },
-    {
-      name: 'Cristiano Ronaldo Jersey Frame',
-      slug: 'cristiano-ronaldo-jersey-frame',
-      sku: 'FM-FRM-FBL-RONALDO',
-      desc: 'Cristiano Ronaldo signed jersey wall poster frame (8x12 inch). World Cup special series printed on 300 GSM photographic paper.',
-      base_price: 299,
-      cats: ['frames', 'wall-art'],
-      images: ['/catalog/frames/football-ronaldo-1.jpg'],
-      manufacturing_metadata: {
-        pricing_status: 'CONFIRMED_SOURCE',
-        provisional_price: false,
-        packaging_profile: 'Profile A',
-        dimensions: { length: 35, width: 25, height: 4, unit: 'cm' },
-        weight: { value: 0.45, unit: 'kg' },
-      },
-    },
-    {
-      name: 'Kylian Mbappé Jersey Frame',
-      slug: 'kylian-mbappe-jersey-frame',
-      sku: 'FM-FRM-FBL-MBAPPE',
-      desc: 'Kylian Mbappé signed jersey wall poster frame (8x12 inch). World Cup special series printed on 300 GSM photographic paper.',
-      base_price: 299,
-      cats: ['frames', 'wall-art'],
-      images: ['/catalog/frames/football-mbappe-1.jpg'],
-      manufacturing_metadata: {
-        pricing_status: 'CONFIRMED_SOURCE',
-        provisional_price: false,
-        packaging_profile: 'Profile A',
-        dimensions: { length: 35, width: 25, height: 4, unit: 'cm' },
-        weight: { value: 0.45, unit: 'kg' },
-      },
-    },
-    {
-      name: 'Hustle Hard Motivation Frame',
-      slug: 'hustle-hard-motivation-frame',
-      sku: 'FM-FRM-MOT-03',
-      desc: 'Wall Framed Poster (8x12 inch) featuring Motivational Quote design. Printed on 300 GSM photographic paper with lightweight durable frame.',
-      base_price: 299,
-      cats: ['frames', 'wall-art'],
-      images: ['/catalog/frames/motivation-03-1.jpg'],
-      manufacturing_metadata: {
-        pricing_status: 'CONFIRMED_SOURCE',
-        provisional_price: false,
-        packaging_profile: 'Profile A',
-        dimensions: { length: 35, width: 25, height: 4, unit: 'cm' },
-        weight: { value: 0.45, unit: 'kg' },
-      },
-    },
-    {
-      name: 'Focus Motivation Frame',
-      slug: 'focus-motivation-frame',
-      sku: 'FM-FRM-MOT-09',
-      desc: 'Wall Framed Poster (8x12 inch) featuring Focus Motivational design. Printed on 300 GSM photographic paper with lightweight durable frame.',
-      base_price: 299,
-      cats: ['frames', 'wall-art'],
-      images: ['/catalog/frames/motivation-09-1.jpg'],
-      manufacturing_metadata: {
-        pricing_status: 'CONFIRMED_SOURCE',
-        provisional_price: false,
-        packaging_profile: 'Profile A',
-        dimensions: { length: 35, width: 25, height: 4, unit: 'cm' },
-        weight: { value: 0.45, unit: 'kg' },
-      },
-    },
-    {
-      name: 'Toyota Supra Wall Frame',
-      slug: 'toyota-supra-wall-frame',
-      sku: 'FM-FRM-FFC-SUPRA',
-      desc: 'Iconic Fast & Furious Toyota Supra 8x12 inch framed wall art. Printed on 300 GSM archival paper with modern frame moulding.',
-      base_price: 299,
-      cats: ['frames', 'wall-art'],
-      images: ['/catalog/frames/cars-supra-1.jpg'],
-      manufacturing_metadata: {
-        pricing_status: 'PROVISIONAL_ESTIMATE',
-        provisional_price: true,
-        packaging_profile: 'Profile A',
-        dimensions: { length: 35, width: 25, height: 4, unit: 'cm' },
-        weight: { value: 0.45, unit: 'kg' },
-      },
-    },
-    {
-      name: 'Cristiano Ronaldo Real Madrid Split Poster',
-      slug: 'ronaldo-real-madrid-split-poster',
-      sku: 'FM-PST-SPL-RONALDO-RM',
-      desc: 'Set of 3 - Cristiano Ronaldo Split Design Posters | Full Size 36x18 inch (12x18 inch per panel). Printed on 170 GSM fine art paper, unframed.',
-      base_price: 299,
-      cats: ['posters', 'wall-art'],
-      images: ['/catalog/posters/ronaldo-split-realmadrid-1.jpg'],
-      manufacturing_metadata: {
-        pricing_status: 'CONFIRMED_SOURCE',
-        provisional_price: false,
-        packaging_profile: 'Profile B',
-        dimensions: { length: 48, width: 10, height: 10, unit: 'cm' },
-        weight: { value: 0.25, unit: 'kg' },
-      },
-    },
-    {
-      name: 'Anime Mix Poster Pack (Set of 12)',
-      slug: 'anime-mix-poster-pack-12',
-      sku: 'FM-PST-ANI-12',
-      desc: 'Anime Universe: Anime poster Set of 12 Mix Anime Wall Posters for room decor (12x4.5 inch). Printed on 300 GSM photographic paper, unframed.',
-      base_price: 199,
-      cats: ['posters'],
-      images: ['/catalog/posters/anime-pack12-1.jpg'],
-      manufacturing_metadata: {
-        pricing_status: 'PROVISIONAL_ESTIMATE',
-        provisional_price: true,
-        packaging_profile: 'Profile C',
-        dimensions: { length: 32, width: 24, height: 2.5, unit: 'cm' },
-        weight: { value: 0.30, unit: 'kg' },
-      },
-    },
-    {
-      name: 'Lamborghini Pink Split Poster Set',
-      slug: 'lamborghini-split-poster-set',
-      sku: 'FM-PST-SPL-LAMBO-PNK',
-      desc: 'Pack of 3 - Lamborghini Super Car Split Poster Set (12x18 inch each, 36x18 inch display). Printed on 170 GSM photographic paper, unframed.',
-      base_price: 299,
-      cats: ['posters'],
-      images: ['/catalog/posters/carsplit-lambo-1.jpg'],
-      manufacturing_metadata: {
-        pricing_status: 'PROVISIONAL_ESTIMATE',
-        provisional_price: true,
-        packaging_profile: 'Profile B',
-        dimensions: { length: 48, width: 10, height: 10, unit: 'cm' },
-        weight: { value: 0.25, unit: 'kg' },
-      },
-    },
-    {
-      name: 'Animal Theme Bookmarks (Set of 10)',
-      slug: 'animal-theme-bookmarks-set',
-      sku: 'FM-BKM-ANM-01',
-      desc: 'Bookmarks For Animal Lovers (Set Of 10 Pcs, 21x6 cm). Vibrant double-sided prints on durable 300 GSM coated cardstock.',
-      base_price: 149,
-      cats: ['bookmarks'],
-      images: ['/catalog/bookmarks/animal-bm1-1.jpg'],
-      manufacturing_metadata: {
-        pricing_status: 'PROVISIONAL_ESTIMATE',
-        provisional_price: true,
-        packaging_profile: 'Profile D',
-        dimensions: { length: 23, width: 8, height: 2, unit: 'cm' },
-        weight: { value: 0.12, unit: 'kg' },
-      },
-    },
-  ];
-
-  for (const pilotProd of realPilotProducts) {
-    const product = await prisma.product.upsert({
-      where: { slug: pilotProd.slug },
-      update: {
-        name: pilotProd.name,
-        sku: pilotProd.sku,
-        description: pilotProd.desc,
-        base_price: new Prisma.Decimal(pilotProd.base_price),
-        manufacturing_metadata: pilotProd.manufacturing_metadata,
-        is_active: true
-      },
-      create: {
-        name: pilotProd.name,
-        slug: pilotProd.slug,
-        sku: pilotProd.sku,
-        description: pilotProd.desc,
-        base_price: new Prisma.Decimal(pilotProd.base_price),
-        manufacturing_metadata: pilotProd.manufacturing_metadata,
-        is_active: true
-      }
-    });
-
-    await prisma.productCategory.deleteMany({ where: { product_id: product.id } });
-    for (const catSlug of pilotProd.cats) {
-      if (categories[catSlug]) {
-        await prisma.productCategory.create({
-          data: { product_id: product.id, category_id: categories[catSlug] }
-        });
-      }
-    }
-
-    await prisma.productImage.deleteMany({ where: { product_id: product.id } });
-    for (let i = 0; i < pilotProd.images.length; i++) {
+    for (let i = 0; i < item.images.length; i++) {
       await prisma.productImage.create({
         data: {
           product_id: product.id,
-          file_key: pilotProd.images[i],
+          file_key: item.images[i],
           sort_order: i,
-          alt_text: pilotProd.name
+          alt_text: item.name
         }
       });
     }
   }
-  console.log(`✅ Upserted ${realPilotProducts.length} Real FirstMemoir Pilot Products with SKUs & Metadata`);
+  console.log(`✅ Processed ${catalogue.length} Products (${createdCount} created, ${updatedCount} updated)`);
 
   console.log('🎉 Seed completed successfully!');
 }

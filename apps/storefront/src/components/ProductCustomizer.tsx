@@ -129,7 +129,7 @@ export function ProductCustomizer({ product }: Props) {
     height: 1,
   });
   const [rotation, setRotation] = useState<number>(0);
-  
+
 
   // Sync to ProductPreviewContext
   const {
@@ -286,77 +286,85 @@ export function ProductCustomizer({ product }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const canAddToCart =
-    (!dpiAcknowledgmentRequired || hasAcknowledgedDpi) && uploadId !== null;
+  const isPersonalizable = product.categories?.some(c => c.category?.slug === 'custom-prints');
+
+  const canAddToCart = isPersonalizable
+    ? (!dpiAcknowledgmentRequired || hasAcknowledgedDpi) && uploadId !== null
+    : true;
+
   const selectedValueIds = Object.values(selectedOptions);
   const { total } = useProductPrice(product, selectedValueIds);
 
   const handleAddToCart = async () => {
-    if (!uploadId || !previewUrl) return;
+    if (isPersonalizable && (!uploadId || !previewUrl)) return;
 
     await addToCart({
       product_id: product.id,
       quantity: 1,
       selected_option_value_ids: selectedValueIds,
-      upload_id: uploadId,
-      preview_url: previewUrl,
-      crop: {
-        ...cropData,
-        aspect_ratio: `${physicalWidth}:${physicalHeight}`,
-      },
-      rotation: rotation,
-      zoom: zoom,
-      orientation: printOrientation,
-      effective_dpi: effectiveDpi,
-      print_quality_status: printQualityStatus,
-      dpi_acknowledged: hasAcknowledgedDpi,
+      ...(isPersonalizable ? {
+        upload_id: uploadId!,
+        preview_url: previewUrl!,
+        crop: {
+          ...cropData,
+          aspect_ratio: `${physicalWidth}:${physicalHeight}`,
+        },
+        rotation: rotation,
+        zoom: zoom,
+        orientation: printOrientation,
+        effective_dpi: effectiveDpi,
+        print_quality_status: printQualityStatus,
+        dpi_acknowledged: hasAcknowledgedDpi,
+      } : {})
     });
   };
 
   return (
     <div className="space-y-6">
       {/* Personalization Trigger */}
-      <div>
-        <h3 className="text-lg font-semibold text-ink mb-3">
-          1. Personalize Print
-        </h3>
-        {!uploadId ? (
-          <button
-            onClick={() => setIsWorkspaceOpen(true)}
-            className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-hairline hover:border-brand hover:bg-brand/5 text-ink hover:text-brand font-medium rounded-lg h-24 transition-colors"
-          >
-            <ImagePlus size={24} className="text-muted" />
-            Upload Photo
-          </button>
-        ) : (
-          <div className="p-4 border border-hairline rounded-lg flex items-center justify-between bg-surface-soft">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded bg-canvas border border-hairline overflow-hidden flex-shrink-0 relative">
-                <img
-                  src={previewUrl!}
-                  alt="Thumbnail"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-ink">
-                  Photo uploaded
-                </span>
-                <span className="text-xs text-muted">Ready for print</span>
-              </div>
-            </div>
+      {isPersonalizable && (
+        <div>
+          <h3 className="text-lg font-semibold text-ink mb-3">
+            1. Personalize Print
+          </h3>
+          {!uploadId ? (
             <button
               onClick={() => setIsWorkspaceOpen(true)}
-              className="px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-full transition-colors flex items-center gap-1"
+              className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-hairline hover:border-brand hover:bg-brand/5 text-ink hover:text-brand font-medium rounded-lg h-24 transition-colors"
             >
-              <Crop size={16} />
-              Edit Crop
+              <ImagePlus size={24} className="text-muted" />
+              Upload Photo
             </button>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="p-4 border border-hairline rounded-lg flex items-center justify-between bg-surface-soft">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded bg-canvas border border-hairline overflow-hidden flex-shrink-0 relative">
+                  <img
+                    src={previewUrl!}
+                    alt="Thumbnail"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-ink">
+                    Photo uploaded
+                  </span>
+                  <span className="text-xs text-muted">Ready for print</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsWorkspaceOpen(true)}
+                className="px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-full transition-colors flex items-center gap-1"
+              >
+                <Crop size={16} />
+                Edit Crop
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
-      {isWorkspaceOpen && (
+      {isPersonalizable && isWorkspaceOpen && (
         <PersonalizationWorkspace
           product={product}
           physicalWidth={physicalWidth}
@@ -380,30 +388,32 @@ export function ProductCustomizer({ product }: Props) {
       )}
 
       {/* Option Selectors */}
-      <div>
-        <h3 className="text-lg font-semibold text-ink mb-3 mt-8">
-          2. Customize Print
-        </h3>
-        <div className="space-y-6">
-          {product.options.map((option) => (
-            <OptionSelector
-              key={option.id}
-              option={option}
-              selectedValueId={selectedOptions[option.id] ?? null}
-              excludedValueIds={excludedValueIds}
-              onChange={(valueId) =>
-                handleOptionChange(option.id, valueId, option)
-              }
-            />
-          ))}
+      {product.options && product.options.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-ink mb-3 mt-8">
+            {isPersonalizable ? "2. Customize Print" : "Customize"}
+          </h3>
+          <div className="space-y-6">
+            {product.options.map((option) => (
+              <OptionSelector
+                key={option.id}
+                option={option}
+                selectedValueId={selectedOptions[option.id] ?? null}
+                excludedValueIds={excludedValueIds}
+                onChange={(valueId) =>
+                  handleOptionChange(option.id, valueId, option)
+                }
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Price Summary — optimistic, recalculated on the backend at checkout */}
       <PriceSummary product={product} selectedValueIds={selectedValueIds} />
 
       {/* DPI acknowledgment banner — shown when print quality is too low */}
-      {dpiAcknowledgmentRequired && uploadId && (
+      {isPersonalizable && dpiAcknowledgmentRequired && uploadId && (
         <DpiAcknowledgmentBanner
           acknowledged={hasAcknowledgedDpi}
           onAcknowledge={() => setHasAcknowledgedDpi(true)}

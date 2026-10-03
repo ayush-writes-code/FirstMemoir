@@ -18,10 +18,10 @@ export const addToCartSchema = {
   body: z.object({
     product_id: z.string().uuid(),
     quantity: z.number().int().min(1).default(1),
-    selected_option_value_ids: z.array(z.string().uuid()),
-    upload_id: z.string().uuid(),
-    preview_url: z.string().url(),
-    orientation: z.enum(['PORTRAIT', 'LANDSCAPE', 'SQUARE']),
+    selected_option_value_ids: z.array(z.string().uuid()).default([]),
+    upload_id: z.string().uuid().optional(),
+    preview_url: z.string().url().optional(),
+    orientation: z.enum(['PORTRAIT', 'LANDSCAPE', 'SQUARE']).optional(),
     crop: z.object({
       x: z.preprocess(v => normalizeCoordinate(v, 0, 1), z.number().min(0).max(1)),
       y: z.preprocess(v => normalizeCoordinate(v, 0, 1), z.number().min(0).max(1)),
@@ -39,12 +39,12 @@ export const addToCartSchema = {
       return data;
     }).refine(data => data.x + data.width <= 1 && data.y + data.height <= 1, {
       message: "Crop coordinates exceed image boundaries"
-    }),
-    rotation: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]),
-    zoom: z.number().min(1),
-    effective_dpi: z.number().int().positive(),
-    print_quality_status: z.enum(['EXCELLENT', 'GOOD', 'ACCEPTABLE', 'LOW_QUALITY', 'NOT_RECOMMENDED']),
-    dpi_acknowledged: z.boolean().default(false)
+    }).optional(),
+    rotation: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]).optional(),
+    zoom: z.number().min(1).optional(),
+    effective_dpi: z.number().int().positive().optional(),
+    print_quality_status: z.enum(['EXCELLENT', 'GOOD', 'ACCEPTABLE', 'LOW_QUALITY', 'NOT_RECOMMENDED']).optional(),
+    dpi_acknowledged: z.boolean().default(false).optional()
   })
 };
 
