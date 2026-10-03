@@ -44,16 +44,13 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 ---
 
 ## 4. Current Milestone & Next Slice
-- **Completed Milestone:** **Slice 3.1 — Catalogue Truth & Checkout Safety Verification**
+- **Completed Milestone:** **Slice 3.2 — Verification Evidence Hardening**
 - **Accomplishments:**
-  - Audited and reconciled all 82 source leaf folders against canonical catalogue products: 82 source listings ↔ 82 canonical products (100% matched, 0 unmatched, 0 extra, 0 duplicate mappings).
-  - Resolved identity discrepancy in Football Jerseys: removed fictional `Suarez` and duplicate `Messi`; added verified source listings `Ramos` and `Zidane`; mapped `pessi` folder to `Lionel Messi Jersey Frame`.
-  - Removed all synthesized/unsupported marketing claims (archival paper, modern frame moulding, signed jersey claims, unconfirmed paper specs).
-  - Classified packaging dimensions across Profiles A–D strictly as `PROVISIONAL_ESTIMATE`.
-  - Reconciled price provenance: verified exactly 48 source-confirmed prices and 34 provisional estimates.
-  - Reinforced `cart.service.ts` and `checkout.service.ts` with strict dual-class product support:
-    - Standard products (`Product → Cart → Order`) operate cleanly without requiring upload or crop data.
-    - Personalized products (`Product → Upload → Crop → Cart → Order`) strictly reject missing upload data.
-  - Added automated regression test suite (`checkout-safety.test.ts`) covering all 8 verification vectors (all 8 tests passing).
-  - Confirmed 0 type errors across `storefront`, `api`, and `admin`.
+  - **Deterministic Price Equality**: Proven that all 48 source-priced listings match canonical `base_price` Rupee-for-Rupee (48 exact matches, 0 mismatches); 34 unpriced listings verified with `provisional_price: true` and `pricing_status: "PROVISIONAL_ESTIMATE"`.
+  - **Repository Portability**: Generated repository-owned `packages/database/prisma/catalogue/source-manifest.json` with audited source facts; removed mandatory dependencies on machine-specific local paths (`/Users/ayushtomar/...`), enabling tests to run portably in CI and across developer checkouts.
+  - **Real Service-Level Commerce Invocations**: Upgraded `checkout-safety.test.ts` to execute real implementations of `cartService.addToCart` and `checkoutService.initializeCheckout`:
+    - Case A: Verified standard catalogue products from the 82-item catalogue (`FM-FRM-POR-GT3`) enter cart without upload/crop/DPI and initialize checkout cleanly with `product_type: "STANDARD"`, `master_file_key: null`, and provisional packaging snapshot.
+    - Case B: Verified personalized products strictly reject missing `upload_id` with HTTP 400 Bad Request without writing to the database.
+    - Case C: Verified personalized products with valid uploads pass validation, lock upload retention, and create immutable order snapshots with `product_type: "PERSONALIZED"` and `master_file_key`.
+  - **Comprehensive Quality Gates**: 8/8 automated regression tests passing, typechecks clean across monorepo (`storefront`, `api`, `admin`).
 - **Next Active Slice:** **Slice 4 — Real Commerce Pilot** (End-to-end cart and checkout against real database pilot products with backend-authoritative pricing).
