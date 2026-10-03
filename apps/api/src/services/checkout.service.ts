@@ -116,6 +116,7 @@ async function isCartStateIdenticalToOrder(
         (so: any) => so.option_value_id
       );
       return (
+        oi.product_id === cartItem.product_id &&
         oi.upload_id === cartItem.upload_id &&
         cartItem.quantity === oi.quantity &&
         cartOptionIds.length === snapOptionIds.length &&
@@ -161,7 +162,8 @@ export const checkoutService = {
           include: {
             product: {
               include: {
-                options: { include: { values: true } }
+                options: { include: { values: true } },
+                categories: { include: { category: true } }
               }
             },
             selected_option_values: {
@@ -222,9 +224,10 @@ export const checkoutService = {
     interface LineItemData {
       cartItem: any;
       pricing: Awaited<ReturnType<typeof pricingService.calculatePrice>>;
-      physicalDimensions: PhysicalDimensions;
-      masterFileKey: string;
+      physicalDimensions: PhysicalDimensions | null;
+      masterFileKey: string | null;
       selectedOptionValueIds: string[];
+      isPersonalized: boolean;
     }
 
     const lineItemData: LineItemData[] = [];
@@ -234,17 +237,50 @@ export const checkoutService = {
         (sov: any) => sov.product_option_value_id
       );
 
-      // DPI acknowledgment validation from authoritative CartLineItem state
-      // (ignore any value supplied in the request payload)
-      const authoritativeQuality = cartItem.print_quality_status;
-      if (
-        (authoritativeQuality === 'LOW_QUALITY' || authoritativeQuality === 'NOT_RECOMMENDED') &&
-        !cartItem.dpi_acknowledged
-      ) {
-        throw {
-          statusCode: 400,
-          message: `Item "${cartItem.product.name}" has print quality "${authoritativeQuality}" but was not acknowledged by the customer. Resolve before checkout.`,
-        };
+      // Determine whether this product is personalized vs standard
+      const isPersonalized = Boolean(
+        cartItem.product.categories?.some((c: any) => c.category?.slug === 'custom-prints' || c.slug === 'custom-prints') ||
+        (cartItem.product.mockup_metadata as any)?.requires_personalization ||
+        cartItem.upload_id !== null
+      );
+
+      let physicalDimensions: PhysicalDimensions | null = null;
+      let masterFileKey: string | null = null;
+
+      if (isPersonalized) {
+        // DPI acknowledgment validation from authoritative CartLineItem state
+        const authoritativeQuality = cartItem.print_quality_status;
+        if (
+          (authoritativeQuality === 'LOW_QUALITY' || authoritativeQuality === 'NOT_RECOMMENDED') &&
+          !cartItem.dpi_acknowledged
+        ) {
+          throw {
+            statusCode: 400,
+            message: `Item "${cartItem.product.name}" has print quality "${authoritativeQuality}" but was not acknowledged by the customer. Resolve before checkout.`,
+          };
+        }
+
+        // Resolve physical dimensions from product option metadata
+        physicalDimensions = resolvePhysicalDimensions(
+          cartItem.product.options,
+          selectedOptionValueIds
+        );
+        if (!physicalDimensions) {
+          throw {
+            statusCode: 400,
+            message: `Cannot determine physical print dimensions for item "${cartItem.product.name}". Ensure a Size option is selected.`,
+          };
+        }
+
+        // Resolve master_file_key server-side from the UserUpload record
+        // NEVER expose this to the browser — it is only used in the DB snapshot
+        masterFileKey = cartItem.upload?.r2_key ?? null;
+        if (!masterFileKey) {
+          throw {
+            statusCode: 400,
+            message: `Upload asset is missing for cart item "${cartItem.product.name}".`,
+          };
+        }
       }
 
       // Authoritative price recalculation via pricingService
@@ -257,34 +293,13 @@ export const checkoutService = {
         new Prisma.Decimal(pricing.finalPrice).mul(new Prisma.Decimal(cartItem.quantity))
       );
 
-      // Resolve physical dimensions from product option metadata
-      const physicalDimensions = resolvePhysicalDimensions(
-        cartItem.product.options,
-        selectedOptionValueIds
-      );
-      if (!physicalDimensions) {
-        throw {
-          statusCode: 400,
-          message: `Cannot determine physical print dimensions for item "${cartItem.product.name}". Ensure a Size option is selected.`,
-        };
-      }
-
-      // Resolve master_file_key server-side from the UserUpload record
-      // NEVER expose this to the browser — it is only used in the DB snapshot
-      const masterFileKey = cartItem.upload?.r2_key;
-      if (!masterFileKey) {
-        throw {
-          statusCode: 400,
-          message: `Upload asset is missing for cart item "${cartItem.product.name}".`,
-        };
-      }
-
       lineItemData.push({
         cartItem,
         pricing,
         physicalDimensions,
         masterFileKey,
         selectedOptionValueIds,
+        isPersonalized,
       });
     }
 
@@ -350,34 +365,35 @@ export const checkoutService = {
       });
 
       // Build the immutable manufacturing snapshot for each line item
-      const orderItemsCreate = lineItemData.map(({ cartItem, pricing, physicalDimensions, masterFileKey, selectedOptionValueIds }) => {
+      const orderItemsCreate = lineItemData.map(({ cartItem, pricing, physicalDimensions, masterFileKey, selectedOptionValueIds, isPersonalized }) => {
         const customizationData = {
           schema_version: '1.0',
+          product_type: isPersonalized ? 'PERSONALIZED' : 'STANDARD',
           // master_file_key is ONLY stored in the DB, never sent to the browser
           master_file_key: masterFileKey,
           // canonical pixel dimensions of the source image
-          canonical_dimensions: {
+          canonical_dimensions: isPersonalized ? {
             width: cartItem.upload?.width ?? 0,
             height: cartItem.upload?.height ?? 0,
-          },
+          } : null,
           // explicit physical print target — immutable against future option renames
-          physical_width: physicalDimensions.width,
-          physical_height: physicalDimensions.height,
-          physical_dimension_unit: physicalDimensions.unit,
-          packaging: physicalDimensions.packaging,
-          orientation: cartItem.orientation,
-          rotation: cartItem.rotation,
-          crop: {
+          physical_width: physicalDimensions?.width ?? null,
+          physical_height: physicalDimensions?.height ?? null,
+          physical_dimension_unit: physicalDimensions?.unit ?? null,
+          packaging: physicalDimensions?.packaging ?? (cartItem.product.manufacturing_metadata as any)?.provisional_packaging ?? null,
+          orientation: cartItem.orientation ?? null,
+          rotation: cartItem.rotation ?? null,
+          crop: cartItem.crop_x !== null && cartItem.crop_x !== undefined ? {
             x: cartItem.crop_x,
             y: cartItem.crop_y,
             width: cartItem.crop_width,
             height: cartItem.crop_height,
-          },
-          crop_aspect_ratio: cartItem.crop_aspect_ratio,
-          effective_dpi: cartItem.effective_dpi,
-          print_quality_status: cartItem.print_quality_status,
+          } : null,
+          crop_aspect_ratio: cartItem.crop_aspect_ratio ?? null,
+          effective_dpi: cartItem.effective_dpi ?? null,
+          print_quality_status: cartItem.print_quality_status ?? null,
           // Copied from authoritative CartLineItem state — NOT from request payload
-          dpi_acknowledged: cartItem.dpi_acknowledged,
+          dpi_acknowledged: cartItem.dpi_acknowledged ?? false,
           manufacturing_profile_version: '1.0',
           // Immutable pricing snapshot
           unit_price: pricing.finalPrice,
@@ -424,14 +440,19 @@ export const checkoutService = {
 
       // Atomic retention lock: CART_ATTACHED → CHECKOUT_LOCKED for all uploads
       // This MUST be in the same transaction as order creation (see architecture invariant)
-      const uploadIds = lineItemData.map(d => d.cartItem.upload_id);
-      await tx.userUpload.updateMany({
-        where: {
-          id: { in: uploadIds },
-          retention_status: 'CART_ATTACHED',
-        },
-        data: { retention_status: 'CHECKOUT_LOCKED' }
-      });
+      const uploadIds = lineItemData
+        .map(d => d.cartItem.upload_id)
+        .filter((id): id is string => Boolean(id));
+
+      if (uploadIds.length > 0) {
+        await tx.userUpload.updateMany({
+          where: {
+            id: { in: uploadIds },
+            retention_status: 'CART_ATTACHED',
+          },
+          data: { retention_status: 'CHECKOUT_LOCKED' }
+        });
+      }
 
       // Cart status: ACTIVE → CHECKOUT_STARTED
       await tx.cart.update({

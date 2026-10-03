@@ -85,14 +85,14 @@ function mapLineItemToDto(item: any) {
       value_name: val.value,
       price_modifier: Number(val.price_modifier)
     })),
-    crop: {
+    crop: item.crop_x !== null && item.crop_x !== undefined ? {
       x: item.crop_x,
       y: item.crop_y,
       width: item.crop_width,
       height: item.crop_height,
       aspect_ratio: item.crop_aspect_ratio,
-    },
-    orientation: item.orientation
+    } : null,
+    orientation: item.orientation ?? null
   };
 }
 

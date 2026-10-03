@@ -15,10 +15,10 @@ export const cartService = {
           include: {
             product: true,
               selected_option_values: {
-                include: { 
+                include: {
                   option_value: {
                     include: { option: true }
-                  } 
+                  }
                 }
               },
             upload: true,
@@ -38,10 +38,10 @@ export const cartService = {
             include: {
               product: true,
               selected_option_values: {
-                include: { 
+                include: {
                   option_value: {
                     include: { option: true }
-                  } 
+                  }
                 }
               },
               upload: true,
@@ -59,10 +59,10 @@ export const cartService = {
             include: {
               product: true,
               selected_option_values: {
-                include: { 
+                include: {
                   option_value: {
                     include: { option: true }
-                  } 
+                  }
                 }
               },
               upload: true,
@@ -81,7 +81,7 @@ export const cartService = {
    */
   calculateLineItemPrice(basePrice: number, optionValues: { modifier_type: string, price_modifier: any }[]): number {
     let finalPrice = basePrice;
-    
+
     // First apply flat modifiers
     for (const val of optionValues) {
       if (val.modifier_type === 'FLAT') {
@@ -96,7 +96,7 @@ export const cartService = {
         percentageModifiers += Number(val.price_modifier);
       }
     }
-    
+
     if (percentageModifiers > 0) {
       finalPrice = finalPrice * (1 + (percentageModifiers / 100));
     }
@@ -114,55 +114,83 @@ export const cartService = {
       storeSettings = await prisma.storeSettings.create({ data: { id: 'default', pricing_version: 1 } });
     }
     const currentPricingVersion = storeSettings.pricing_version;
-    
+
     // 2. Fetch the cart
     const cart = await this.getCart(sessionId, userId);
 
-    // 3. Verify upload
-    const upload = await prisma.userUpload.findUnique({
-      where: { id: input.upload_id },
-    });
-
-    if (!upload) {
-      throw { statusCode: 404, message: 'Upload not found' };
-    }
-
-    if (upload.session_id !== sessionId && upload.user_id !== userId) {
-      throw { statusCode: 403, message: 'You do not have permission to use this upload' };
-    }
-
-    if (upload.status !== 'READY' && upload.status !== 'LINKED_TO_CART') {
-      throw { statusCode: 400, message: `Upload is not ready (Status: ${upload.status})` };
-    }
-
-    // Update upload status and retention
-    if (upload.retention_status === 'UNATTACHED') {
-      await prisma.userUpload.update({
-        where: { id: upload.id },
-        data: { 
-          status: 'LINKED_TO_CART',
-          retention_status: 'CART_ATTACHED'
-        }
-      });
-    } else if (upload.status === 'READY') {
-      await prisma.userUpload.update({
-        where: { id: upload.id },
-        data: { status: 'LINKED_TO_CART' }
-      });
-    }
-
-    // 4. Verify Product and Options
+    // 3. Verify Product and Options
     const product = await prisma.product.findUnique({
       where: { id: input.product_id },
       include: {
         options: {
           include: { values: true }
+        },
+        categories: {
+          include: { category: true }
         }
       }
     });
 
     if (!product) {
       throw { statusCode: 404, message: 'Product not found' };
+    }
+
+    // Determine whether this product requires personalization
+    const isPersonalized = Boolean(
+      product.categories.some(c => c.category?.slug === 'custom-prints') ||
+      (product.mockup_metadata as any)?.requires_personalization
+    );
+
+    // Case B enforcement: Personalized products MUST have upload and configuration data
+    if (isPersonalized) {
+      if (!input.upload_id) {
+        throw {
+          statusCode: 400,
+          message: 'Personalized product requires a photo upload (upload_id is missing).'
+        };
+      }
+      if (!input.preview_url || !input.crop || !input.orientation) {
+        throw {
+          statusCode: 400,
+          message: 'Personalized product requires preview_url, crop configuration, and orientation.'
+        };
+      }
+    }
+
+    // 4. Verify upload if provided (required for personalized products, optional for standard)
+    let upload = null;
+    if (input.upload_id) {
+      upload = await prisma.userUpload.findUnique({
+        where: { id: input.upload_id },
+      });
+
+      if (!upload) {
+        throw { statusCode: 404, message: 'Upload not found' };
+      }
+
+      if (upload.session_id !== sessionId && upload.user_id !== userId) {
+        throw { statusCode: 403, message: 'You do not have permission to use this upload' };
+      }
+
+      if (upload.status !== 'READY' && upload.status !== 'LINKED_TO_CART') {
+        throw { statusCode: 400, message: `Upload is not ready (Status: ${upload.status})` };
+      }
+
+      // Update upload status and retention
+      if (upload.retention_status === 'UNATTACHED') {
+        await prisma.userUpload.update({
+          where: { id: upload.id },
+          data: {
+            status: 'LINKED_TO_CART',
+            retention_status: 'CART_ATTACHED'
+          }
+        });
+      } else if (upload.status === 'READY') {
+        await prisma.userUpload.update({
+          where: { id: upload.id },
+          data: { status: 'LINKED_TO_CART' }
+        });
+      }
     }
 
     // Ensure all selected options belong to this product
@@ -176,7 +204,7 @@ export const cartService = {
       }
     }
 
-    // Phase 6C: Validation and Recalculation
+    // Phase 6C: Validation and Recalculation (Only applicable if upload and Size option are present)
     const sizeOption = product.options.find(o => o.name === 'Size');
     let physicalWidth = 0;
     let physicalHeight = 0;
@@ -199,7 +227,7 @@ export const cartService = {
       }
     }
 
-    if (physicalWidth > 0 && physicalHeight > 0) {
+    if (upload && physicalWidth > 0 && physicalHeight > 0) {
       // 1. Orientation checks
       if (physicalWidth === physicalHeight && input.orientation !== 'SQUARE') {
         throw { statusCode: 400, message: "Square size requires SQUARE orientation" };
@@ -212,9 +240,9 @@ export const cartService = {
       const canonical_W = upload.width || 0;
       const canonical_H = upload.height || 0;
 
-      if (canonical_W > 0 && canonical_H > 0) {
-        const canonical_crop_width_px = input.crop!.width * canonical_W;
-        const canonical_crop_height_px = input.crop!.height * canonical_H;
+      if (canonical_W > 0 && canonical_H > 0 && input.crop) {
+        const canonical_crop_width_px = input.crop.width * canonical_W;
+        const canonical_crop_height_px = input.crop.height * canonical_H;
 
         let final_pixel_width = canonical_crop_width_px;
         let final_pixel_height = canonical_crop_height_px;
@@ -236,16 +264,16 @@ export const cartService = {
         }
 
         const expectedAspectRatio = `${printWidthInches}:${printHeightInches}`;
-        if (input.crop!.aspect_ratio !== expectedAspectRatio) {
-           throw { statusCode: 400, message: `Crop aspect ratio validation failed. Expected ${expectedAspectRatio}, got ${input.crop!.aspect_ratio}` };
+        if (input.crop.aspect_ratio !== expectedAspectRatio) {
+           throw { statusCode: 400, message: `Crop aspect ratio validation failed. Expected ${expectedAspectRatio}, got ${input.crop.aspect_ratio}` };
         }
 
         const dpi_x = final_pixel_width / printWidthInches;
         const dpi_y = final_pixel_height / printHeightInches;
         const calculated_dpi = Math.floor(Math.min(dpi_x, dpi_y));
 
-        if (Math.abs(calculated_dpi - input.effective_dpi!) > 5) {
-           throw { statusCode: 400, message: `DPI validation failed. Backend calculated ${calculated_dpi}, payload claimed ${input.effective_dpi!}` };
+        if (input.effective_dpi && Math.abs(calculated_dpi - input.effective_dpi) > 5) {
+           throw { statusCode: 400, message: `DPI validation failed. Backend calculated ${calculated_dpi}, payload claimed ${input.effective_dpi}` };
         }
 
         // Let's also validate the print_quality_status
@@ -255,7 +283,7 @@ export const cartService = {
         else if (calculated_dpi >= 100) expectedTier = 'ACCEPTABLE';
         else if (calculated_dpi >= 70) expectedTier = 'LOW_QUALITY';
 
-        if (input.print_quality_status !== expectedTier) {
+        if (input.print_quality_status && input.print_quality_status !== expectedTier) {
            throw { statusCode: 400, message: `Quality tier validation failed. Expected ${expectedTier}, got ${input.print_quality_status}` };
         }
 
@@ -275,19 +303,19 @@ export const cartService = {
         product_id: product.id,
         quantity: input.quantity,
         status: 'VALIDATED', // Validated since we just checked it
-        upload_id: input.upload_id,
-        preview_url: input.preview_url, // URL generated by frontend or proxy
-        orientation: input.orientation,
-        crop_x: input.crop!.x,
-        crop_y: input.crop!.y,
-        crop_width: input.crop!.width,
-        crop_height: input.crop!.height,
-        crop_aspect_ratio: input.crop!.aspect_ratio,
-        rotation: input.rotation,
-        zoom: input.zoom,
-        effective_dpi: input.effective_dpi!,
-        print_quality_status: input.print_quality_status as any,
-        dpi_acknowledged: input.dpi_acknowledged,
+        upload_id: input.upload_id ?? null,
+        preview_url: input.preview_url ?? null,
+        orientation: input.orientation ?? null,
+        crop_x: input.crop?.x ?? null,
+        crop_y: input.crop?.y ?? null,
+        crop_width: input.crop?.width ?? null,
+        crop_height: input.crop?.height ?? null,
+        crop_aspect_ratio: input.crop?.aspect_ratio ?? null,
+        rotation: input.rotation ?? null,
+        zoom: input.zoom ?? null,
+        effective_dpi: input.effective_dpi ?? null,
+        print_quality_status: (input.print_quality_status as any) ?? null,
+        dpi_acknowledged: input.dpi_acknowledged ?? false,
         pricing_version: currentPricingVersion,
         selected_option_values: {
           create: (input.selected_option_value_ids || []).map(id => ({
@@ -298,10 +326,10 @@ export const cartService = {
       include: {
         product: true,
         selected_option_values: {
-          include: { 
+          include: {
             option_value: {
               include: { option: true }
-            } 
+            }
           }
         },
         upload: true,
@@ -344,7 +372,7 @@ export const cartService = {
         const upload = await prisma.userUpload.findUnique({
           where: { id: lineItem.upload_id }
         });
-        
+
         if (upload && upload.retention_status === 'CART_ATTACHED') {
           await prisma.userUpload.update({
             where: { id: upload.id },
@@ -385,10 +413,10 @@ export const cartService = {
       include: {
         product: true,
         selected_option_values: {
-          include: { 
+          include: {
             option_value: {
               include: { option: true }
-            } 
+            }
           }
         },
         upload: true,

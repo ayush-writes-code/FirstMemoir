@@ -142,7 +142,7 @@ FirstMemoir.in
 
 | Field | Value | Status |
 |---|---|---|
-| Source folder | `Frames 8x12/Football jerseys (10 variations)/[Ronaldo,beckham,ibrahimovic,mbappe,messi,neymar,pessi,ronaldinho,suarez,van dijk]` | — |
+| Source folder | `Frames 8x12/Football jerseys (10 variations)/[Ronaldo,beckham,ibrahimovic,mbappe,neymar,pessi,ramos,ronaldinho,van dijk,zidane]` | — |
 | Source title | `[Player] Wall Poster Frames \| 8x12 inch \| World Cup special signed Jerseys Series` | VERIFIED FROM SOURCE |
 | Classification | DESIGN variants — 10 player designs, identical product type/price/dimensions | BUSINESS DECISION REQUIRED |
 | Proposed Category | Wall Frames | CONFIGURATION REQUIRED |
