@@ -45,13 +45,15 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 
 ## 4. Current Milestone & Next Slice
 - **Completed Milestone:** **Slice 6B — Staging Configuration Contracts**
-- **Attempted Milestone:** **Slice 6C — Staging Infrastructure Provisioning**
+- **Attempted Milestone:** **Slice 6C — Staging Infrastructure Provisioning & Sandbox Integration**
 - **Accomplishments:**
   - **Status**: The infrastructure provisioning phase is formally **BLOCKED**.
-  - **Reason**: Adhering to strict environment isolation protocols, the deployment requires an external Staging Postgres node (e.g. Supabase/Neon), isolated Cloudflare R2 staging buckets, and Razorpay Sandbox credentials. None of these have been provided via `.env.staging` or hosting platform dashboards.
+  - **Reason**: Adhering to strict environment isolation protocols, the deployment requires an external Staging Postgres node (e.g. Supabase/Neon), isolated Cloudflare R2 staging buckets, and Razorpay Sandbox credentials. None of these have been provided via `.env.staging` or hosting platform dashboards. The Vercel demo frontend is deployed but lacks an API backend.
+  - **R2 Security Audit**: Confirmed a critical security boundary issue. The current shared `weprintit-assets` bucket exposes `customers/` master uploads publicly because the bucket is globally public. A two-bucket architecture (`firstmemoir-public-assets` and `firstmemoir-private-uploads`) is required before storing real customer data.
   - **Regression Safety**: Local regression suite executed successfully, confirming the repository itself remains pristine, perfectly deployable, and fundamentally untainted by missing remote infrastructure.
 - **External Blockers**:
   - Requires actual staging DB provision (Supabase/Neon).
   - Requires staging domain, sandbox Razorpay keys, and test Shiprocket keys.
-  - Requires staging Cloudflare R2 bucket configuration + CORS setup.
+  - Requires two Cloudflare R2 buckets (public and private) + CORS setup.
+  - Requires the API to be deployed to Render so Vercel `NEXT_PUBLIC_API_URL` can point to it.
 - **Next Active Slice:** **Slice 6C (Continued) — Procurement & Secret Injection** (The user must officially procure the cloud resources and inject them into the deployment provider, at which point the staging smoke tests can be executed).
