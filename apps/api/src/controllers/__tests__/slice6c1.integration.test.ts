@@ -48,10 +48,10 @@ describe('Slice 6C.1 - Security & Idempotency Hardening Verification', () => {
       assert.strictEqual(result.visibility, 'public');
     });
 
-    it('1.2: previews/* routes strictly to public bucket', () => {
+    it('1.2: previews/* routes strictly to private bucket', () => {
       const result = validateAndGetBucket('previews/thumb-123.webp');
-      assert.strictEqual(result.bucket, env.R2_PUBLIC_BUCKET_NAME);
-      assert.strictEqual(result.visibility, 'public');
+      assert.strictEqual(result.bucket, env.R2_PRIVATE_BUCKET_NAME);
+      assert.strictEqual(result.visibility, 'private');
     });
 
     it('1.3: customers/* routes strictly to private bucket', () => {
@@ -60,18 +60,20 @@ describe('Slice 6C.1 - Security & Idempotency Hardening Verification', () => {
       assert.strictEqual(result.visibility, 'private');
     });
 
-    it('1.4: customers/* cannot be converted into a public URL (fail-closed guard)', () => {
+    it('1.4: customers/* and previews/* cannot be converted into a public URL (fail-closed guard)', () => {
       assert.throws(
         () => r2Provider.getPublicUrl('customers/private-master.jpg'),
         /Cannot generate public URL for private object/
       );
+      assert.throws(
+        () => r2Provider.getPublicUrl('previews/thumb-123.webp'),
+        /Cannot generate public URL for private object/
+      );
     });
 
-    it('1.5: products/* and previews/* generate valid public URLs', () => {
+    it('1.5: products/* generate valid public URLs', () => {
       const productUrl = r2Provider.getPublicUrl('products/frame.webp');
       assert.ok(productUrl.includes('/products/frame.webp'));
-      const previewUrl = r2Provider.getPublicUrl('previews/prev.webp');
-      assert.ok(previewUrl.includes('/previews/prev.webp'));
     });
 
     it('1.6: invalid/unknown prefix fails closed across all storage methods', () => {

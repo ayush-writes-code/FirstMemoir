@@ -140,8 +140,13 @@ export const storageController = {
       const isAdmin = (req as any).user?.role === 'ADMIN';
 
       const { prisma } = await import('@repo/database');
-      const existingUpload = await prisma.userUpload.findUnique({
-        where: { r2_key: file_key }
+      const existingUpload = await prisma.userUpload.findFirst({
+        where: {
+          OR: [
+            { r2_key: file_key },
+            { preview_r2_key: file_key }
+          ]
+        }
       });
 
       if (!existingUpload) {
@@ -156,12 +161,57 @@ export const storageController = {
       }
 
       const signedUrl = await storageService.generateReadUrl(file_key);
-
       res.status(200).json(successResponse({
         signed_url: signedUrl,
         file_key,
         expires_in: 3600, // 1 hour
       }));
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/v1/storage/preview/:file_key(*)
+   * 
+   * Returns a 302 Redirect to the presigned URL for an image.
+   * Useful for direct `<img src="..." />` tags.
+   */
+  async streamPreview(req: Request, res: Response, next: NextFunction) {
+    try {
+      // The file_key might contain slashes like previews/xxx.webp
+      const file_key = (req.params[0] || req.params.file_key) as string;
+      if (!file_key) {
+        return res.status(400).send('Missing file_key');
+      }
+      const { getSessionId } = await import('../middlewares/session.middleware.js');
+      const sessionId = getSessionId(req);
+      const userId = (req as any).user?.id || null;
+      const isAdmin = (req as any).user?.role === 'ADMIN';
+
+      const { prisma } = await import('@repo/database');
+      const existingUpload = await prisma.userUpload.findFirst({
+        where: {
+          OR: [
+            { r2_key: file_key },
+            { preview_r2_key: file_key }
+          ]
+        }
+      });
+
+      if (!existingUpload) {
+        return res.status(404).send('Not found');
+      }
+
+      const isOwnedBySession = existingUpload.session_id === sessionId;
+      const isOwnedByUser = userId && existingUpload.user_id === userId;
+
+      if (!isOwnedBySession && !isOwnedByUser && !isAdmin) {
+        return res.status(403).send('Forbidden');
+      }
+
+      const signedUrl = await storageService.generateReadUrl(file_key);
+      res.redirect(302, signedUrl);
     } catch (error) {
       next(error);
     }
@@ -263,10 +313,11 @@ export const storageController = {
         }
       });
 
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
       res.status(200).json(successResponse({
         upload_id: upload.id,
         status: upload.status,
-        preview_url: `${process.env.R2_PUBLIC_URL}/${previewKey}`,
+        preview_url: `${baseUrl}/api/v1/storage/preview/${previewKey}`,
         width: canonicalWidth || 0,
         height: canonicalHeight || 0,
       }));

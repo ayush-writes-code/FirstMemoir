@@ -32,10 +32,10 @@ function buildFileKey(fileName: string, visibility: StorageVisibility): string {
 }
 
 export function validateAndGetBucket(fileKey: string): { bucket: string; visibility: StorageVisibility } {
-  if (fileKey.startsWith('customers/')) {
+  if (fileKey.startsWith('customers/') || fileKey.startsWith('previews/')) {
     return { bucket: env.R2_PRIVATE_BUCKET_NAME, visibility: 'private' };
   }
-  if (fileKey.startsWith('products/') || fileKey.startsWith('previews/')) {
+  if (fileKey.startsWith('products/')) {
     return { bucket: env.R2_PUBLIC_BUCKET_NAME, visibility: 'public' };
   }
   throw new Error(`Invalid or unauthorized storage key prefix for '${fileKey}'. Must be customers/, products/, or previews/.`);
@@ -44,7 +44,7 @@ export function validateAndGetBucket(fileKey: string): { bucket: string; visibil
 export const r2Provider: IStorageProvider = {
   getPublicUrl(fileKey: string): string {
     const { visibility } = validateAndGetBucket(fileKey);
-    if (visibility !== 'public' || fileKey.startsWith('customers/')) {
+    if (visibility !== 'public') {
       throw new Error(`Forbidden: Cannot generate public URL for private object '${fileKey}'.`);
     }
     return `${env.R2_PUBLIC_URL}/${fileKey}`;

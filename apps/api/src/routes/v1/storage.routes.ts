@@ -43,7 +43,16 @@ router.get(
   validate(requestReadUrlSchema),
   storageController.requestReadUrl,
 );
-
+/**
+ * GET /api/v1/storage/preview/:file_key(*)
+ *
+ * Redirects to a short-lived pre-signed URL for an image.
+ */
+router.get(
+  '/preview/*',
+  ensureCartSession,
+  storageController.streamPreview,
+);
 /**
  * POST /api/v1/storage/upload-complete
  *

@@ -44,19 +44,18 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 ---
 
 ## 4. Current Milestone & Next Slice
-- **Completed Milestone:** **Slice 6C.1 — Staging Blocker Security & Idempotency Hardening**
-- **Milestone Status:** **STAGING BLOCKED — APPLICATION HARDENING COMPLETE / INFRASTRUCTURE PENDING**
+- **Completed Milestone:** **Slice 6C.2 — R2 Privacy Model & Staging Readiness Final Audit**
+- **Milestone Status:** **STAGING BLOCKED — INFRASTRUCTURE PENDING (Code-Ready)**
 - **Accomplishments:**
-  - **Application Hardening Verified**: 24/24 focused security, idempotency, routing, and recovery integration tests passing against real PostgreSQL test DB.
-  - **R2 Provider Hardened**: Implemented fail-closed prefix routing (`validateAndGetBucket`) across all storage operations. Customer master uploads strictly route to `R2_PRIVATE_BUCKET_NAME`; `getPublicUrl("customers/...")` throws and fails closed.
-  - **Upload Session Security**: Guest checkout sessions are strictly isolated via signed `cart_session` cookies; Session B cannot claim, mutate, or read Session A uploads (403 Forbidden).
-  - **Razorpay Webhook & Checkout Idempotency**: Verified atomic webhook transaction and rollback-safe retry semantics. Checkout initialization reuses existing unpaid orders and prevents duplicate Razorpay orders.
-  - **Upload State Recovery**: Gateway initialization failures roll back local orders to `EXPIRED` and unlock uploads back to `CART_ATTACHED`, allowing immediate user retry. Confirmed order uploads remain strictly protected.
-  - **Regression Matrix**: Slice 3.2 (8/8), Slice 4 (4/4), Slice 5 (5/5), Slice 6C.1 (24/24), Typecheck (PASS), Monorepo Build (PASS).
+  - **R2 Privacy Architecture Complete:** All customer-derived data (both original `customers/*` uploads and `sharp`-generated `previews/*`) is now strictly isolated in `R2_PRIVATE_BUCKET_NAME`.
+  - **Secure Preview Access:** Built `GET /api/v1/storage/preview/:file_key` redirection endpoint to securely serve short-lived signed URLs for previews while preserving session ownership checks.
+  - **Bucket Splitting Configuration:** Removed legacy `R2_BUCKET_NAME` entirely across `.env.example` and `render.yaml`.
+  - **Regression Matrix Passed:** Slice 3.2 (8/8), Slice 4 (4/4), Slice 5 (5/5), Slice 6C.1 (24/24), Typecheck (PASS), Monorepo Build (PASS).
+  - **Decision Reached:** The repository is fully secure and **READY FOR STAGING INFRASTRUCTURE**.
 - **External Blockers**:
   - Requires actual staging DB provision (Supabase/Neon).
   - Requires staging Render compute instance deployment.
-  - Requires two Cloudflare R2 buckets (`firstmemoir-public-assets` and `firstmemoir-private-uploads`) + credentials.
+  - Requires two Cloudflare R2 buckets (`firstmemoir-public` and `firstmemoir-private`) + credentials.
   - Requires Razorpay Sandbox API keys and Webhook secret.
   - Requires updating Vercel `NEXT_PUBLIC_API_URL` to point to the live Render API.
-- **Next Active Slice:** **Slice 6D — External Staging Provisioning & Secret Injection** (Execute only after external cloud resources are created and credentials configured).
+- **Next Active Slice:** **Slice 6C.3 / 6D — External Staging Provisioning & Secret Injection** (Execute only after external cloud resources are created).
