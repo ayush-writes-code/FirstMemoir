@@ -31,14 +31,25 @@ function buildFileKey(fileName: string, visibility: StorageVisibility): string {
   return `${prefix}/${timestamp}-${uuid}${ext}`;
 }
 
-function getBucketForKey(fileKey: string): string {
+export function validateAndGetBucket(fileKey: string): { bucket: string; visibility: StorageVisibility } {
   if (fileKey.startsWith('customers/')) {
-    return env.R2_PRIVATE_BUCKET_NAME;
+    return { bucket: env.R2_PRIVATE_BUCKET_NAME, visibility: 'private' };
   }
-  return env.R2_PUBLIC_BUCKET_NAME;
+  if (fileKey.startsWith('products/') || fileKey.startsWith('previews/')) {
+    return { bucket: env.R2_PUBLIC_BUCKET_NAME, visibility: 'public' };
+  }
+  throw new Error(`Invalid or unauthorized storage key prefix for '${fileKey}'. Must be customers/, products/, or previews/.`);
 }
 
 export const r2Provider: IStorageProvider = {
+  getPublicUrl(fileKey: string): string {
+    const { visibility } = validateAndGetBucket(fileKey);
+    if (visibility !== 'public' || fileKey.startsWith('customers/')) {
+      throw new Error(`Forbidden: Cannot generate public URL for private object '${fileKey}'.`);
+    }
+    return `${env.R2_PUBLIC_URL}/${fileKey}`;
+  },
+
   async generateUploadUrl(
     fileName: string,
     mimeType: string,
@@ -46,9 +57,10 @@ export const r2Provider: IStorageProvider = {
     maxSizeBytes: number,
   ): Promise<PresignedUploadResponse> {
     const fileKey = buildFileKey(fileName, visibility);
+    const { bucket } = validateAndGetBucket(fileKey);
 
     const command = new PutObjectCommand({
-      Bucket: getBucketForKey(fileKey),
+      Bucket: bucket,
       Key: fileKey,
       ContentType: mimeType,
     });
@@ -58,15 +70,16 @@ export const r2Provider: IStorageProvider = {
     const result: PresignedUploadResponse = { url, fileKey };
 
     if (visibility === 'public') {
-      result.publicUrl = `${env.R2_PUBLIC_URL}/${fileKey}`;
+      result.publicUrl = r2Provider.getPublicUrl(fileKey);
     }
 
     return result;
   },
 
   async generateReadUrl(fileKey: string, expiresIn = 3600, downloadFilename?: string): Promise<string> {
+    const { bucket } = validateAndGetBucket(fileKey);
     const input: any = {
-      Bucket: getBucketForKey(fileKey),
+      Bucket: bucket,
       Key: fileKey,
     };
     if (downloadFilename) {
@@ -83,9 +96,11 @@ export const r2Provider: IStorageProvider = {
       throw { statusCode: 400, message: `File key must start with '${options.expectedPrefix}'` };
     }
 
+    const { bucket } = validateAndGetBucket(fileKey);
+
     try {
       const command = new HeadObjectCommand({
-        Bucket: getBucketForKey(fileKey),
+        Bucket: bucket,
         Key: fileKey,
       });
       const response = await client.send(command);
@@ -112,8 +127,9 @@ export const r2Provider: IStorageProvider = {
   },
 
   async deleteFile(fileKey: string): Promise<void> {
+    const { bucket } = validateAndGetBucket(fileKey);
     const command = new DeleteObjectCommand({
-      Bucket: getBucketForKey(fileKey),
+      Bucket: bucket,
       Key: fileKey,
     });
 
@@ -121,8 +137,9 @@ export const r2Provider: IStorageProvider = {
   },
 
   async downloadFile(fileKey: string): Promise<Buffer> {
+    const { bucket } = validateAndGetBucket(fileKey);
     const command = new GetObjectCommand({
-      Bucket: getBucketForKey(fileKey),
+      Bucket: bucket,
       Key: fileKey,
     });
     const response = await client.send(command);
@@ -135,8 +152,9 @@ export const r2Provider: IStorageProvider = {
   },
 
   async uploadBuffer(fileKey: string, buffer: Buffer, mimeType: string): Promise<void> {
+    const { bucket } = validateAndGetBucket(fileKey);
     const command = new PutObjectCommand({
-      Bucket: getBucketForKey(fileKey),
+      Bucket: bucket,
       Key: fileKey,
       Body: buffer,
       ContentType: mimeType,

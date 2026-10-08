@@ -34,12 +34,12 @@ router.post(
 /**
  * GET /api/v1/storage/read-url
  *
- * Any authenticated user can retrieve a short-lived read URL for a private asset.
- * Per-asset ownership checks will be layered on in the Orders milestone.
+ * Any session or authenticated user can retrieve a short-lived read URL for their own private asset.
+ * Enforces strict per-asset ownership checks bound to session or user.
  */
 router.get(
   '/read-url',
-  authenticate,
+  ensureCartSession,
   validate(requestReadUrlSchema),
   storageController.requestReadUrl,
 );

@@ -44,16 +44,19 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 ---
 
 ## 4. Current Milestone & Next Slice
-- **Completed Milestone:** **Slice 6B — Staging Configuration Contracts**
-- **Attempted Milestone:** **Slice 6C — Staging Infrastructure Provisioning & Sandbox Integration**
+- **Completed Milestone:** **Slice 6C.1 — Staging Blocker Security & Idempotency Hardening**
+- **Milestone Status:** **STAGING BLOCKED — APPLICATION HARDENING COMPLETE / INFRASTRUCTURE PENDING**
 - **Accomplishments:**
-  - **Status**: The infrastructure provisioning phase is formally **BLOCKED**.
-  - **Reason**: Adhering to strict environment isolation protocols, the deployment requires an external Staging Postgres node (e.g. Supabase/Neon), isolated Cloudflare R2 staging buckets, and Razorpay Sandbox credentials. None of these have been provided via `.env.staging` or hosting platform dashboards. The Vercel demo frontend is deployed but lacks an API backend.
-  - **R2 Security Audit**: Confirmed a critical security boundary issue. The current shared `weprintit-assets` bucket exposes `customers/` master uploads publicly because the bucket is globally public. A two-bucket architecture (`firstmemoir-public-assets` and `firstmemoir-private-uploads`) is required before storing real customer data.
-  - **Regression Safety**: Local regression suite executed successfully, confirming the repository itself remains pristine, perfectly deployable, and fundamentally untainted by missing remote infrastructure.
+  - **Application Hardening Verified**: 24/24 focused security, idempotency, routing, and recovery integration tests passing against real PostgreSQL test DB.
+  - **R2 Provider Hardened**: Implemented fail-closed prefix routing (`validateAndGetBucket`) across all storage operations. Customer master uploads strictly route to `R2_PRIVATE_BUCKET_NAME`; `getPublicUrl("customers/...")` throws and fails closed.
+  - **Upload Session Security**: Guest checkout sessions are strictly isolated via signed `cart_session` cookies; Session B cannot claim, mutate, or read Session A uploads (403 Forbidden).
+  - **Razorpay Webhook & Checkout Idempotency**: Verified atomic webhook transaction and rollback-safe retry semantics. Checkout initialization reuses existing unpaid orders and prevents duplicate Razorpay orders.
+  - **Upload State Recovery**: Gateway initialization failures roll back local orders to `EXPIRED` and unlock uploads back to `CART_ATTACHED`, allowing immediate user retry. Confirmed order uploads remain strictly protected.
+  - **Regression Matrix**: Slice 3.2 (8/8), Slice 4 (4/4), Slice 5 (5/5), Slice 6C.1 (24/24), Typecheck (PASS), Monorepo Build (PASS).
 - **External Blockers**:
   - Requires actual staging DB provision (Supabase/Neon).
-  - Requires staging domain, sandbox Razorpay keys, and test Shiprocket keys.
-  - Requires two Cloudflare R2 buckets (public and private) + CORS setup.
-  - Requires the API to be deployed to Render so Vercel `NEXT_PUBLIC_API_URL` can point to it.
-- **Next Active Slice:** **Slice 6C (Continued) — Procurement & Secret Injection** (The user must officially procure the cloud resources and inject them into the deployment provider, at which point the staging smoke tests can be executed).
+  - Requires staging Render compute instance deployment.
+  - Requires two Cloudflare R2 buckets (`firstmemoir-public-assets` and `firstmemoir-private-uploads`) + credentials.
+  - Requires Razorpay Sandbox API keys and Webhook secret.
+  - Requires updating Vercel `NEXT_PUBLIC_API_URL` to point to the live Render API.
+- **Next Active Slice:** **Slice 6D — External Staging Provisioning & Secret Injection** (Execute only after external cloud resources are created and credentials configured).

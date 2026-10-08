@@ -64,4 +64,10 @@ export interface IStorageProvider {
    * Upload buffer directly to R2.
    */
   uploadBuffer(fileKey: string, buffer: Buffer, mimeType: string): Promise<void>;
+
+  /**
+   * Returns CDN public URL for public assets (products/*, previews/*).
+   * Throws an error for private assets (customers/*) or unknown prefixes.
+   */
+  getPublicUrl(fileKey: string): string;
 }

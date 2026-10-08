@@ -129,13 +129,31 @@ export const storageController = {
    * GET /api/v1/storage/read-url
    *
    * Returns a short-lived pre-signed URL for a private customer photo.
-   * Authenticated users can access this endpoint — deeper per-asset
-   * authorization (e.g. ownership checks) will be added when customer
-   * orders are implemented.
+   * Enforces strict session/user ownership.
    */
   async requestReadUrl(req: Request, res: Response, next: NextFunction) {
     try {
       const { file_key } = req.query as { file_key: string };
+      const { getSessionId } = await import('../middlewares/session.middleware.js');
+      const sessionId = getSessionId(req);
+      const userId = (req as any).user?.id || null;
+      const isAdmin = (req as any).user?.role === 'ADMIN';
+
+      const { prisma } = await import('@repo/database');
+      const existingUpload = await prisma.userUpload.findUnique({
+        where: { r2_key: file_key }
+      });
+
+      if (!existingUpload) {
+        return res.status(404).json({ success: false, data: null, error: 'Upload not found' });
+      }
+
+      const isOwnedBySession = existingUpload.session_id === sessionId;
+      const isOwnedByUser = userId && existingUpload.user_id === userId;
+
+      if (!isOwnedBySession && !isOwnedByUser && !isAdmin) {
+        return res.status(403).json({ success: false, data: null, error: 'Unauthorized to access this upload' });
+      }
 
       const signedUrl = await storageService.generateReadUrl(file_key);
 

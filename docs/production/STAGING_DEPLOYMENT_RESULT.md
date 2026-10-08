@@ -1,65 +1,83 @@
 # Staging Deployment & End-To-End Verification Result
 
 ## STAGING STATUS
-STAGING BLOCKED
+BLOCKED — EXTERNAL INFRASTRUCTURE NOT YET PROVISIONED
 
-## VERIFIED
-- API architecture and environment configuration locally.
-- R2 upload, processing, and preview extraction logic locally.
-- Razorpay Webhook HMAC verification and idempotency processing locally.
-- Cart and checkout authoritative backend pricing locally.
-- `render.yaml` schema structure.
-- Local regression test stability.
-- Repository configuration contracts.
+## APPLICATION HARDENING
+VERIFIED
 
-## NOT VERIFIED
-- Remote Staging Database Migrations (No connection string).
-- API deployment (Render service un-provisioned).
-- Live Razorpay Checkout (No Sandbox credentials).
-- Live R2 Uploads (No R2 tokens available).
-- Webhook Delivery (Razorpay cannot reach localhost/un-provisioned API).
+---
 
-## BLOCKERS
-- **Render API Instance:** The Express API has not been provisioned on Render.
-- **Staging Database:** A dedicated staging PostgreSQL database (e.g. Neon, Supabase) must be provisioned and its connection string provided.
-- **R2 Credentials:** Cloudflare R2 Account ID and API tokens are missing from the staging environment variables.
-- **Razorpay Sandbox:** Test mode `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET` are not supplied.
-- **Vercel API URL:** The deployed `firstmemoir-demo.vercel.app` is currently pointing `NEXT_PUBLIC_API_URL` to `http://localhost:3001/api/v1` and requires an update to the actual Render API URL once deployed.
+## Slice 6C.1 Final Verification
 
-## R2 SECURITY FINDING
-- **Finding:** The current Cloudflare R2 bucket (`weprintit-assets`) has public access enabled globally. Because Cloudflare R2 does not support directory-level permissions natively, objects inside the `customers/` prefix are inherently public. Although the backend does not expose `master_file_key` to the storefront during cart/checkout, the `requestUploadUrl` endpoint returns the `file_key` (e.g., `customers/<timestamp>-<uuid>.jpg`) to the browser so the client can perform the PUT request. Anyone intercepting this response (or the browser user themselves) could construct the public URL and access the raw customer master upload.
-- **Recommendation:** Do not use a single mixed bucket. Provision two separate buckets: 
-  1. `firstmemoir-public-assets` (Public access enabled: for `products/` and `previews/`)
-  2. `firstmemoir-private-uploads` (Public access disabled: for `customers/` master uploads, accessible only via API presigned URLs).
-  The environment schema (`env.ts`) and `r2.provider.ts` will need to be updated to support two distinct bucket variables (`R2_PUBLIC_BUCKET_NAME` and `R2_PRIVATE_BUCKET_NAME`).
+### 1. Verification vs. Staging Status
+- **APPLICATION HARDENING**: **VERIFIED** (All 24/24 focused security, idempotency, routing, and recovery tests passing against real PostgreSQL test DB; regression suites 3.2, 4, 5 all passing).
+- **STAGING DEPLOYMENT**: **BLOCKED — EXTERNAL INFRASTRUCTURE NOT YET PROVISIONED** (External PostgreSQL database, Render compute, two isolated R2 buckets, and Razorpay test credentials pending human procurement).
 
-## RAZORPAY TEST RESULT
-- **Implementation:** VERIFIED locally. Webhook HMAC verification and idempotency logic are structurally sound and separate from each other.
-- **Sandbox:** BLOCKED (Requires actual credentials and a reachable staging API).
-- **Production:** NOT IN SCOPE.
+### 2. Real R2 Bucket Audit (`weprintit-assets`)
+- **Status**: Live bucket audited via Cloudflare R2 SDK.
+- **Total Objects**: 123
+- **Total Storage**: 7,791,248 bytes (~7.43 MB)
+- **Prefix Breakdown**:
+  - `customers/`: 56 objects (5,246,240 bytes / ~5.00 MB, extensions: `.jpeg`, `.jpg`, `.png`, `.webp`, timestamps from August 6, 2026).
+  - `previews/`: 56 objects (2,007,650 bytes / ~1.91 MB, extensions: `.webp`, 1:1 preview proxies for customer test uploads).
+  - `products/`: 11 objects (537,358 bytes / ~0.51 MB, extensions: `.webp`, `.jpeg`, early product test images from July 31 - August 5, 2026).
+  - Other prefixes: None.
+- **Catalogue Reference Status**: The 82 canonical catalogue items store static paths (e.g. `/catalog/frames/...`) and do NOT actively reference these 11 R2 product images.
+- **Data Classification**: All 56 customer uploads and 56 previews represent development test uploads from August 2026. No live customer production data exists.
 
-## DEPLOYED URLS
-- **Storefront:** https://firstmemoir-demo.vercel.app (Note: API calls currently failing due to `localhost` binding).
-- **API:** BLOCKED (Pending Render deployment).
-- **Admin:** BLOCKED (Pending deployment).
+### 3. Target Storage Architecture & Migration Plan
+- **Target Separation**:
+  - **Public Bucket**: `firstmemoir-public-assets` (Public access ENABLED, holds `products/*` and `previews/*`).
+  - **Private Bucket**: `firstmemoir-private-uploads` (Public access DISABLED, holds `customers/*`).
+- **Migration Plan for `weprintit-assets`**:
+  - Do NOT delete the existing `weprintit-assets` bucket during staging setup.
+  - The 11 `products/*` objects can be optionally copied to `firstmemoir-public-assets` if needed for staging tests.
+  - The 56 test `customers/*` uploads can remain in `weprintit-assets` or be archived. Because they are test artifacts from August 2026, they do not require migration to `firstmemoir-private-uploads`.
+  - Once new staging buckets are operational, the legacy `weprintit-assets` bucket can be decommissioned safely after confirmation.
 
-## DATABASE
-- **Migration:** BLOCKED (No staging DB).
-- **Seed:** BLOCKED (No staging DB).
-- **82-product verification:** BLOCKED (No staging DB).
+### 4. Storage Provider Invariants (`r2.provider.ts`)
+- **Prefix Routing**:
+  - `customers/*` routes strictly to `R2_PRIVATE_BUCKET_NAME`.
+  - `products/*` routes strictly to `R2_PUBLIC_BUCKET_NAME`.
+  - `previews/*` routes strictly to `R2_PUBLIC_BUCKET_NAME`.
+- **Fail-Closed Guard**: Any unrecognized or missing prefix (e.g. `malicious/file.txt`) immediately throws an error, failing closed across all storage methods (`generateUploadUrl`, `generateReadUrl`, `verifyFile`, `deleteFile`, `downloadFile`, `uploadBuffer`).
+- **Public URL Invariant**: `getPublicUrl("customers/...")` throws an explicit error and NEVER returns a public URL.
 
-## FILES/DOCS UPDATED
-- `docs/production/STAGING_DEPLOYMENT_RESULT.md` (Created)
-- `CURRENT_STATE.md` (Updated)
+### 5. Upload Authorization & Session Security
+- **Guest Checkout Supported**: `ensureCartSession` middleware issues a signed, HttpOnly `cart_session` cookie if unauthenticated, allowing seamless guest uploads.
+- **Ownership Enforcement**:
+  - `POST /api/v1/storage/upload-complete`: Verifies `existingUpload.session_id === sessionId || existingUpload.user_id === userId`. Session B cannot claim or complete Session A's upload (rejects with 403).
+  - `GET /api/v1/storage/read-url`: Verifies session or user ownership before generating pre-signed read URL. Session B cannot retrieve Session A's private upload (rejects with 403).
 
-## COMMIT
-- `chore(production): audit staging deployment blockers and r2 security`
+### 6. Razorpay Webhook Idempotency & Retries
+- **HMAC Verification**: Rejects invalid signatures with 400.
+- **Atomic Processing**: First valid `payment.captured` event executes within a single database transaction:
+  - Row lock on Order (`SELECT ... FOR UPDATE`).
+  - Creates `WebhookEvent` with status `PROCESSED`.
+  - Creates `Payment` with status `CAPTURED`.
+  - Transitions `Order` to `CONFIRMED`.
+  - Transitions `UserUpload` to `ORDERED_RETAINED`.
+- **Duplicate Protection**: Second call with same `event_id` catches unique constraint violation (`P2002`) and returns 200 OK without double payment or double confirmation.
+- **Retryable Failures**: Any infrastructure or database abort rolls back the transaction completely, ensuring `WebhookEvent` is not committed. A subsequent retry with the same `event_id` succeeds normally.
 
-## Slice 6C.1 Security and Idempotency Remediation
-**R2 Access Model**: Updated to a strict two-bucket architecture. `customers/` master uploads are routed to `R2_PRIVATE_BUCKET_NAME` ensuring they are not publicly retrievable even if the file key is known. `products/` and `previews/` remain in `R2_PUBLIC_BUCKET_NAME`.
-**Upload Authorization Model**: Verified that `requestUploadUrl` issues a secure, signed `cart_session` HttpOnly cookie. The `uploadComplete` endpoint explicitly enforces that only the exact `sessionId` that originated the upload can mark it as ready, preventing enumeration and completion spoofing.
-**Webhook Retry/Idempotency**: Verified that `payment.captured` webhooks create a `WebhookEvent` idempotency lock *inside* the main transaction. If any database or infrastructure error occurs, the transaction rolls back, which destroys the `WebhookEvent`, perfectly preserving the ability for Razorpay to retry the event. Duplicate successful events return 200 OK.
-**Checkout Initialization Behavior**: Verified that `initializeCheckout` is perfectly idempotent. Repeated initialization requests identify existing `PENDING` orders, fetch their Razorpay status, and idempotently return the existing `razorpay_order_id` if it is valid and unpaid, preventing duplicate Razorpay orders.
-**Upload Failure Recovery**: Verified that if the Razorpay order creation (which happens outside the transaction) fails, the checkout service safely catches the error, marks the local order `EXPIRED`, and explicitly transitions all locked uploads back to `CART_ATTACHED`, preventing upload stranding.
-**Tests Added**: Added `slice6c1.integration.test.ts` to verify bucket routing, session isolation, and transaction rollback mechanics.
-**Remaining Staging Blockers**: Render API Instance, Staging PostgreSQL Database, Cloudflare R2 Credentials (now two buckets), Razorpay Sandbox Credentials, Vercel API URL binding.
+### 7. Checkout Initialization Idempotency & Price Authority
+- **Reusing Valid Orders**: If an active `PENDING` order exists for the cart and its Razorpay order has 0 attempts and status `created`, `initializeCheckout` reuses both the local order and Razorpay order ID without creating duplicates.
+- **Deterministic Replacement**: If the existing Razorpay order is expired or already attempted, the stale local order is marked `EXPIRED` and a replacement order is created.
+- **Paid Order Protection**: If the Razorpay order is already `paid`, returns 409 conflict to prevent double charges.
+- **Backend Price Authority**: Checkout price is recalculated authoritatively from database catalogue prices and selected options; client payloads cannot alter amounts.
+
+### 8. Upload State Recovery
+- **Failure Rollback**: If Razorpay order creation fails after the local order transaction, `checkoutService` catches the error, marks the local order `EXPIRED`, resets the cart to `ACTIVE`, and recovers all locked uploads back to `CART_ATTACHED`.
+- **Safe Retry**: The user can immediately retry checkout with the exact same upload assets.
+- **Confirmed Order Invariant**: Genuinely confirmed order uploads (`ORDERED_RETAINED`) are never touched or unlocked by subsequent checkout failures.
+
+---
+
+## REGRESSION TEST MATRIX
+- **Slice 3.2 (Catalogue Truth & Safety)**: 8/8 passed
+- **Slice 4 (Real Commerce Pilot)**: 4/4 passed
+- **Slice 5 (Admin Verification)**: 5/5 passed
+- **Slice 6C.1 (Security & Idempotency Hardening)**: 24/24 passed
+- **Typecheck (`check-types` across monorepo + `tsc --noEmit`)**: PASS (0 errors)
+- **Monorepo Build (`turbo run build`)**: PASS (5/5 tasks successful: `@repo/database`, `@repo/shared`, `admin`, `api`, `storefront`)
