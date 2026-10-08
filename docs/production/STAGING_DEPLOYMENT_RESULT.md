@@ -54,3 +54,12 @@ STAGING BLOCKED
 
 ## COMMIT
 - `chore(production): audit staging deployment blockers and r2 security`
+
+## Slice 6C.1 Security and Idempotency Remediation
+**R2 Access Model**: Updated to a strict two-bucket architecture. `customers/` master uploads are routed to `R2_PRIVATE_BUCKET_NAME` ensuring they are not publicly retrievable even if the file key is known. `products/` and `previews/` remain in `R2_PUBLIC_BUCKET_NAME`.
+**Upload Authorization Model**: Verified that `requestUploadUrl` issues a secure, signed `cart_session` HttpOnly cookie. The `uploadComplete` endpoint explicitly enforces that only the exact `sessionId` that originated the upload can mark it as ready, preventing enumeration and completion spoofing.
+**Webhook Retry/Idempotency**: Verified that `payment.captured` webhooks create a `WebhookEvent` idempotency lock *inside* the main transaction. If any database or infrastructure error occurs, the transaction rolls back, which destroys the `WebhookEvent`, perfectly preserving the ability for Razorpay to retry the event. Duplicate successful events return 200 OK.
+**Checkout Initialization Behavior**: Verified that `initializeCheckout` is perfectly idempotent. Repeated initialization requests identify existing `PENDING` orders, fetch their Razorpay status, and idempotently return the existing `razorpay_order_id` if it is valid and unpaid, preventing duplicate Razorpay orders.
+**Upload Failure Recovery**: Verified that if the Razorpay order creation (which happens outside the transaction) fails, the checkout service safely catches the error, marks the local order `EXPIRED`, and explicitly transitions all locked uploads back to `CART_ATTACHED`, preventing upload stranding.
+**Tests Added**: Added `slice6c1.integration.test.ts` to verify bucket routing, session isolation, and transaction rollback mechanics.
+**Remaining Staging Blockers**: Render API Instance, Staging PostgreSQL Database, Cloudflare R2 Credentials (now two buckets), Razorpay Sandbox Credentials, Vercel API URL binding.

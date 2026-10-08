@@ -31,6 +31,13 @@ function buildFileKey(fileName: string, visibility: StorageVisibility): string {
   return `${prefix}/${timestamp}-${uuid}${ext}`;
 }
 
+function getBucketForKey(fileKey: string): string {
+  if (fileKey.startsWith('customers/')) {
+    return env.R2_PRIVATE_BUCKET_NAME;
+  }
+  return env.R2_PUBLIC_BUCKET_NAME;
+}
+
 export const r2Provider: IStorageProvider = {
   async generateUploadUrl(
     fileName: string,
@@ -41,7 +48,7 @@ export const r2Provider: IStorageProvider = {
     const fileKey = buildFileKey(fileName, visibility);
 
     const command = new PutObjectCommand({
-      Bucket: env.R2_BUCKET_NAME,
+      Bucket: getBucketForKey(fileKey),
       Key: fileKey,
       ContentType: mimeType,
     });
@@ -59,7 +66,7 @@ export const r2Provider: IStorageProvider = {
 
   async generateReadUrl(fileKey: string, expiresIn = 3600, downloadFilename?: string): Promise<string> {
     const input: any = {
-      Bucket: env.R2_BUCKET_NAME,
+      Bucket: getBucketForKey(fileKey),
       Key: fileKey,
     };
     if (downloadFilename) {
@@ -78,7 +85,7 @@ export const r2Provider: IStorageProvider = {
 
     try {
       const command = new HeadObjectCommand({
-        Bucket: env.R2_BUCKET_NAME,
+        Bucket: getBucketForKey(fileKey),
         Key: fileKey,
       });
       const response = await client.send(command);
@@ -106,7 +113,7 @@ export const r2Provider: IStorageProvider = {
 
   async deleteFile(fileKey: string): Promise<void> {
     const command = new DeleteObjectCommand({
-      Bucket: env.R2_BUCKET_NAME,
+      Bucket: getBucketForKey(fileKey),
       Key: fileKey,
     });
 
@@ -115,7 +122,7 @@ export const r2Provider: IStorageProvider = {
 
   async downloadFile(fileKey: string): Promise<Buffer> {
     const command = new GetObjectCommand({
-      Bucket: env.R2_BUCKET_NAME,
+      Bucket: getBucketForKey(fileKey),
       Key: fileKey,
     });
     const response = await client.send(command);
@@ -129,7 +136,7 @@ export const r2Provider: IStorageProvider = {
 
   async uploadBuffer(fileKey: string, buffer: Buffer, mimeType: string): Promise<void> {
     const command = new PutObjectCommand({
-      Bucket: env.R2_BUCKET_NAME,
+      Bucket: getBucketForKey(fileKey),
       Key: fileKey,
       Body: buffer,
       ContentType: mimeType,

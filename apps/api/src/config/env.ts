@@ -25,7 +25,8 @@ const envSchema = z.object({
   R2_ACCOUNT_ID: z.string().min(1, 'R2_ACCOUNT_ID is required'),
   R2_ACCESS_KEY_ID: z.string().min(1, 'R2_ACCESS_KEY_ID is required'),
   R2_SECRET_ACCESS_KEY: z.string().min(1, 'R2_SECRET_ACCESS_KEY is required'),
-  R2_BUCKET_NAME: z.string().min(1, 'R2_BUCKET_NAME is required'),
+  R2_PUBLIC_BUCKET_NAME: z.string().min(1, 'R2_PUBLIC_BUCKET_NAME is required'),
+  R2_PRIVATE_BUCKET_NAME: z.string().min(1, 'R2_PRIVATE_BUCKET_NAME is required'),
   R2_PUBLIC_URL: z.string().optional().default(''),
 
   // Razorpay
@@ -58,7 +59,8 @@ const devDefaults = {
   R2_ACCOUNT_ID: 'mock',
   R2_ACCESS_KEY_ID: 'mock',
   R2_SECRET_ACCESS_KEY: 'mock',
-  R2_BUCKET_NAME: 'mock',
+  R2_PUBLIC_BUCKET_NAME: 'mock-public',
+  R2_PRIVATE_BUCKET_NAME: 'mock-private',
   RAZORPAY_KEY_ID: 'mock',
   RAZORPAY_KEY_SECRET: 'mock',
   RAZORPAY_WEBHOOK_SECRET: 'mock',
