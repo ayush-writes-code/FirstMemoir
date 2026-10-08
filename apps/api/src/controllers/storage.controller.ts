@@ -172,17 +172,16 @@ export const storageController = {
   },
 
   /**
-   * GET /api/v1/storage/preview/:file_key(*)
+   * GET /api/v1/storage/preview/:uploadId
    * 
-   * Returns a 302 Redirect to the presigned URL for an image.
+   * Returns a 302 Redirect to the presigned URL for an image's preview proxy.
    * Useful for direct `<img src="..." />` tags.
    */
   async streamPreview(req: Request, res: Response, next: NextFunction) {
     try {
-      // The file_key might contain slashes like previews/xxx.webp
-      const file_key = (req.params[0] || req.params.file_key) as string;
-      if (!file_key) {
-        return res.status(400).send('Missing file_key');
+      const uploadId = req.params.uploadId;
+      if (!uploadId) {
+        return res.status(400).send('Missing uploadId');
       }
       const { getSessionId } = await import('../middlewares/session.middleware.js');
       const sessionId = getSessionId(req);
@@ -190,17 +189,16 @@ export const storageController = {
       const isAdmin = (req as any).user?.role === 'ADMIN';
 
       const { prisma } = await import('@repo/database');
-      const existingUpload = await prisma.userUpload.findFirst({
-        where: {
-          OR: [
-            { r2_key: file_key },
-            { preview_r2_key: file_key }
-          ]
-        }
+      const existingUpload = await prisma.userUpload.findUnique({
+        where: { id: uploadId }
       });
 
-      if (!existingUpload) {
-        return res.status(404).send('Not found');
+      if (!existingUpload || !existingUpload.preview_r2_key) {
+        return res.status(404).send('Preview not found');
+      }
+
+      if (!existingUpload.preview_r2_key.startsWith('previews/')) {
+        return res.status(400).send('Invalid preview object');
       }
 
       const isOwnedBySession = existingUpload.session_id === sessionId;
@@ -210,7 +208,9 @@ export const storageController = {
         return res.status(403).send('Forbidden');
       }
 
-      const signedUrl = await storageService.generateReadUrl(file_key);
+      const signedUrl = await storageService.generateReadUrl(existingUpload.preview_r2_key);
+      res.setHeader('Cache-Control', 'private, no-store');
+      res.setHeader('Referrer-Policy', 'no-referrer');
       res.redirect(302, signedUrl);
     } catch (error) {
       next(error);
@@ -317,7 +317,7 @@ export const storageController = {
       res.status(200).json(successResponse({
         upload_id: upload.id,
         status: upload.status,
-        preview_url: `${baseUrl}/api/v1/storage/preview/${previewKey}`,
+        preview_url: `${baseUrl}/api/v1/storage/preview/${upload.id}`,
         width: canonicalWidth || 0,
         height: canonicalHeight || 0,
       }));

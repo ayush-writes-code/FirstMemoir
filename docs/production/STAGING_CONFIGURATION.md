@@ -8,7 +8,8 @@ This matrix defines the strict environment variable contract required to provisi
 | `R2_ACCOUNT_ID` | ✓ | | | ✓ | ✓ | Cloudflare | Pending |
 | `R2_ACCESS_KEY_ID`| ✓ | | | ✓ | ✓ | Cloudflare | Pending |
 | `R2_SECRET_ACCESS_KEY`| ✓ | | | ✓ | ✓ | Cloudflare | Pending |
-| `R2_BUCKET_NAME` | ✓ | | | ✓ | No | Cloudflare | Pending |
+| `R2_PUBLIC_BUCKET_NAME` | ✓ | | | ✓ | No | Cloudflare | Pending |
+| `R2_PRIVATE_BUCKET_NAME` | ✓ | | | ✓ | No | Cloudflare | Pending |
 | `R2_PUBLIC_URL` | ✓ | ✓ | | ✓ | No | Cloudflare Custom Domain | Pending |
 | `RAZORPAY_KEY_ID` | ✓ | ✓ | | ✓ (Pay) | No | Razorpay Test Mode | Pending |
 | `RAZORPAY_KEY_SECRET` | ✓ | | | ✓ (Pay) | ✓ | Razorpay Test Mode | Pending |

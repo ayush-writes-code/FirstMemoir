@@ -17,7 +17,8 @@ The production environment MUST supply the following exact keys. Fake or test cr
 | `CLOUDFLARE_R2_ACCOUNT_ID` | Cloudflare account ID | Cloudflare | **REQUIRED** |
 | `CLOUDFLARE_R2_ACCESS_KEY_ID` | R2 Bucket Access Key | Cloudflare | **REQUIRED** |
 | `CLOUDFLARE_R2_SECRET_ACCESS_KEY`| R2 Bucket Secret Key | Cloudflare | **REQUIRED** |
-| `CLOUDFLARE_R2_BUCKET_NAME` | Name of the bucket (e.g. `firstmemoir-prod`) | Cloudflare | **REQUIRED** |
+| `CLOUDFLARE_R2_PUBLIC_BUCKET_NAME` | Name of the public bucket (e.g. `firstmemoir-public`) | Cloudflare | **REQUIRED** |
+| `CLOUDFLARE_R2_PRIVATE_BUCKET_NAME` | Name of the private bucket (e.g. `firstmemoir-private`) | Cloudflare | **REQUIRED** |
 | `CLOUDFLARE_R2_PUBLIC_URL` | Public routing domain (e.g. `https://cdn.firstmemoir.in`) | Cloudflare | **REQUIRED** |
 | `RAZORPAY_KEY_ID` | Live Razorpay Key | Razorpay Dashboard | **BLOCKED** (Pending KYC) |
 | `RAZORPAY_KEY_SECRET` | Live Razorpay Secret | Razorpay Dashboard | **BLOCKED** (Pending KYC) |

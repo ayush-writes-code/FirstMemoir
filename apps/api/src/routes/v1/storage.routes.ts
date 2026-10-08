@@ -44,12 +44,12 @@ router.get(
   storageController.requestReadUrl,
 );
 /**
- * GET /api/v1/storage/preview/:file_key(*)
+ * GET /api/v1/storage/preview/:uploadId
  *
  * Redirects to a short-lived pre-signed URL for an image.
  */
 router.get(
-  '/preview/*',
+  '/preview/:uploadId',
   ensureCartSession,
   storageController.streamPreview,
 );

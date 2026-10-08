@@ -156,6 +156,37 @@ describe('Slice 6C.1 - Security & Idempotency Hardening Verification', () => {
       assert.strictEqual(res.status, 404);
       assert.strictEqual(res.body.error, 'Upload not found');
     });
+
+    it('2.6: Session B cannot use preview endpoint for Session A upload (rejects with 403)', async () => {
+      const uploadRecord = await prisma.userUpload.findUnique({ where: { r2_key: uploadKeyA } });
+      await prisma.userUpload.update({
+        where: { id: uploadRecord!.id },
+        data: { preview_r2_key: 'previews/test-preview.webp' }
+      });
+
+      const res = await sessionB
+        .get(`/api/v1/storage/preview/${uploadRecord!.id}`);
+
+      assert.strictEqual(res.status, 403);
+    });
+
+    it('2.7: Session A can use preview endpoint and receives 302 redirect', async () => {
+      const uploadRecord = await prisma.userUpload.findUnique({ where: { r2_key: uploadKeyA } });
+
+      await prisma.userUpload.update({
+        where: { id: uploadRecord!.id },
+        data: { preview_r2_key: 'previews/test-preview.webp' }
+      });
+
+      const res = await sessionA
+        .get(`/api/v1/storage/preview/${uploadRecord!.id}`);
+
+      assert.strictEqual(res.status, 302);
+      assert.ok(res.header.location);
+      assert.ok(res.header.location.includes('X-Amz-Signature'));
+      assert.strictEqual(res.header['cache-control'], 'private, no-store');
+      assert.strictEqual(res.header['referrer-policy'], 'no-referrer');
+    });
   });
 
   // =========================================================================

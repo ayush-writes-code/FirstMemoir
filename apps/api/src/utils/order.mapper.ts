@@ -36,7 +36,7 @@ export const orderMapper = {
       unit_price: item.unit_price.toString(),
       print_asset_url: item.print_asset_url,
       // For preview, construct a proxy URL or just return the key for now.
-      preview_url: item.upload?.preview_r2_key ? `/api/v1/uploads/preview/${item.upload.preview_r2_key}` : '',
+      preview_url: item.upload_id ? `/api/v1/storage/preview/${item.upload_id}` : '',
       customization_summary: item.customization_data,
     };
   },
