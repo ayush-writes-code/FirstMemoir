@@ -44,18 +44,30 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 ---
 
 ## 4. Current Milestone & Next Slice
-- **Completed Milestone:** **Slice 6C.2 — R2 Privacy Model & Staging Readiness Final Audit**
-- **Milestone Status:** **STAGING BLOCKED — INFRASTRUCTURE PENDING (Code-Ready)**
+- **Completed Milestone:** **Slice 6C.3 — Staging Data Infrastructure (Attempted)**
+- **Milestone Status:** **BLOCKED — MANUAL INFRASTRUCTURE PROVISIONING REQUIRED**
 - **Accomplishments:**
-  - **R2 Privacy Architecture Complete:** All customer-derived data (both original `customers/*` uploads and `sharp`-generated `previews/*`) is now strictly isolated in `R2_PRIVATE_BUCKET_NAME`.
-  - **Secure Preview Access:** Built `GET /api/v1/storage/preview/:file_key` redirection endpoint to securely serve short-lived signed URLs for previews while preserving session ownership checks.
-  - **Bucket Splitting Configuration:** Removed legacy `R2_BUCKET_NAME` entirely across `.env.example` and `render.yaml`.
-  - **Regression Matrix Passed:** Slice 3.2 (8/8), Slice 4 (4/4), Slice 5 (5/5), Slice 6C.1 (24/24), Typecheck (PASS), Monorepo Build (PASS).
-  - **Decision Reached:** The repository is fully secure and **READY FOR STAGING INFRASTRUCTURE**.
+  - **Infrastructure Requirements Defined:** Specified the exact bucket architecture, CORS requirements, API token scoping, and PostgreSQL staging requirements.
+  - **Blocker Identified:** Lacking Cloudflare (`wrangler`) and PostgreSQL provider (`neonctl`/`supabase`) CLI access to autonomously provision resources.
 - **External Blockers**:
-  - Requires actual staging DB provision (Supabase/Neon).
+  - Manual creation of `firstmemoir-public-assets` (Public) and `firstmemoir-private-uploads` (Private) R2 buckets.
+  - Manual generation of scoped R2 API token and CORS configuration.
+  - Manual provisioning of a dedicated staging PostgreSQL database and extraction of `DATABASE_URL`.
   - Requires staging Render compute instance deployment.
-  - Requires two Cloudflare R2 buckets (`firstmemoir-public` and `firstmemoir-private`) + credentials.
   - Requires Razorpay Sandbox API keys and Webhook secret.
   - Requires updating Vercel `NEXT_PUBLIC_API_URL` to point to the live Render API.
-- **Next Active Slice:** **Slice 6C.3 / 6D — External Staging Provisioning & Secret Injection** (Execute only after external cloud resources are created).
+- **Next Active Slice:** **Resume Slice 6C.3** (Post-manual infrastructure provisioning to verify DB migration, seed, and R2 access) followed by **Slice 6C.4 — Render API Staging Deployment**.
+
+---
+
+## 5. Deployment Readiness Matrix
+
+| Environment/Layer | Status | Notes |
+|---|---|---|
+| **LOCAL** | `VERIFIED` | 100% test pass rate across safety, commerce, idempotency. |
+| **STAGING DATA INFRASTRUCTURE** | `BLOCKED` | Pending manual creation of Postgres & R2 buckets. |
+| **API DEPLOYMENT** | `NOT STARTED` | Pending data infrastructure. |
+| **STOREFRONT DEPLOYMENT** | `NOT STARTED` | Pending API. |
+| **RAZORPAY STAGING** | `NOT STARTED` | Keys required. |
+| **END-TO-END STAGING** | `NOT VERIFIED` | - |
+| **PRODUCTION** | `NOT APPROVED` | - |
