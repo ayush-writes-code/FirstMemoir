@@ -179,7 +179,7 @@ export const storageController = {
    */
   async streamPreview(req: Request, res: Response, next: NextFunction) {
     try {
-      const uploadId = req.params.uploadId;
+      const uploadId = req.params.uploadId as string;
       if (!uploadId) {
         return res.status(400).send('Missing uploadId');
       }
