@@ -3,9 +3,9 @@
 ## 1. Executive Summary
 
 This document records the empirical execution and verification results for Slice 6C.3 Staging Data Infrastructure.
-The staging environment data layer was connected and tested:
-- **Staging PostgreSQL (Neon)**: **VERIFIED**. Connected, 6 Prisma migrations applied via `migrate deploy`, and idempotent seed verified twice (82 canonical products).
-- **Staging Cloudflare R2**: **BLOCKED / RUNTIME NOT VERIFIED**. The configured public domain is active, but S3 API operations with the configured credentials returned HTTP 401 Unauthorized.
+Both core staging data layers have now been connected, tested, and empirically verified:
+- **Staging PostgreSQL (Neon)**: **PASS**. Connected, 6 Prisma migrations applied via `prisma migrate deploy`, and idempotent seed verified twice (82 canonical products).
+- **Staging Cloudflare R2**: **PASS**. Real runtime write, public read, private access block, authorized presigned read, and cleanup verified against live staging buckets using newly provisioned credentials.
 - **Legacy Bucket (`weprintit-assets`)**: **UNTOUCHED**. No operations performed against legacy assets.
 
 ---
@@ -38,11 +38,11 @@ The staging environment data layer was connected and tested:
   - Products Updated: 82
   - Duplicates Created: 0
 
-### 2.3 Catalogue Reconciliation Evidence
-Verified against the live staging database:
+### 2.3 Live Catalogue Reconciliation
+Verified directly against the live staging database:
 - **Total Products**: 82
 - **Missing Canonical Slugs**: 0
-- **Unique SKUs**: 82
+- **Unique SKUs**: 82 / 82
 - **Price Provenance**:
   - `CONFIRMED_SOURCE`: 48
   - `PROVISIONAL_ESTIMATE`: 34
@@ -50,39 +50,46 @@ Verified against the live staging database:
 
 ---
 
-## 3. Cloudflare R2 Storage Infrastructure
+## 3. Cloudflare R2 Storage Infrastructure Verification
 
-- **Target Public Bucket**: `firstmemoir-public-assets`
-- **Target Private Bucket**: `firstmemoir-private-uploads`
-- **Configured Public URL**: `https://pub-c0dc396fc2f245cca9ef062272bb82f4.r2.dev`
+- **Configured S3 Endpoint**: `https://694b7628005c133e000f815f81d91640.r2.cloudflarestorage.com` (Verified standard Cloudflare R2 endpoint using account ID)
+- **Public Bucket**: `firstmemoir-public-assets`
+- **Private Bucket**: `firstmemoir-private-uploads`
+- **Public Domain**: `https://pub-c0dc396fc2f245cca9ef062272bb82f4.r2.dev`
 
-### 3.1 Public Domain Verification
-- `curl -I https://pub-c0dc396fc2f245cca9ef062272bb82f4.r2.dev` returns `HTTP/1.1 404 Not Found` from `Server: cloudflare`.
-- The public edge domain is reachable and actively served by Cloudflare.
+### 3.1 Real Runtime Verification Results
 
-### 3.2 S3 API Runtime Access Check
-- **Status**: **R2 RUNTIME ACCESS: NOT VERIFIED (BLOCKED)**
-- **Evidence**:
-  - Executed PutObject / HeadBucket / GetObject requests via `@aws-sdk/client-s3` and SigV4 curl to `https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com`.
-  - Cloudflare R2 responded with `HTTP 401 Unauthorized` (`<Code>Unauthorized</Code><Message>Unauthorized</Message>`).
-  - Both `firstmemoir-public-assets` and `firstmemoir-private-uploads` return 401.
-- **Root Cause**: The R2 API token or Access Key ID / Secret Access Key pair configured in the environment is invalid, lacks Object Read/Write permissions on the staging buckets, has an IP restriction, or was revoked in Cloudflare.
+| Test Step | Target Bucket / Object | Expected Behavior | Observed Result | Status |
+|---|---|---|---|---|
+| **1. Endpoint Check** | Account S3 Endpoint | Standard R2 URL | Accessible via AWS SDK v3 client | **PASS** |
+| **2. Public Object Write** | `firstmemoir-public-assets` (`products/staging-test-...txt`) | PutObject succeeds | `200 OK` (Written successfully) | **PASS** |
+| **3. Private Object Write** | `firstmemoir-private-uploads` (`customers/staging-test-...txt`) | PutObject succeeds | `200 OK` (Written successfully) | **PASS** |
+| **4. Public URL Read** | `R2_PUBLIC_URL/products/...` | HTTP 200, matching body | `200 OK`, exact payload match | **PASS** |
+| **5. Private Unauthenticated Read** | `R2_PUBLIC_URL/customers/...` | HTTP 404 / 403 denied | `404 Not Found`, access blocked | **PASS** |
+| **6. Private Authorized Read** | Presigned GET URL (expires in 300s) | HTTP 200, matching body | `200 OK`, exact payload match | **PASS** |
+| **7. Public Object Cleanup** | `firstmemoir-public-assets` | DeleteObject succeeds | Deleted cleanly | **PASS** |
+| **8. Private Object Cleanup** | `firstmemoir-private-uploads` | DeleteObject succeeds | Deleted cleanly | **PASS** |
+
+### 3.2 Automated Storage Unit Tests
+- Executed `slice6c1.integration.test.ts` (Section 1: R2 Access Model & Routing Guards):
+  - `1.1: products/* routes strictly to public bucket`: **PASS**
+  - `1.2: previews/* routes strictly to private bucket`: **PASS**
+  - `1.3: customers/* routes strictly to private bucket`: **PASS**
+  - `1.4: customers/* and previews/* fail-closed on public URL`: **PASS**
+  - `1.5: products/* generate valid public URLs`: **PASS**
+  - `1.6: invalid/unknown prefix fails closed`: **PASS**
+  - `1.7: private customer object generates signed read URL`: **PASS**
+  - **Total**: 7/7 passed (0 failures).
+
+### 3.3 Git Diff Quality Check
+- `git diff --check`: Clean (no trailing whitespace, no merge conflicts).
 
 ---
 
-## 4. CORS Configuration Specification (Required for Staging)
+## 4. Final Status Summary
 
-When configuring CORS on the private bucket (`firstmemoir-private-uploads`) in Cloudflare Dashboard:
-- **Allowed Origins**: Staging storefront origin(s) (e.g., `https://firstmemoir-demo.vercel.app`, `http://localhost:3000`)
-- **Allowed Methods**: `PUT`, `GET`, `HEAD`
-- **Allowed Headers**: `*` (or `Content-Type`, `Content-Length`, `x-amz-*`)
-- **Exposed Headers**: `ETag`
-- **Max Age**: 3600 seconds
-
----
-
-## 5. Remaining Blockers
-
-1. **R2 API Token Credentials**: Update `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` in the environment with a working token that has `Object Read & Write` permissions on `firstmemoir-public-assets` and `firstmemoir-private-uploads`.
-2. Once the token is updated, execute temporary test object creation and deletion to achieve **R2 RUNTIME ACCESS: VERIFIED**.
-3. **API Deployment (Render)**: Not yet started.
+- **Public Access**: **PASS**
+- **Private Access**: **PASS**
+- **Cleanup**: **PASS**
+- **Staging Database**: **PASS**
+- **Overall Slice 6C.3 Status**: **PASS — READY FOR API DEPLOYMENT (Slice 6C.4)**

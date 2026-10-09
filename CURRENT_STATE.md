@@ -45,19 +45,19 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 
 ## 4. Current Milestone & Next Slice
 - **Completed Milestone:** **Slice 6C.3 — Staging Data Infrastructure**
-- **Milestone Status:** **STAGING DATABASE VERIFIED / R2 TOKEN BLOCKED**
+- **Milestone Status:** **STAGING DATA INFRASTRUCTURE VERIFIED (PASS)**
 - **Accomplishments:**
   - **Staging PostgreSQL Verified**: Successfully connected to Neon PostgreSQL (`ep-super-queen-b38volvi-pooler.c-4.ap-southeast-1.aws.neon.tech`). Applied all 6 Prisma migrations via `prisma migrate deploy`.
   - **Idempotent Seed Verified**: Seed executed cleanly twice against live staging DB. Run 1 created 82 products; Run 2 updated 82 products and created 0 new products.
   - **Catalogue Verified**: Exactly 82 products, 82 unique SKUs, 82 unique slugs, 48 `CONFIRMED_SOURCE` prices, 34 `PROVISIONAL_ESTIMATE` prices, 5 core categories.
-  - **Public R2 Edge Verified**: Public edge domain (`pub-c0dc396fc2f245cca9ef062272bb82f4.r2.dev`) verified reachable via Cloudflare edge.
+  - **Cloudflare R2 Runtime Verified**: Successfully performed live write/read/delete against `firstmemoir-public-assets` and `firstmemoir-private-uploads`. Public assets verified readable via public domain. Private assets verified blocked from unauthenticated access and readable via authorized presigned URLs. Temporary test objects deleted cleanly.
+  - **Automated Storage Tests**: 7/7 unit tests passed in `slice6c1.integration.test.ts`.
   - **Legacy R2 Preserved**: `weprintit-assets` remained completely untouched.
-- **External Blockers**:
-  - **R2 API Token 401 Unauthorized**: The configured `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` pair returned HTTP 401 Unauthorized from Cloudflare R2 on all S3 API operations (`PutObject`, `HeadBucket`). A valid token with Object Read/Write permissions on `firstmemoir-public-assets` and `firstmemoir-private-uploads` is required.
+- **External Blockers for Next Steps**:
   - Requires staging Render compute instance deployment (Slice 6C.4).
-  - Requires Razorpay Sandbox API keys and Webhook secret.
+  - Requires Razorpay Sandbox API keys and Webhook secret for end-to-end commerce verification.
   - Requires updating Vercel `NEXT_PUBLIC_API_URL` to point to the live Render API.
-- **Next Active Slice:** **Resolve R2 Token -> Verify R2 Runtime Objects -> Slice 6C.4: Render API Staging Deployment**.
+- **Next Active Slice:** **Slice 6C.4 — Render API Staging Deployment**.
 
 ---
 
@@ -67,9 +67,9 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 |---|---|---|
 | **LOCAL** | `VERIFIED` | 100% test pass rate across safety, commerce, idempotency. |
 | **STAGING POSTGRESQL** | `VERIFIED` | Neon AWS Singapore: 6/6 migrations applied, 82 products seeded idempotently. |
-| **STAGING R2 RUNTIME** | `BLOCKED` | R2 RUNTIME ACCESS: NOT VERIFIED. Token returned HTTP 401 Unauthorized. |
-| **API DEPLOYMENT** | `NOT STARTED` | Pending working R2 runtime verification. |
+| **STAGING R2 RUNTIME** | `VERIFIED` | Real write/read/delete & presigned access verified on live buckets. |
+| **API DEPLOYMENT** | `NOT STARTED` | Next step: Slice 6C.4 Render deployment. |
 | **STOREFRONT DEPLOYMENT** | `NOT STARTED` | Pending API deployment. |
-| **RAZORPAY STAGING** | `NOT STARTED` | Keys required. |
+| **RAZORPAY STAGING** | `NOT STARTED` | Sandbox keys required for E2E tests. |
 | **END-TO-END STAGING** | `NOT VERIFIED` | - |
 | **PRODUCTION** | `NOT APPROVED` | - |
