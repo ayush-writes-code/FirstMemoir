@@ -1,7 +1,7 @@
 # Current State of FirstMemoir.in
 
 *Authoritative Technical Snapshot — Iterative Product Delivery Phase*  
-*Last updated: October 3, 2026*
+*Last updated: October 10, 2026*
 
 ---
 
@@ -53,11 +53,13 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
   - **Cloudflare R2 Runtime Verified**: Successfully performed live write/read/delete against `firstmemoir-public-assets` and `firstmemoir-private-uploads`. Public assets verified readable via public domain. Private assets verified blocked from unauthenticated access and readable via authorized presigned URLs. Temporary test objects deleted cleanly.
   - **Automated Storage Tests**: 7/7 unit tests passed in `slice6c1.integration.test.ts`.
   - **Legacy R2 Preserved**: `weprintit-assets` remained completely untouched.
-- **External Blockers for Next Steps**:
-  - Requires staging Render compute instance deployment (Slice 6C.4).
-  - Requires Razorpay Sandbox API keys and Webhook secret for end-to-end commerce verification.
-  - Requires updating Vercel `NEXT_PUBLIC_API_URL` to point to the live Render API.
-- **Next Active Slice:** **Slice 6C.4 — Render API Staging Deployment**.
+- **Current Active Milestone:** **Slice 6C.4 — Render API Staging Deployment**
+- **Pre-Deployment Audit Status (Phase 1 & 2):**
+  - **Render Configuration**: `render.yaml` uses Docker runtime with root context and `/api/health/live` probe.
+  - **Monorepo Build**: `turbo run build` passing across 5/5 packages.
+  - **Storage Controller Fix**: TypeScript typing on `uploadId` parameter resolved and committed (`5d9bf69`).
+  - **Storage Invariants**: 7/7 R2 access-model routing guard assertions verified passing.
+  - **Staging Blockers**: Render deployment blocked pending secure configuration of staging secrets (`JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `COOKIE_SECRET`, `RAZORPAY_*`, `CORS_ORIGIN`).
 
 ---
 
@@ -65,10 +67,10 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 
 | Environment/Layer | Status | Notes |
 |---|---|---|
-| **LOCAL** | `VERIFIED` | 100% test pass rate across safety, commerce, idempotency. |
+| **LOCAL** | `VERIFIED` | 100% build pass rate, R2 access guards verified, safe isolation enforced. |
 | **STAGING POSTGRESQL** | `VERIFIED` | Neon AWS Singapore: 6/6 migrations applied, 82 products seeded idempotently. |
 | **STAGING R2 RUNTIME** | `VERIFIED` | Real write/read/delete & presigned access verified on live buckets. |
-| **API DEPLOYMENT** | `NOT STARTED` | Next step: Slice 6C.4 Render deployment. |
+| **API DEPLOYMENT** | `READY_FOR_DEPLOYMENT` | Slice 6C.4 audited; pending staging secrets injection in Render. |
 | **STOREFRONT DEPLOYMENT** | `NOT STARTED` | Pending API deployment. |
 | **RAZORPAY STAGING** | `NOT STARTED` | Sandbox keys required for E2E tests. |
 | **END-TO-END STAGING** | `NOT VERIFIED` | - |
