@@ -153,3 +153,31 @@ In accordance with safety guidelines:
 - **Live Staging Initialization:** **PASS**
 - **Idempotency & State Machine:** **PASS**
 - **Overall Stage 3 Status:** **PASS**
+
+---
+
+## 7. Final Gate: Deploy Verification & Manual Browser Test Preparation
+
+### 7.1 Deployed Commit Verification
+- **Target Service:** `firstmemoir-api-staging.onrender.com`
+- **Active Commit:** `938d25b` (Verified live via HTTP 404 response on unauthenticated `GET /api/v1/orders/:id/status`, confirming deployment of the order status session fix).
+- **Probes:**
+  - `GET /api/health/live` → HTTP 200 `{"status":"ok","service":"first-memoir-api"}`
+  - `GET /api/health/ready` → HTTP 200 `{"status":"ok","service":"first-memoir-api","database":"connected"}`
+
+### 7.2 Existing Test-Order Disposition
+- Inspected Neon database:
+  - `7c4102c7-9ae7-41d3-a771-254e3de43138`: `PENDING`, ₹249, `order_TmdHiWiiN7yVWt`, 0 payments, 0 webhooks.
+  - `f0dc4577-2765-49f1-a444-e669ee9e9f77`: `PENDING`, ₹249, `order_TmdE5SYKA1FJrN`, 0 payments, 0 webhooks.
+  - `c1e65a9a-d9dc-48fb-a4ff-79a4abb1e765`: `PENDING`, ₹249, `order_Tmd8sE0txSGRkR`, 0 payments, 0 webhooks.
+- **Disposition:** No cleanup required. In ecommerce audit logging, unpaid orders preserve cart abandonment history without affecting catalogue stock or financial records.
+
+### 7.3 Manual Browser Test Protocol
+- **Storefront URL:** `https://firstmemoir-demo.vercel.app`
+- **Gateway Mode:** Verified test mode (`rzp_test_TmIGcynU0XmBZ8`).
+- **Webhook Pre-requisite:** Razorpay Dashboard must have webhook configured:
+  - **URL:** `https://firstmemoir-api-staging.onrender.com/api/v1/webhooks/razorpay`
+  - **Secret:** Value of `RAZORPAY_WEBHOOK_SECRET` configured in Render environment.
+  - **Active Events:** `payment.captured`
+- **Monitoring Script:** `scripts/monitor-webhook-order.ts` ready to verify DB transition upon payment.
+
