@@ -92,4 +92,35 @@ All runtime environment variables were audited against `apps/api/src/config/env.
 
 - **Target URL**: `https://firstmemoir-api-staging.onrender.com`
 - **Initial Verification Response**: `HTTP/2 404`, Header `x-render-routing: no-server`
-- **Status**: Render container build / deployment activation pending on Render dashboard.
+
+---
+
+## 7. Render Docker Startup Failure & Resolution
+
+### Root Cause
+During the initial Render Docker container startup, Node.js crashed with:
+```text
+Error: Cannot find module '/app/apps/api/dist/index.js'
+```
+Investigation of the compilation tree revealed:
+1. `apps/api/tsconfig.json` was missing an explicit `"rootDir": "src"`.
+2. Test files located under `apps/api/src/controllers/__tests__/` were included in the production `tsc` build.
+3. Specifically, `checkout-safety.test.ts` contained an import referencing `../../../../../packages/database/prisma/catalogue/data.js` outside `apps/api/src`.
+4. As a result, TypeScript inferred the common root directory across all compiled files as `/app` (the repository root) rather than `apps/api/src`.
+5. `tsc` consequently mirrored the full monorepo path under `dist/`, generating `dist/apps/api/src/index.js` and `dist/packages/...` instead of `dist/index.js`.
+6. When the runner container executed `CMD ["node", "apps/api/dist/index.js"]`, the entry point was absent from `/app/apps/api/dist/index.js`.
+
+### Fix Implemented
+In [`apps/api/tsconfig.json`](file:///Users/ayushtomar/Downloads/WePrintIt.in/apps/api/tsconfig.json):
+- Added `"rootDir": "src"` to strictly anchor compilation output to `apps/api/src`.
+- Added `"exclude": ["node_modules", "dist", "src/**/__tests__", "src/**/*.test.ts"]` so that test suites (which are executed dynamically via `tsx`) are excluded from the production compiled distribution.
+
+### Empirical Verification
+- **Output Inspection**: Rebuilding with `tsc` produces `apps/api/dist/index.js` directly at the expected root.
+- **Node Syntax Check**: `node --check apps/api/dist/index.js` succeeded (exit code 0).
+- **Runtime Execution**: Booted `node apps/api/dist/index.js` locally against staging configuration:
+  - Liveness probe (`GET /api/health/live`): `200 OK` (`{"status":"ok","service":"first-memoir-api"}`)
+  - Readiness probe (`GET /api/health/ready`): `200 OK` (`{"status":"ok","service":"first-memoir-api","database":"connected"}`)
+  - Live Catalogue API (`GET /api/v1/categories`): `200 OK` (Returned all 5 seeded categories)
+- **Regression Gates**: All 7 R2 storage access model tests passed (7/7). Turbo monorepo build succeeded (5/5).
+

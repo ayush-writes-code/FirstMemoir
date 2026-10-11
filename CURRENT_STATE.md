@@ -1,7 +1,7 @@
 # Current State of FirstMemoir.in
 
 *Authoritative Technical Snapshot — Iterative Product Delivery Phase*  
-*Last updated: October 10, 2026*
+*Last updated: October 11, 2026*
 
 ---
 
@@ -54,12 +54,12 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
   - **Automated Storage Tests**: 7/7 unit tests passed in `slice6c1.integration.test.ts`.
   - **Legacy R2 Preserved**: `weprintit-assets` remained completely untouched.
 - **Current Active Milestone:** **Slice 6C.4 — Render API Staging Deployment**
-- **Pre-Deployment Audit Status (Phase 1 & 2):**
-  - **Render Configuration**: `render.yaml` uses Docker runtime with root context and `/api/health/live` probe.
+- **Pre-Deployment & Build Status:**
+  - **Docker Entrypoint Resolution**: Fixed output path in `apps/api/tsconfig.json` by adding `"rootDir": "src"` and excluding test suites from production compilation. Confirmed `apps/api/dist/index.js` generated at the exact expected path.
   - **Monorepo Build**: `turbo run build` passing across 5/5 packages.
-  - **Storage Controller Fix**: TypeScript typing on `uploadId` parameter resolved and committed (`5d9bf69`).
+  - **Runtime Verification**: Verified `node apps/api/dist/index.js` boots cleanly, responding 200 on `/api/health/live`, `/api/health/ready` (PostgreSQL connected), and `/api/v1/categories`.
   - **Storage Invariants**: 7/7 R2 access-model routing guard assertions verified passing.
-  - **Staging Blockers**: Render deployment blocked pending secure configuration of staging secrets (`JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `COOKIE_SECRET`, `RAZORPAY_*`, `CORS_ORIGIN`).
+  - **Ready for Deployment**: Awaiting Render staging container redeploy with the updated commit.
 
 ---
 
