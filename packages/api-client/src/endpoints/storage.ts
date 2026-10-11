@@ -18,8 +18,8 @@ export const getUploadUrl = (input: {
 /**
  * Request a short-lived read URL for a private file.
  */
-export const getReadUrl = (fileKey: string): Promise<ApiResponse<{ url: string }>> => {
-  return fetchClient<{ url: string }>(`/storage/read-url?fileKey=${encodeURIComponent(fileKey)}`, {
+export const getReadUrl = (fileKey: string): Promise<ApiResponse<{ signed_url: string; file_key: string; expires_in: number }>> => {
+  return fetchClient<{ signed_url: string; file_key: string; expires_in: number }>(`/storage/read-url?file_key=${encodeURIComponent(fileKey)}`, {
     method: 'GET',
   });
 };

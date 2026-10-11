@@ -60,7 +60,14 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
   - **Pagination & Query Preservation**: Added pagination controls adhering to backend `limit <= 50` validation, preserving `category` and `sort` query params.
   - **Error & Image Resilience**: Added graceful user-facing error empty states and `onError` fallback handling across product cards, thumbnail galleries, and PDP mockups. Whitelisted `*.r2.dev` in Next.js `remotePatterns`.
   - **Quality Gates**: 12/12 integration and live API contract tests passed (100%), 0 TypeScript errors, 0 ESLint warnings, 5/5 Turborepo build targets succeeded.
-- **Stage 2 Gate:** **UNBLOCKED** (Upload flow inspection).
+- **Stage 2 Status (Upload Architecture Audit & Staging Verification):** **PASS**
+  - **Upload Flow Traced**: Server-authoritative presigned PUT URL generation (`customers/*`), direct R2 client upload, completion callback with Sharp EXIF normalization and 800px WebP preview proxy generation (`previews/*`), 302 preview redirect with `Cache-Control: private, no-store`.
+  - **Security & Privacy Boundaries Verified**: Private uploads strictly return `public_url: null`. Direct public CDN access blocked (404). Unauthenticated preview and read requests rejected (403 Forbidden). Duplicate upload completion rejected (409 Conflict).
+  - **Live Staging Run Verified**: `scripts/verify-staging-upload.ts` verified complete lifecycle against `https://firstmemoir-api-staging.onrender.com` and `firstmemoir-private-uploads` with 100% pass rate.
+  - **Guaranteed Cleanup**: Test upload and preview proxy deleted and confirmed absent via `HeadObjectCommand`. Zero residual objects in R2.
+  - **Legacy Bucket Untouched**: `weprintit-assets` remained 100% untouched.
+  - **Bug Fixed**: Harmonized `packages/api-client/src/endpoints/storage.ts` query param to `file_key` matching backend Zod schema.
+- **Stage 3 Gate:** **UNBLOCKED** (Checkout & Razorpay sandbox integration).
 
 ---
 
@@ -73,7 +80,7 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 | **STAGING R2 RUNTIME** | `VERIFIED` | Real write/read/delete & presigned access verified on live buckets. |
 | **API DEPLOYMENT** | `VERIFIED` | Render Staging service live; live health, DB readiness, catalogue, and CORS verified. |
 | **STOREFRONT CATALOGUE** | `VERIFIED` | Stage 1 PASS: connected to live staging API, 12/12 tests passing. |
-| **STOREFRONT UPLOAD & E2E** | `STAGE_2_GATE` | Unblocked for inspection; harmless staging test upload next. |
-| **RAZORPAY STAGING** | `CONFIGURED_TEST_MODE` | Test mode credentials injected in Render; ready for E2E sandbox checkout tests. |
-| **END-TO-END STAGING** | `NEXT_GATE` | Awaiting Stage 2 (upload) and Stage 3 (sandbox checkout). |
+| **STOREFRONT UPLOAD & STORAGE** | `VERIFIED` | Stage 2 PASS: end-to-end upload, preview proxy, security boundaries, and cleanup verified on live staging API. |
+| **RAZORPAY STAGING** | `CONFIGURED_TEST_MODE` | Test mode credentials injected in Render; ready for Stage 3 sandbox checkout verification. |
+| **END-TO-END STAGING** | `NEXT_GATE` | Stage 1 & Stage 2 PASS; Stage 3 (sandbox checkout) next. |
 | **PRODUCTION** | `NOT APPROVED` | - |
