@@ -6,15 +6,7 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [
-        ".next/**",
-        "!.next/cache/**",
-        "!.next/dev/**",
-        "apps/storefront/.next/**",
-        "!apps/storefront/.next/cache/**",
-        "!apps/storefront/.next/dev/**",
-        "dist/**"
-      ]
+      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**", "dist/**"]
     },
     "test": {
       "cache": false,

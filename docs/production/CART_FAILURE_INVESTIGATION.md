@@ -145,37 +145,39 @@ Tracing the end-to-end request lifecycle revealed three intersecting root causes
 
 ---
 
-## 6. Vercel Monorepo Build Failure & Resolution
+## 6. Vercel Monorepo Build Failures & Architectural Resolution
 
-### Incident Report
-- **Trigger:** Deployment of commit `e85b300` on Vercel.
-- **Log Observation:** `turbo run build` and `storefront:build` executed and succeeded completely (TypeScript, lint, and static page generation 14/14 passed in 5.6s).
-- **Failure:** Vercel threw immediately following compilation:
+### Deployment Failure Log & Post-Mortem (Commits `e85b300` & `9c33d3a`)
+- **First Failure (`e85b300`):** Vercel ran root `npm run build` (`turbo run build`), compiled Next.js in `apps/storefront` successfully, and then aborted with:
   ```text
   Error: The Next.js output directory ".next" was not found at "/vercel/path0/.next".
   ```
+- **Second Failure (`9c33d3a`):** Commit `9c33d3a` added `"apps/storefront/.next/**"` to `turbo.json` outputs. Vercel ran the exact same root build and failed with the identical error.
+- **Why `turbo.json` Did Not Resolve the Issue:**
+  Turborepo's `outputs` configuration only determines which directories are persisted and restored to/from Turborepo's task cache. It **never physically relocates or copies** build artifacts on disk. The Next.js builder (`@vercel/next`) evaluates `${RootDirectory}/.next`. Because Vercel's Root Directory was configured as the repository root (`/vercel/path0`), `@vercel/next` inspected `/vercel/path0/.next`, where no `.next` folder exists.
+- **Deployment Status:** **NOT FIXED.** The deployed cart is not marked working until the Vercel project configuration is corrected and live end-to-end verification passes.
 
-### Root Cause
-1. **Working Directory & Monorepo Root:** Vercel cloned the repository to `/vercel/path0`. The Vercel project build was executing from the repository root rather than `apps/storefront`.
-2. **Missing Output Declaration in `turbo.json`:** In `turbo.json`, the `"build"` task outputs were defined as `[".next/**", "!.next/cache/**", "!.next/dev/**", "dist/**"]`.
-   - Turborepo/Vercel resolved `.next/**` relative to the repository root `/vercel/path0`, searching for `/vercel/path0/.next`.
-   - Next.js compiled strictly inside `apps/storefront`, creating `/vercel/path0/apps/storefront/.next`.
-   - Because `turbo.json` did not declare `apps/storefront/.next/**`, Vercel failed to locate the compiled Next.js output.
+### Correct Monorepo Architecture: Root Directory = `apps/storefront`
+Vercel's intended architecture for deploying a single Next.js application within a monorepo is to set the project's **Root Directory** to the application package itself:
 
-### Fix Applied
-Updated `turbo.json` build task outputs to explicitly declare the storefront application's build output relative to the monorepo root:
-```json
-"outputs": [
-  ".next/**",
-  "!.next/cache/**",
-  "!.next/dev/**",
-  "apps/storefront/.next/**",
-  "!apps/storefront/.next/cache/**",
-  "!apps/storefront/.next/dev/**",
-  "dist/**"
-]
-```
-- Next.js standard output (`.next`) is completely preserved without setting artificial custom directories.
-- Turborepo caches and declares both package-relative and monorepo-relative paths.
-- Local production build confirmed `apps/storefront/.next` generated with complete manifests and server assets.
+1. **Root Directory:** `apps/storefront`
+   - Vercel evaluates the output directory relative to `apps/storefront`, resolving `.next` to `/vercel/path0/apps/storefront/.next`.
+   - This matches Next.js's native build output with zero path discrepancy.
+2. **Access to Monorepo Workspace Packages:**
+   - Setting: "Include source files outside of the Root Directory in the Build Step" is **ENABLED**.
+3. **Workspace-Aware Commands:**
+   - **Install Command:** `cd ../.. && npm install` (installs from root so workspaces `@repo/*` are linked).
+   - **Build Command:** `cd ../.. && npx turbo run build --filter=storefront` (builds upstream dependency `@repo/shared` via Turborepo, then compiles `storefront`).
+4. **File-Based Configuration (`apps/storefront/vercel.json`):**
+   ```json
+   {
+     "$schema": "https://openapi.vercel.sh/vercel.json",
+     "framework": "nextjs",
+     "buildCommand": "cd ../.. && npx turbo run build --filter=storefront",
+     "installCommand": "cd ../.. && npm install"
+   }
+   ```
+5. **Turbo Configuration Cleaned:**
+   - Reverted speculative `apps/storefront/.next/**` declarations in `turbo.json` back to standard `[".next/**", "!.next/cache/**", "!.next/dev/**", "dist/**"]`.
+
 
