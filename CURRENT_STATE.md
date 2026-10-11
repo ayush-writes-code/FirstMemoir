@@ -79,13 +79,14 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
   - **Legacy Slug Aliasing**: Created `PRODUCT_SLUG_ALIASES` in `apps/storefront/src/config/slug-aliases.ts` redirecting legacy URLs (`porsche-gt3-rs-frame` &rarr; `porsche-gt3-rs-wall-frame-set`).
   - **UI/UX Resilience & Feedback**: Added "Unable to Load Cart" recovery screen with retry action, fallback thumbnail icon for standard prints, and "Added to Cart ✓" transient feedback on customizer buttons.
   - **Quality Gates**: 21/21 storefront tests passing (100%), 0 TypeScript errors, 0 lint errors, 5/5 Turborepo build targets passing.
-- **Stage 5 Status (Vercel Monorepo Output Directory Resolution):** **BLOCKED ON VERCEL DASHBOARD ROOT DIRECTORY**
-  - **Deployments Failed**: Commits `e85b300` and `9c33d3a` both failed on Vercel with `Error: The Next.js output directory ".next" was not found at "/vercel/path0/.next"`.
-  - **Root Cause Isolated**: Vercel project has Root Directory set to `./` (monorepo root). Turbo output glob declarations in `turbo.json` do not physically move artifacts. Next.js outputs to `apps/storefront/.next`, but `@vercel/next` looked at `/vercel/path0/.next`.
-  - **Architectural Fix**: Added `apps/storefront/vercel.json` defining `buildCommand: cd ../.. && npx turbo run build --filter=storefront` and `installCommand: cd ../.. && npm install`. Reverted speculative `turbo.json` outputs.
-  - **Pending Dashboard Action**: User must configure Vercel Project Root Directory to `apps/storefront` with external source file access enabled.
-  - **Cart Status**: Live deployed cart is **NOT MARKED FIXED** until Vercel deployment is verified Ready on the live domain.
-- **Slice 6C.5 Milestone Status:** **IN PROGRESS (Cart code verified locally; awaiting Vercel dashboard Root Directory configuration & deployment).**
+- **Stage 5 Status (Vercel Monorepo Output Directory Resolution):** **BLOCKED ON FRESH DEPLOYMENT TRIGGER AFTER DASHBOARD ROOT DIRECTORY UPDATE**
+  - **Deployments Logged**: Commits `e85b300`, `9c33d3a`, and `40e9f84` reported `Error: The Next.js output directory ".next" was not found at "/vercel/path0/.next"`.
+  - **Root Cause Isolated**: In commit `40e9f84`, Vercel still executed `npm run build` at the repository root because deployment snapshots in Vercel preserve the project settings from when the deployment was created. Modifying Root Directory to `apps/storefront` in Project Settings only applies to future deployments created after the change; clicking "Redeploy" on an existing failed deployment re-runs under its original snapshot (`Root Directory = ./`).
+  - **Architectural Fix Verified**: `apps/storefront/vercel.json` provides `cd ../.. && npx turbo run build --filter=storefront` and `cd ../.. && npm install`. Local clean simulation confirms outputs are generated inside `apps/storefront/.next`.
+  - **Dashboard Settings Verified**: Project Root Directory set to `apps/storefront`, external source files included, Build & Development setting override toggles disabled.
+  - **Next Step**: Push verified documentation commit to trigger a fresh deployment lifecycle that activates the new Root Directory.
+  - **Cart Status**: Live deployed cart is **NOT MARKED FIXED** until Vercel deployment is verified Ready on the live domain and browser testing passes.
+- **Slice 6C.5 Milestone Status:** **IN PROGRESS (Cart code verified locally; awaiting fresh Vercel deployment under apps/storefront Root Directory).**
 
 ---
 
