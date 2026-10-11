@@ -7,8 +7,8 @@ This report documents the pre-deployment audit, quality gates, and Render deploy
 - **Target Service**: `firstmemoir-api-staging` (Render Staging Environment)
 - **Repository**: `ayush-writes-code/FirstMemoir`
 - **Branch**: `phase-3-2-categories`
-- **Deployment Hash**: `4fc6e3cd7fb4e57cfa9a14f340053bd0365cccd1`
-- **Current Status**: All local pre-deployment gates (storage routing, TypeScript typechecks, Turbo container build, Git sync) have passed cleanly. The service configuration has been reconciled against the authoritative Zod schema.
+- **Deployment Hash**: `45d2d07` (`45d2d07466548a31e84a92cfa77d5ae43398c8c5`)
+- **Current Status**: **LIVE & VERIFIED (PASS)**. The Render staging service is deployed, stable, and successfully serving health, database readiness, and public catalogue queries from the live Neon staging database.
 
 ---
 
@@ -17,11 +17,11 @@ This report documents the pre-deployment audit, quality gates, and Render deploy
 | Metric | Local | Remote (`origin`) | Status |
 |---|---|---|---|
 | **Branch** | `phase-3-2-categories` | `phase-3-2-categories` | In Sync |
-| **Commit Hash** | `4fc6e3cd7fb4e57cfa9a14f340053bd0365cccd1` | `4fc6e3cd7fb4e57cfa9a14f340053bd0365cccd1` | **MATCH (Clean)** |
+| **Commit Hash** | `45d2d07` | `45d2d07` | **MATCH (Clean)** |
 | **Working Tree** | Clean (`0` uncommitted files) | - | Clean |
 | **Git Whitespace Check** | Clean (`git diff --check` = 0) | - | **PASS** |
 
-The latest commit `4fc6e3c` (`docs(production): update current state for Slice 6C.4 pre-deployment audit`) contains all verified features, fixes (including the `uploadId` TypeScript parameter fix `5d9bf69`), and staging data infrastructure from Slice 6C.1 through Slice 6C.3.
+The deployed commit `45d2d07` (`fix(api): fix Docker startup entrypoint path by setting rootDir and excluding tests in tsconfig`) fixed the entrypoint generation path in Docker so that `apps/api/dist/index.js` is produced at the expected path.
 
 ---
 
@@ -30,6 +30,7 @@ The latest commit `4fc6e3c` (`docs(production): update current state for Slice 6
 - **Project**: `firstMemoir`
 - **Environment**: `Staging`
 - **Service Name**: `firstmemoir-api-staging`
+- **Service URL**: `https://firstmemoir-api-staging.onrender.com`
 - **Runtime**: `Docker`
 - **Context Directory**: `.` (Root)
 - **Dockerfile Path**: `apps/api/Dockerfile`
@@ -88,10 +89,85 @@ All runtime environment variables were audited against `apps/api/src/config/env.
 
 ---
 
-## 6. Live Endpoint Verification
+## 6. Live Endpoint Verification (Remote Staging Evidence)
 
-- **Target URL**: `https://firstmemoir-api-staging.onrender.com`
-- **Initial Verification Response**: `HTTP/2 404`, Header `x-render-routing: no-server`
+All requests were made directly to the live Render endpoint `https://firstmemoir-api-staging.onrender.com`:
+
+### 6.1 Liveness Probe (`GET /api/health/live`)
+- **Status**: `HTTP/2 200 OK`
+- **Payload**:
+  ```json
+  {"status":"ok","service":"first-memoir-api"}
+  ```
+- **Finding**: Express process is running, responding on port 8080, and Render health-check passing.
+
+### 6.2 Readiness Probe & Database Connectivity (`GET /api/health/ready`)
+- **Status**: `HTTP/2 200 OK`
+- **Payload**:
+  ```json
+  {"status":"ok","service":"first-memoir-api","database":"connected"}
+  ```
+- **Finding**: Confirmed active connection from Render to the Neon PostgreSQL staging database (`SELECT 1` query succeeded).
+
+### 6.3 Categories Endpoint (`GET /api/v1/categories`)
+- **Status**: `HTTP/2 200 OK`
+- **Payload**:
+  ```json
+  {
+    "success": true,
+    "data": [
+      { "id": "e7389e22-c71c-49e8-97b6-dd57e793a8e9", "name": "Wall Frames", "slug": "frames", "is_active": true },
+      { "id": "bc053a2e-9859-4e32-afca-18b954660298", "name": "Posters & Wall Art", "slug": "posters", "is_active": true },
+      { "id": "d585ece6-7e5a-4324-a5d8-efc57b5011c5", "name": "Bookmarks", "slug": "bookmarks", "is_active": true },
+      { "id": "e0ecd350-dc25-4629-ad76-3a342be72845", "name": "Custom Photo Prints", "slug": "custom-prints", "is_active": true },
+      { "id": "81a276c0-1615-4a48-a41e-bdc7da4fcf6f", "name": "All Wall Art", "slug": "wall-art", "is_active": true }
+    ],
+    "error": null
+  }
+  ```
+- **Finding**: All 5 canonical categories seeded in Slice 6C.3 are successfully queried and returned.
+
+### 6.4 Products Catalogue Endpoint (`GET /api/v1/products?limit=2`)
+- **Status**: `HTTP/2 200 OK`
+- **Payload**:
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "id": "bf24dc6d-9810-4463-adb9-316fec14ba13",
+        "name": "One Piece Wanted Posters (Pack of 10)",
+        "slug": "one-piece-wanted-posters-pack-of-10",
+        "sku": "FM-PST-OP-WANTED-10",
+        "base_price": "249",
+        "is_active": true,
+        "images": [{ "url": "https://pub-c0dc396fc2f245cca9ef062272bb82f4.r2.dev//catalog/posters/wanted10-1.jpg" }],
+        "categories": [{ "category": { "name": "Posters & Wall Art", "slug": "posters" } }]
+      },
+      {
+        "id": "62584fe4-7b18-4366-af05-be94eba1a121",
+        "name": "Football Wall Posters (Set of 10)",
+        "slug": "football-wall-posters-set-of-10",
+        "sku": "FM-PST-FBL-10",
+        "base_price": "299",
+        "is_active": true,
+        "images": [{ "url": "https://pub-c0dc396fc2f245cca9ef062272bb82f4.r2.dev//catalog/posters/football10-1.jpg" }],
+        "categories": [{ "category": { "name": "Posters & Wall Art", "slug": "posters" } }]
+      }
+    ],
+    "meta": { "total": 82, "page": 1, "limit": 2, "totalPages": 41 },
+    "error": null
+  }
+  ```
+- **Finding**: Exactly 82 canonical seeded products confirmed in the remote database. Public asset URLs correctly reference `https://pub-c0dc396fc2f245cca9ef062272bb82f4.r2.dev/`. No administrative or customer sensitive fields are leaked.
+
+### 6.5 CORS Preflight Verification (`OPTIONS /api/v1/categories`)
+- **Status**: `HTTP/2 204 No Content`
+- **Headers Verified**:
+  - `access-control-allow-origin: https://firstmemoir-demo.vercel.app`
+  - `access-control-allow-credentials: true`
+  - `access-control-allow-methods: GET,HEAD,PUT,PATCH,POST,DELETE`
+- **Finding**: Cross-origin requests from the verified live Vercel demo storefront are explicitly allowed with credentials.
 
 ---
 
@@ -115,12 +191,38 @@ In [`apps/api/tsconfig.json`](file:///Users/ayushtomar/Downloads/WePrintIt.in/ap
 - Added `"rootDir": "src"` to strictly anchor compilation output to `apps/api/src`.
 - Added `"exclude": ["node_modules", "dist", "src/**/__tests__", "src/**/*.test.ts"]` so that test suites (which are executed dynamically via `tsx`) are excluded from the production compiled distribution.
 
-### Empirical Verification
-- **Output Inspection**: Rebuilding with `tsc` produces `apps/api/dist/index.js` directly at the expected root.
-- **Node Syntax Check**: `node --check apps/api/dist/index.js` succeeded (exit code 0).
-- **Runtime Execution**: Booted `node apps/api/dist/index.js` locally against staging configuration:
-  - Liveness probe (`GET /api/health/live`): `200 OK` (`{"status":"ok","service":"first-memoir-api"}`)
-  - Readiness probe (`GET /api/health/ready`): `200 OK` (`{"status":"ok","service":"first-memoir-api","database":"connected"}`)
-  - Live Catalogue API (`GET /api/v1/categories`): `200 OK` (Returned all 5 seeded categories)
-- **Regression Gates**: All 7 R2 storage access model tests passed (7/7). Turbo monorepo build succeeded (5/5).
+---
+
+## 8. AWS SDK Node.js 20 Deprecation Warning Investigation
+
+### Observation
+Render container build logs report a warning from `@aws-sdk/client-s3`:
+```text
+[AWS-SDK-JS-V3] (warning) Node.js 20 is end-of-life and will not be supported by future versions of AWS SDK for JavaScript...
+```
+
+### Analysis
+- Node.js 20 LTS transitioned to Maintenance LTS in 2025 and reached official End-of-Life on April 30, 2026.
+- AWS SDK v3 emits this advisory warning on process startup under Node.js 20.
+- Current status: The AWS SDK v3 client operates without functional degradation on Node.js 20; the warning is purely informational and does not cause runtime errors.
+- Monorepo compatibility for Node.js 22:
+  - Root `package.json` specifies `"engines": { "node": ">=18" }`.
+  - TypeScript compilation targets `ES2022` with `NodeNext` modules.
+  - Turborepo, Prisma 5, and Next.js 16 all officially support Node.js 22 LTS.
+
+### Recommendation
+Do **not** change Docker base images in this slice to preserve deployment stability. Plan a separate runtime upgrade slice to bump `node:20-slim` to `node:22-slim` in `apps/api/Dockerfile` along with a full dependency re-validation.
+
+---
+
+## 9. Final Verdict & Next Steps
+
+### Verdict: **`SLICE 6C.4 = PASS`**
+
+The Express API is successfully deployed to Render Staging, connected to Neon PostgreSQL, serving the canonical catalogue, and enforcing staging CORS rules.
+
+### Next Recommended Milestone
+**Slice 6C.5: Storefront API Integration & Staging E2E Checkout Verification**
+- Configure Vercel staging storefront `NEXT_PUBLIC_API_URL` to point to `https://firstmemoir-api-staging.onrender.com/api/v1`.
+- Verify storefront browsing, cart operations, custom photo upload to Cloudflare R2 staging buckets, and Razorpay Sandbox test checkout end-to-end.
 

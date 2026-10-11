@@ -44,22 +44,19 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 ---
 
 ## 4. Current Milestone & Next Slice
-- **Completed Milestone:** **Slice 6C.3 — Staging Data Infrastructure**
-- **Milestone Status:** **STAGING DATA INFRASTRUCTURE VERIFIED (PASS)**
+- **Completed Milestone:** **Slice 6C.4 — Render API Staging Deployment**
+- **Milestone Status:** **STAGING API DEPLOYMENT VERIFIED (PASS)**
 - **Accomplishments:**
-  - **Staging PostgreSQL Verified**: Successfully connected to Neon PostgreSQL (`ep-super-queen-b38volvi-pooler.c-4.ap-southeast-1.aws.neon.tech`). Applied all 6 Prisma migrations via `prisma migrate deploy`.
-  - **Idempotent Seed Verified**: Seed executed cleanly twice against live staging DB. Run 1 created 82 products; Run 2 updated 82 products and created 0 new products.
-  - **Catalogue Verified**: Exactly 82 products, 82 unique SKUs, 82 unique slugs, 48 `CONFIRMED_SOURCE` prices, 34 `PROVISIONAL_ESTIMATE` prices, 5 core categories.
-  - **Cloudflare R2 Runtime Verified**: Successfully performed live write/read/delete against `firstmemoir-public-assets` and `firstmemoir-private-uploads`. Public assets verified readable via public domain. Private assets verified blocked from unauthenticated access and readable via authorized presigned URLs. Temporary test objects deleted cleanly.
-  - **Automated Storage Tests**: 7/7 unit tests passed in `slice6c1.integration.test.ts`.
-  - **Legacy R2 Preserved**: `weprintit-assets` remained completely untouched.
-- **Current Active Milestone:** **Slice 6C.4 — Render API Staging Deployment**
-- **Pre-Deployment & Build Status:**
-  - **Docker Entrypoint Resolution**: Fixed output path in `apps/api/tsconfig.json` by adding `"rootDir": "src"` and excluding test suites from production compilation. Confirmed `apps/api/dist/index.js` generated at the exact expected path.
-  - **Monorepo Build**: `turbo run build` passing across 5/5 packages.
-  - **Runtime Verification**: Verified `node apps/api/dist/index.js` boots cleanly, responding 200 on `/api/health/live`, `/api/health/ready` (PostgreSQL connected), and `/api/v1/categories`.
-  - **Storage Invariants**: 7/7 R2 access-model routing guard assertions verified passing.
-  - **Ready for Deployment**: Awaiting Render staging container redeploy with the updated commit.
+  - **Docker Entrypoint Resolution**: Fixed compilation output in `apps/api/tsconfig.json` (`"rootDir": "src"` and test exclusions). Verified `apps/api/dist/index.js` generated at container entrypoint path.
+  - **Live Service Deployment**: Service `firstmemoir-api-staging` deployed successfully on Render from commit `45d2d07`.
+  - **Live Liveness & Readiness**: `GET /api/health/live` returns 200 OK. `GET /api/health/ready` returns 200 OK confirming real database connectivity to the Neon staging PostgreSQL instance.
+  - **Live Catalogue API**: `GET /api/v1/categories` successfully returns all 5 seeded categories. `GET /api/v1/products?limit=2` successfully queries the database and reports `total: 82` products with verified public R2 image URLs and confirmed pricing.
+  - **CORS Preflight Verified**: Preflight `OPTIONS /api/v1/categories` with Origin `https://firstmemoir-demo.vercel.app` returns 204 No Content with `Access-Control-Allow-Origin` and `Access-Control-Allow-Credentials: true`.
+  - **AWS SDK Node 20 Advisory**: Documented deprecation warning from `@aws-sdk/client-s3` on Node 20 runtime; verified no functional regression, scheduled Node 22 bump for subsequent maintenance slice.
+- **Current Active Milestone:** **Slice 6C.5 — Storefront API Integration & Staging E2E Checkout Verification**
+- **Next Actions:**
+  - Update Vercel demo/staging storefront environment variable `NEXT_PUBLIC_API_URL` to point to `https://firstmemoir-api-staging.onrender.com/api/v1`.
+  - Verify storefront browsing, cart operations, custom photo upload to Cloudflare R2 staging buckets, and Razorpay Sandbox test checkout end-to-end.
 
 ---
 
@@ -70,8 +67,8 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 | **LOCAL** | `VERIFIED` | 100% build pass rate, R2 access guards verified, safe isolation enforced. |
 | **STAGING POSTGRESQL** | `VERIFIED` | Neon AWS Singapore: 6/6 migrations applied, 82 products seeded idempotently. |
 | **STAGING R2 RUNTIME** | `VERIFIED` | Real write/read/delete & presigned access verified on live buckets. |
-| **API DEPLOYMENT** | `READY_FOR_DEPLOYMENT` | Slice 6C.4 audited; pending staging secrets injection in Render. |
-| **STOREFRONT DEPLOYMENT** | `NOT STARTED` | Pending API deployment. |
-| **RAZORPAY STAGING** | `NOT STARTED` | Sandbox keys required for E2E tests. |
-| **END-TO-END STAGING** | `NOT VERIFIED` | - |
+| **API DEPLOYMENT** | `VERIFIED` | Render Staging service live; live health, DB readiness, catalogue, and CORS verified. |
+| **STOREFRONT DEPLOYMENT** | `READY_FOR_INTEGRATION` | Vercel storefront ready to point to staging Render API URL. |
+| **RAZORPAY STAGING** | `CONFIGURED_TEST_MODE` | Test mode credentials injected in Render; ready for E2E sandbox checkout tests. |
+| **END-TO-END STAGING** | `NEXT_SLICE` | Slice 6C.5 to verify full user journey on staging. |
 | **PRODUCTION** | `NOT APPROVED` | - |
