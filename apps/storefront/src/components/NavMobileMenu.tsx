@@ -149,7 +149,7 @@ export function NavMobileMenu() {
                 <div className="w-12 h-px bg-zinc-100" />
 
                 <Link
-                  href="/products?category=frames-8x12"
+                  href="/products?category=frames"
                   onClick={() => setIsOpen(false)}
                   className="group flex items-center justify-between py-2 text-2xl sm:text-3xl font-serif text-ink tracking-tight hover:text-brand transition-colors"
                 >

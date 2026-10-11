@@ -65,7 +65,7 @@ export default async function Home() {
               Shop All
             </Link>
             <Link
-              href="/products?category=frames-8x12"
+              href="/products?category=frames"
               className="px-10 py-4 bg-white/10 text-white border border-white/30 rounded-pill font-medium text-lg hover:bg-white/20 transition-colors backdrop-blur-sm"
             >
               Explore Frames
@@ -90,7 +90,7 @@ export default async function Home() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           {/* Frames */}
-          <Link href="/products?category=frames-8x12" className="group flex flex-col">
+          <Link href="/products?category=frames" className="group flex flex-col">
             <div className="relative aspect-[4/5] bg-surface-soft overflow-hidden rounded-sm">
               <Image
                 src={CATALOG_IMAGES.categories.frames}
@@ -190,7 +190,7 @@ export default async function Home() {
               Every frame is printed on heavyweight photographic paper and assembled with care. From motivational quotes to iconic sports moments — find art that speaks to you.
             </p>
             <Link
-              href="/products?category=frames-8x12"
+              href="/products?category=frames"
               className="inline-flex items-center justify-center px-8 py-3.5 bg-ink text-white rounded-pill font-medium hover:bg-neutral-800 transition-colors mt-2"
             >
               Shop Wall Frames
@@ -205,8 +205,8 @@ export default async function Home() {
           <h2 className="text-3xl md:text-5xl font-serif text-ink tracking-tight text-center mb-14">Collections</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-center">
             {[
-              { name: 'Football Legends', href: '/products?category=frames-8x12', img: CATALOG_IMAGES.hero },
-              { name: 'Motivational Quotes', href: '/products?category=frames-8x12', img: CATALOG_IMAGES.editorial },
+              { name: 'Football Legends', href: '/products?category=frames', img: CATALOG_IMAGES.hero },
+              { name: 'Motivational Quotes', href: '/products?category=frames', img: CATALOG_IMAGES.editorial },
               { name: 'Anime', href: '/products?category=posters', img: CATALOG_IMAGES.featured[3]!.src },
               { name: 'Supercars', href: '/products?category=posters', img: CATALOG_IMAGES.collection },
             ].map((col, idx) => (

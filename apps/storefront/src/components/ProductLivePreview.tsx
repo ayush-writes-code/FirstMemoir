@@ -1,10 +1,13 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import type { ProductImageDto } from '@/lib/api-client';
 import { useProductPreview } from '../store/ProductPreviewContext';
 import { getMockupCoordinates, getPremiumMockup } from '../config/mockupCoordinates';
 import { canonicalCropToVisualCrop } from '../utils/cropMath';
+
+const DEFAULT_PREVIEW_FALLBACK = 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=1200';
 
 interface Props {
   baseImage: ProductImageDto;
@@ -16,6 +19,11 @@ interface Props {
 
 export function ProductLivePreview({ baseImage, productSlug, productName, mockupMetadata }: Props) {
   const { previewUrl, cropData, printOrientation, rotation = 0 } = useProductPreview();
+  const [baseImgSrc, setBaseImgSrc] = useState(baseImage.url || DEFAULT_PREVIEW_FALLBACK);
+
+  useEffect(() => {
+    setBaseImgSrc(baseImage.url || DEFAULT_PREVIEW_FALLBACK);
+  }, [baseImage.url]);
   
   // Data-driven fallback checking mockupMetadata directly
   let premiumMockup = null;
@@ -122,13 +130,18 @@ export function ProductLivePreview({ baseImage, productSlug, productName, mockup
   return (
     <div className="relative w-full h-full">
       {/* Base Mockup Layer */}
-      <Image 
-        src={baseImage.url} 
-        alt={`Mockup for ${productName}`} 
+      <Image
+        src={baseImgSrc}
+        alt={`Mockup for ${productName}`}
         fill
         sizes="(max-width: 768px) 100vw, 50vw"
         priority
         className="object-cover"
+        onError={() => {
+          if (baseImgSrc !== DEFAULT_PREVIEW_FALLBACK) {
+            setBaseImgSrc(DEFAULT_PREVIEW_FALLBACK);
+          }
+        }}
       />
 
       {/* Customer Overlay Layer */}

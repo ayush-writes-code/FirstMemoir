@@ -54,9 +54,13 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
   - **CORS Preflight Verified**: Preflight `OPTIONS /api/v1/categories` with Origin `https://firstmemoir-demo.vercel.app` returns 204 No Content with `Access-Control-Allow-Origin` and `Access-Control-Allow-Credentials: true`.
   - **AWS SDK Node 20 Advisory**: Documented deprecation warning from `@aws-sdk/client-s3` on Node 20 runtime; verified no functional regression, scheduled Node 22 bump for subsequent maintenance slice.
 - **Current Active Milestone:** **Slice 6C.5 — Storefront API Integration & Staging E2E Checkout Verification**
-- **Next Actions:**
-  - Update Vercel demo/staging storefront environment variable `NEXT_PUBLIC_API_URL` to point to `https://firstmemoir-api-staging.onrender.com/api/v1`.
-  - Verify storefront browsing, cart operations, custom photo upload to Cloudflare R2 staging buckets, and Razorpay Sandbox test checkout end-to-end.
+- **Stage 1 Status (Catalogue Integration):** **PASS**
+  - **Live API Integration**: Storefront connected to live staging API (`https://firstmemoir-api-staging.onrender.com/api/v1`) via `NEXT_PUBLIC_API_URL`.
+  - **Category Slugs Harmonized**: Updated navigation links across header, mobile menu, and homepage to canonical `frames` slug (49 products).
+  - **Pagination & Query Preservation**: Added pagination controls adhering to backend `limit <= 50` validation, preserving `category` and `sort` query params.
+  - **Error & Image Resilience**: Added graceful user-facing error empty states and `onError` fallback handling across product cards, thumbnail galleries, and PDP mockups. Whitelisted `*.r2.dev` in Next.js `remotePatterns`.
+  - **Quality Gates**: 12/12 integration and live API contract tests passed (100%), 0 TypeScript errors, 0 ESLint warnings, 5/5 Turborepo build targets succeeded.
+- **Stage 2 Gate:** **UNBLOCKED** (Upload flow inspection).
 
 ---
 
@@ -68,7 +72,8 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 | **STAGING POSTGRESQL** | `VERIFIED` | Neon AWS Singapore: 6/6 migrations applied, 82 products seeded idempotently. |
 | **STAGING R2 RUNTIME** | `VERIFIED` | Real write/read/delete & presigned access verified on live buckets. |
 | **API DEPLOYMENT** | `VERIFIED` | Render Staging service live; live health, DB readiness, catalogue, and CORS verified. |
-| **STOREFRONT DEPLOYMENT** | `READY_FOR_INTEGRATION` | Vercel storefront ready to point to staging Render API URL. |
+| **STOREFRONT CATALOGUE** | `VERIFIED` | Stage 1 PASS: connected to live staging API, 12/12 tests passing. |
+| **STOREFRONT UPLOAD & E2E** | `STAGE_2_GATE` | Unblocked for inspection; harmless staging test upload next. |
 | **RAZORPAY STAGING** | `CONFIGURED_TEST_MODE` | Test mode credentials injected in Render; ready for E2E sandbox checkout tests. |
-| **END-TO-END STAGING** | `NEXT_SLICE` | Slice 6C.5 to verify full user journey on staging. |
+| **END-TO-END STAGING** | `NEXT_GATE` | Awaiting Stage 2 (upload) and Stage 3 (sandbox checkout). |
 | **PRODUCTION** | `NOT APPROVED` | - |

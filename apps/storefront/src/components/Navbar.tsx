@@ -59,7 +59,7 @@ export function Navbar() {
               Shop All
             </Link>
             <Link
-              href="/products?category=frames-8x12"
+              href="/products?category=frames"
               className="text-sm font-medium text-ink hover:text-brand transition-colors py-1"
             >
               Frames

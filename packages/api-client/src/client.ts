@@ -1,6 +1,10 @@
 import type { ApiResponse } from './types';
 
-let API_URL = 'http://localhost:3001/api/v1';
+const envApiUrl = typeof globalThis !== 'undefined'
+  ? (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env?.NEXT_PUBLIC_API_URL
+  : undefined;
+
+let API_URL = envApiUrl || 'http://localhost:3001/api/v1';
 
 export const setApiUrl = (url: string) => {
   API_URL = url;

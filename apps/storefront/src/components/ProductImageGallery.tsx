@@ -37,24 +37,51 @@ export function ProductImageGallery({ images, productName, productSlug, mockupMe
       {hasImages && images.length > 1 && (
         <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
           {images.map((image, idx) => (
-            <button
+            <GalleryThumbnail
               key={image.id}
+              image={image}
+              productName={productName}
+              index={idx}
+              isSelected={selectedIndex === idx}
               onClick={() => setSelectedIndex(idx)}
-              className={`relative w-20 h-20 flex-shrink-0 rounded-card overflow-hidden border-2 transition-colors ${
-                selectedIndex === idx ? 'border-brand' : 'border-transparent hover:border-border-strong'
-              }`}
-            >
-              <Image 
-                src={image.url} 
-                alt={image.alt_text || `${productName} thumbnail ${idx + 1}`} 
-                fill 
-                sizes="80px"
-                className="object-cover"
-              />
-            </button>
+            />
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+function GalleryThumbnail({
+  image,
+  productName,
+  index,
+  isSelected,
+  onClick,
+}: {
+  image: ProductImageDto;
+  productName: string;
+  index: number;
+  isSelected: boolean;
+  onClick: () => void;
+}) {
+  const [src, setSrc] = useState(image.url || 'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800');
+
+  return (
+    <button
+      onClick={onClick}
+      className={`relative w-20 h-20 flex-shrink-0 rounded-card overflow-hidden border-2 transition-colors ${
+        isSelected ? 'border-brand' : 'border-transparent hover:border-border-strong'
+      }`}
+    >
+      <Image
+        src={src}
+        alt={image.alt_text || `${productName} thumbnail ${index + 1}`}
+        fill
+        sizes="80px"
+        className="object-cover"
+        onError={() => setSrc('https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800')}
+      />
+    </button>
   );
 }

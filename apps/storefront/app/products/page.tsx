@@ -9,44 +9,51 @@ export const dynamic = 'force-dynamic';
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; sort?: string }>;
+  searchParams: Promise<{ category?: string; sort?: string; page?: string }>;
 }) {
-  const { category, sort } = await searchParams;
+  const { category, sort, page } = await searchParams;
+  const currentPage = Math.max(1, Number(page) || 1);
+
+  // Validate sort parameter to ensure it matches the backend schema
+  const validSort = sort === 'price_asc' || sort === 'price_desc' || sort === 'newest' ? sort : undefined;
 
   // Fetch real catalog data from the API
-  const [productsRes, categoriesRes] = await Promise.all([
-    productsApi.getProducts({ category, sort }),
-    categoriesApi.getCategories()
-  ]);
+  let productsRes;
+  let categoriesRes;
+  try {
+    [productsRes, categoriesRes] = await Promise.all([
+      productsApi.getProducts({ category, sort: validSort, page: currentPage, limit: 50 }),
+      categoriesApi.getCategories()
+    ]);
+  } catch (err) {
+    console.error("Failed to fetch products/categories from API:", err);
+    productsRes = { success: false, data: [], error: 'Failed to connect to API', meta: { total: 0, page: 1, limit: 50, totalPages: 0 } };
+    categoriesRes = { success: false, data: [] };
+  }
 
-  let products = productsRes.data || [];
-  const categories = categoriesRes.data || [];
-
-
-  // Basic sorting
-  products.sort((a, b) => {
-    if (sort === 'price_asc') {
-      const priceA = Number(a.base_price) || 999999;
-      const priceB = Number(b.base_price) || 999999;
-      return priceA - priceB;
-    }
-    if (sort === 'price_desc') {
-      const priceA = Number(a.base_price) || 0;
-      const priceB = Number(b.base_price) || 0;
-      return priceB - priceA;
-    }
-    // Default: newest (by created_at)
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  const products = (productsRes.success && productsRes.data) ? productsRes.data : [];
+  const categories = (categoriesRes.success && categoriesRes.data) ? categoriesRes.data : [];
+  const meta = productsRes.meta || { total: products.length, page: currentPage, limit: 50, totalPages: 1 };
+  const totalPages = meta.totalPages || 1;
+  const totalCount = meta.total ?? products.length;
 
   const currentCategoryObj = categories.find(c => c.slug === category);
   const pageTitle = currentCategoryObj ? currentCategoryObj.name : 'All Prints';
+
+  const buildQueryString = (newPage: number) => {
+    const params = new URLSearchParams();
+    if (category) params.set('category', category);
+    if (sort) params.set('sort', sort);
+    if (newPage > 1) params.set('page', newPage.toString());
+    const qs = params.toString();
+    return qs ? `/products?${qs}` : '/products';
+  };
 
   return (
     <div className="max-w-content mx-auto px-4 md:px-8 py-16 min-h-screen">
       <div className="mb-12 text-center md:text-left">
         <h1 className="text-4xl md:text-5xl font-serif text-ink tracking-tight">{pageTitle}</h1>
-        <p className="text-muted mt-3 font-light">{products.length} products</p>
+        <p className="text-muted mt-3 font-light">{totalCount} {totalCount === 1 ? 'product' : 'products'}</p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-6 justify-between mb-12 items-center border-b border-hairline pb-4">
@@ -84,12 +91,54 @@ export default async function ProductsPage({
         </div>
       </div>
 
-      {products.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={adaptApiProductToStorefront(product)} />
-          ))}
-        </div>
+      {!productsRes.success ? (
+        <EmptyState
+          title="Catalogue Temporarily Unavailable"
+          description="We are experiencing a temporary issue retrieving products. Please try refreshing or check back shortly."
+          cta={{ label: "Retry", href: "/products" }}
+        />
+      ) : products.length > 0 ? (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={adaptApiProductToStorefront(product)} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-hairline pt-6 mt-12">
+              <div className="text-xs uppercase tracking-wider text-muted">
+                Page {currentPage} of {totalPages} ({totalCount} total)
+              </div>
+              <div className="flex items-center gap-3">
+                {currentPage > 1 ? (
+                  <Link
+                    href={buildQueryString(currentPage - 1)}
+                    className="px-4 py-2 text-xs uppercase tracking-wider font-medium text-ink bg-surface-soft border border-hairline rounded hover:bg-neutral-100 transition-colors"
+                  >
+                    ← Previous
+                  </Link>
+                ) : (
+                  <span className="px-4 py-2 text-xs uppercase tracking-wider text-muted-soft border border-hairline/50 rounded cursor-not-allowed">
+                    ← Previous
+                  </span>
+                )}
+                {currentPage < totalPages ? (
+                  <Link
+                    href={buildQueryString(currentPage + 1)}
+                    className="px-4 py-2 text-xs uppercase tracking-wider font-medium text-ink bg-surface-soft border border-hairline rounded hover:bg-neutral-100 transition-colors"
+                  >
+                    Next →
+                  </Link>
+                ) : (
+                  <span className="px-4 py-2 text-xs uppercase tracking-wider text-muted-soft border border-hairline/50 rounded cursor-not-allowed">
+                    Next →
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <EmptyState
           title="No products found"
