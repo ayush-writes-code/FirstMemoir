@@ -79,7 +79,11 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
   - **Legacy Slug Aliasing**: Created `PRODUCT_SLUG_ALIASES` in `apps/storefront/src/config/slug-aliases.ts` redirecting legacy URLs (`porsche-gt3-rs-frame` &rarr; `porsche-gt3-rs-wall-frame-set`).
   - **UI/UX Resilience & Feedback**: Added "Unable to Load Cart" recovery screen with retry action, fallback thumbnail icon for standard prints, and "Added to Cart ✓" transient feedback on customizer buttons.
   - **Quality Gates**: 21/21 storefront tests passing (100%), 0 TypeScript errors, 0 lint errors, 5/5 Turborepo build targets passing.
-- **Slice 6C.5 Complete Milestone Status:** **PASS** (Storefront Catalogue, Uploads, Checkout Sandbox, and Cart Network Flow Verified).
+- **Stage 5 Status (Vercel Monorepo Output Directory Resolution):** **PASS**
+  - **Issue Isolated**: On deploying commit `e85b300`, Vercel executed `turbo run build` from repository root `/vercel/path0`. The build completed cleanly, but Vercel threw `Error: The Next.js output directory ".next" was not found at "/vercel/path0/.next"` because `turbo.json` only declared `".next/**"`, causing Vercel's Turborepo integration to search the repo root instead of `apps/storefront/.next`.
+  - **Resolution**: Updated `turbo.json` build task outputs to declare `"apps/storefront/.next/**"`, `"!apps/storefront/.next/cache/**"`, `"!apps/storefront/.next/dev/**"`.
+  - **Verification**: Verified `apps/storefront/.next` generated with complete manifests, `check-types` passed (FULL TURBO), `lint` passed (FULL TURBO), `test` passed 21/21 (100%).
+- **Slice 6C.5 Complete Milestone Status:** **PASS** (Storefront Catalogue, Uploads, Checkout Sandbox, Cart Network Flow, and Monorepo Output Config Verified).
 
 ---
 

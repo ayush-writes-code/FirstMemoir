@@ -142,3 +142,40 @@ Tracing the end-to-end request lifecycle revealed three intersecting root causes
      ```
   3. Trigger a redeploy of `firstmemoir-demo` on Vercel.
   4. Once deployed, verify in browser at `https://firstmemoir-demo.vercel.app/cart`.
+
+---
+
+## 6. Vercel Monorepo Build Failure & Resolution
+
+### Incident Report
+- **Trigger:** Deployment of commit `e85b300` on Vercel.
+- **Log Observation:** `turbo run build` and `storefront:build` executed and succeeded completely (TypeScript, lint, and static page generation 14/14 passed in 5.6s).
+- **Failure:** Vercel threw immediately following compilation:
+  ```text
+  Error: The Next.js output directory ".next" was not found at "/vercel/path0/.next".
+  ```
+
+### Root Cause
+1. **Working Directory & Monorepo Root:** Vercel cloned the repository to `/vercel/path0`. The Vercel project build was executing from the repository root rather than `apps/storefront`.
+2. **Missing Output Declaration in `turbo.json`:** In `turbo.json`, the `"build"` task outputs were defined as `[".next/**", "!.next/cache/**", "!.next/dev/**", "dist/**"]`.
+   - Turborepo/Vercel resolved `.next/**` relative to the repository root `/vercel/path0`, searching for `/vercel/path0/.next`.
+   - Next.js compiled strictly inside `apps/storefront`, creating `/vercel/path0/apps/storefront/.next`.
+   - Because `turbo.json` did not declare `apps/storefront/.next/**`, Vercel failed to locate the compiled Next.js output.
+
+### Fix Applied
+Updated `turbo.json` build task outputs to explicitly declare the storefront application's build output relative to the monorepo root:
+```json
+"outputs": [
+  ".next/**",
+  "!.next/cache/**",
+  "!.next/dev/**",
+  "apps/storefront/.next/**",
+  "!apps/storefront/.next/cache/**",
+  "!apps/storefront/.next/dev/**",
+  "dist/**"
+]
+```
+- Next.js standard output (`.next`) is completely preserved without setting artificial custom directories.
+- Turborepo caches and declares both package-relative and monorepo-relative paths.
+- Local production build confirmed `apps/storefront/.next` generated with complete manifests and server assets.
+
