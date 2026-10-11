@@ -144,4 +144,37 @@ describe('Customer Orders Integration API', () => {
       assert.strictEqual(res.status, 404);
     });
   });
+
+  describe('GET /api/v1/orders/:id/status', () => {
+    it('should return status for authenticated order owner', async () => {
+      const res = await request(app)
+        .get(`/api/v1/orders/${testOrderId}/status`)
+        .set('Cookie', [`accessToken=${customerToken}`]);
+
+      assert.strictEqual(res.status, 200);
+      assert.strictEqual(res.body.success, true);
+      assert.strictEqual(res.body.data.order_id, testOrderId);
+      assert.strictEqual(res.body.data.status, 'PENDING');
+    });
+
+    it('should return 404 (not 500) when request has no session cookie and no auth token', async () => {
+      const res = await request(app)
+        .get(`/api/v1/orders/${testOrderId}/status`);
+
+      assert.strictEqual(res.status, 404);
+      assert.strictEqual(res.body.success, false);
+    });
+
+    it('should return 404 when request has a mismatched session cookie', async () => {
+      const agent = request.agent(app);
+      // Initialize an unrelated cart session
+      await agent.get('/api/v1/cart');
+
+      const res = await agent
+        .get(`/api/v1/orders/${testOrderId}/status`);
+
+      assert.strictEqual(res.status, 404);
+      assert.strictEqual(res.body.success, false);
+    });
+  });
 });

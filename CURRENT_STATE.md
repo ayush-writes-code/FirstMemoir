@@ -67,7 +67,13 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
   - **Guaranteed Cleanup**: Test upload and preview proxy deleted and confirmed absent via `HeadObjectCommand`. Zero residual objects in R2.
   - **Legacy Bucket Untouched**: `weprintit-assets` remained 100% untouched.
   - **Bug Fixed**: Harmonized `packages/api-client/src/endpoints/storage.ts` query param to `file_key` matching backend Zod schema.
-- **Stage 3 Gate:** **UNBLOCKED** (Checkout & Razorpay sandbox integration).
+- **Stage 3 Status (Checkout Architecture Audit & Razorpay Sandbox Verification):** **PASS**
+  - **Checkout Contracts Verified**: Request DTO strictly accepts email, phone, and address; backend authoritative pricing enforced from database catalog.
+  - **Test-Mode Credentials Confirmed**: Live staging service confirmed using test key (`rzp_test_TmIGcynU0XmBZ8`), successfully creating real Razorpay test orders (`order_...`). Server secrets remain unexposed.
+  - **Idempotency & State Machine Verified**: Duplicate checkout initialization reuses existing PENDING order. Browser success callback never independently confirms orders (strictly polls status).
+  - **Webhook Security**: Raw body HMAC SHA256 signature verification enforced. Missing or invalid signatures rejected with 400.
+  - **Audit Finding Resolved**: Addressed uncaught `getSessionId(req)` error on unauthenticated status checks; now cleanly returns HTTP 404. Added 3 regression tests in `customer.orders.integration.test.ts`.
+- **Slice 6C.5 Complete Milestone Status:** **PASS** (Storefront Catalogue, Uploads, and Checkout Sandbox Verified).
 
 ---
 
@@ -81,6 +87,6 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 | **API DEPLOYMENT** | `VERIFIED` | Render Staging service live; live health, DB readiness, catalogue, and CORS verified. |
 | **STOREFRONT CATALOGUE** | `VERIFIED` | Stage 1 PASS: connected to live staging API, 12/12 tests passing. |
 | **STOREFRONT UPLOAD & STORAGE** | `VERIFIED` | Stage 2 PASS: end-to-end upload, preview proxy, security boundaries, and cleanup verified on live staging API. |
-| **RAZORPAY STAGING** | `CONFIGURED_TEST_MODE` | Test mode credentials injected in Render; ready for Stage 3 sandbox checkout verification. |
-| **END-TO-END STAGING** | `NEXT_GATE` | Stage 1 & Stage 2 PASS; Stage 3 (sandbox checkout) next. |
-| **PRODUCTION** | `NOT APPROVED` | - |
+| **RAZORPAY STAGING CHECKOUT** | `VERIFIED` | Stage 3 PASS: test-mode key (`rzp_test_...`), order creation, idempotency, webhook guards verified on live staging API. |
+| **END-TO-END STAGING** | `VERIFIED` | All three Slice 6C.5 stages PASS (Catalogue, Upload, Checkout Sandbox). |
+| **PRODUCTION** | `NOT APPROVED` | Awaiting client acceptance & production credential provisioning. |

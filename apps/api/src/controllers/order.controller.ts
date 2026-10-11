@@ -2,7 +2,6 @@ import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { orderService } from '../services/order.service.js';
 import { successResponse } from '../utils/response.js';
-import { getSessionId } from '../middlewares/session.middleware.js';
 
 export const orderStatusSchema = {
   params: z.object({
@@ -23,7 +22,7 @@ export const orderController = {
    */
   async getStatus(req: Request, res: Response, next: NextFunction) {
     try {
-      const sessionId = getSessionId(req);
+      const sessionId = req.signedCookies?.['cart_session'];
       const userId = (req as any).user?.userId;
       const orderId = req.params.id as string;
 
