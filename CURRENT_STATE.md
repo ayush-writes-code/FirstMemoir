@@ -72,8 +72,14 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
   - **Test-Mode Credentials Confirmed**: Live staging service confirmed using test key (`rzp_test_TmIGcynU0XmBZ8`), successfully creating real Razorpay test orders (`order_...`). Server secrets remain unexposed.
   - **Idempotency & State Machine Verified**: Duplicate checkout initialization reuses existing PENDING order. Browser success callback never independently confirms orders (strictly polls status).
   - **Webhook Security**: Raw body HMAC SHA256 signature verification enforced. Missing or invalid signatures rejected with 400.
-  - **Audit Finding Resolved**: Addressed uncaught `getSessionId(req)` error on unauthenticated status checks; now cleanly returns HTTP 404. Added 3 regression tests in `customer.orders.integration.test.ts`.
-- **Slice 6C.5 Complete Milestone Status:** **PASS** (Storefront Catalogue, Uploads, and Checkout Sandbox Verified).
+- **Stage 4 Status (Cart Network Failure & PDP Flow Investigation):** **PASS**
+  - **Root Cause Isolated**: Production client bundles lacked `NEXT_PUBLIC_API_URL` on Vercel, falling back to `http://localhost:3001/api/v1` which triggered `TypeError: Failed to fetch`. Deployed demo also served older prototype commit `618f623` using disconnected `<PrototypeAddToCart>`.
+  - **Production Fallback Hardened**: Added production-mode staging API fallback (`https://firstmemoir-api-staging.onrender.com/api/v1`) in `packages/api-client/src/client.ts` and `apps/storefront/src/lib/api-client.ts`. Client bundles safely target Render staging when `NEXT_PUBLIC_API_URL` is omitted.
+  - **In-Memory Cookie Jar**: Equipped `fetchClient` with in-memory cookie tracking for non-browser/Node.js testing, ensuring cross-request session affinity for cart tests.
+  - **Legacy Slug Aliasing**: Created `PRODUCT_SLUG_ALIASES` in `apps/storefront/src/config/slug-aliases.ts` redirecting legacy URLs (`porsche-gt3-rs-frame` &rarr; `porsche-gt3-rs-wall-frame-set`).
+  - **UI/UX Resilience & Feedback**: Added "Unable to Load Cart" recovery screen with retry action, fallback thumbnail icon for standard prints, and "Added to Cart ✓" transient feedback on customizer buttons.
+  - **Quality Gates**: 21/21 storefront tests passing (100%), 0 TypeScript errors, 0 lint errors, 5/5 Turborepo build targets passing.
+- **Slice 6C.5 Complete Milestone Status:** **PASS** (Storefront Catalogue, Uploads, Checkout Sandbox, and Cart Network Flow Verified).
 
 ---
 

@@ -292,6 +292,7 @@ export function ProductCustomizer({ product }: Props) {
     ? (!dpiAcknowledgmentRequired || hasAcknowledgedDpi) && uploadId !== null
     : true;
 
+  const [justAdded, setJustAdded] = useState(false);
   const selectedValueIds = Object.values(selectedOptions);
   const { total } = useProductPrice(product, selectedValueIds);
 
@@ -317,6 +318,9 @@ export function ProductCustomizer({ product }: Props) {
         dpi_acknowledged: hasAcknowledgedDpi,
       } : {})
     });
+
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 2000);
   };
 
   return (
@@ -426,7 +430,7 @@ export function ProductCustomizer({ product }: Props) {
         className="w-full flex items-center justify-center bg-brand hover:bg-brand-pressed disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-lg rounded-pill h-12 mt-2 transition-colors"
         onClick={handleAddToCart}
       >
-        {isCartLoading ? "Adding..." : "Add to Cart"}
+        {isCartLoading ? "Adding..." : justAdded ? "Added to Cart ✓" : "Add to Cart"}
       </button>
 
       <p className="text-sm text-center text-muted">
@@ -452,7 +456,7 @@ export function ProductCustomizer({ product }: Props) {
             className="flex-1 bg-brand hover:bg-brand-pressed disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-base rounded-pill h-11 transition-colors flex items-center justify-center max-w-[200px]"
             onClick={handleAddToCart}
           >
-            {isCartLoading ? "Adding..." : "Add to Cart"}
+            {isCartLoading ? "Adding..." : justAdded ? "Added ✓" : "Add to Cart"}
           </button>
         </div>
       </div>

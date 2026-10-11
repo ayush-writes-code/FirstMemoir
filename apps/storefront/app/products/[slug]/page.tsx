@@ -1,11 +1,12 @@
 import { ShieldCheck, Package, Award } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { products as productsApi } from "@/lib/api-client";
 import { ProductImageGallery } from "@/components/ProductImageGallery";
 import { ProductCustomizer } from "@/components/ProductCustomizer";
 import { ProductPreviewProvider } from "@/store/ProductPreviewContext";
 import type { Metadata } from "next";
+import { PRODUCT_SLUG_ALIASES } from "@/config/slug-aliases";
 
 export async function generateMetadata({
   params,
@@ -13,9 +14,10 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const resolvedSlug = PRODUCT_SLUG_ALIASES[slug] || slug;
 
   // Real API Product
-  const res = await productsApi.getProductBySlug(slug).catch(() => ({ success: false, data: null }));
+  const res = await productsApi.getProductBySlug(resolvedSlug).catch(() => ({ success: false, data: null }));
   if (res.success && res.data) {
     return {
       title: `${res.data.name} | FirstMemoir`,
@@ -34,6 +36,11 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+
+  // Seamlessly redirect legacy/prototype product slugs to their canonical catalogue counterparts
+  if (PRODUCT_SLUG_ALIASES[slug]) {
+    redirect(`/products/${PRODUCT_SLUG_ALIASES[slug]}`);
+  }
 
   // Fetch real API product
   const res = await productsApi.getProductBySlug(slug).catch(() => ({ success: false, data: null }));

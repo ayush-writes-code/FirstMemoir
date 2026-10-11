@@ -2,7 +2,7 @@
 
 import { useCartStore } from '@/store/cart.store';
 import Link from 'next/link';
-import { Trash2, Plus, Minus, ArrowRight } from 'lucide-react';
+import { Trash2, Plus, Minus, ArrowRight, Package, RefreshCw } from 'lucide-react';
 import { useEffect } from 'react';
 
 export default function CartPage() {
@@ -14,16 +14,36 @@ export default function CartPage() {
 
   if (isLoading && !cart) {
     return (
-      <div className="max-w-content mx-auto px-4 py-16 text-center text-muted">
-        Loading cart...
+      <div className="max-w-content mx-auto px-4 py-24 text-center text-muted">
+        <RefreshCw size={24} className="animate-spin mx-auto mb-3 opacity-50" />
+        Loading your cart...
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-content mx-auto px-4 py-16 text-center text-error">
-        {error}
+      <div className="max-w-content mx-auto px-4 py-24 text-center">
+        <h1 className="text-3xl font-serif font-bold text-ink mb-4">Unable to Load Cart</h1>
+        <p className="text-muted mb-8 max-w-md mx-auto">
+          We encountered an issue connecting to the store service ({error}). Please check your connection and try again.
+        </p>
+        <div className="flex items-center justify-center gap-4">
+          <button
+            onClick={() => fetchCart()}
+            disabled={isLoading}
+            className="inline-flex items-center gap-2 bg-brand hover:bg-brand-pressed text-white px-6 py-3 rounded-pill font-medium transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+            Try Again
+          </button>
+          <Link
+            href="/products"
+            className="inline-flex items-center gap-2 border border-hairline hover:bg-surface text-ink px-6 py-3 rounded-pill font-medium transition-colors"
+          >
+            Browse Collections
+          </Link>
+        </div>
       </div>
     );
   }
@@ -32,7 +52,7 @@ export default function CartPage() {
     return (
       <div className="max-w-content mx-auto px-4 py-24 text-center">
         <h1 className="text-3xl font-serif font-bold text-ink mb-4">Your Cart is Empty</h1>
-        <p className="text-muted mb-8">Looks like you haven&apos;t added any personalized prints yet.</p>
+        <p className="text-muted mb-8">Looks like you haven&apos;t added any prints to your cart yet.</p>
         <Link 
           href="/products" 
           className="inline-flex items-center gap-2 bg-brand hover:bg-brand-pressed text-white px-8 py-3 rounded-pill font-medium transition-colors"
@@ -59,8 +79,9 @@ export default function CartPage() {
                 {item.preview_url ? (
                   <img src={item.preview_url} alt="Crop preview" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted text-sm">
-                    No Preview
+                  <div className="w-full h-full flex flex-col items-center justify-center text-muted p-2 text-center bg-surface-soft">
+                    <Package size={24} className="mb-1 opacity-40 text-ink" />
+                    <span className="text-[11px] font-medium text-muted">Wall Art</span>
                   </div>
                 )}
               </div>

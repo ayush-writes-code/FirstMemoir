@@ -4,7 +4,15 @@ const envApiUrl = typeof globalThis !== 'undefined'
   ? (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env?.NEXT_PUBLIC_API_URL
   : undefined;
 
-let API_URL = envApiUrl || 'http://localhost:3001/api/v1';
+const nodeEnv = typeof globalThis !== 'undefined'
+  ? (globalThis as unknown as { process?: { env?: Record<string, string | undefined> } }).process?.env?.NODE_ENV
+  : undefined;
+
+const DEFAULT_API_URL = nodeEnv === 'production'
+  ? 'https://firstmemoir-api-staging.onrender.com/api/v1'
+  : 'http://localhost:3001/api/v1';
+
+let API_URL = envApiUrl || DEFAULT_API_URL;
 
 export const setApiUrl = (url: string) => {
   API_URL = url;
@@ -25,6 +33,9 @@ const processQueue = (error: Error | null) => {
   failedQueue = [];
 };
 
+// In non-browser (Node.js/testing) environments, maintain cookies in-memory across requests
+const nodeCookieJar: Record<string, string> = {};
+
 export async function fetchClient<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -36,6 +47,13 @@ export async function fetchClient<T>(
     headers.set('Content-Type', 'application/json');
   }
 
+  // Attach in-memory session cookies in Node.js environments
+  if (typeof window === 'undefined' && Object.keys(nodeCookieJar).length > 0) {
+    const existingCookie = headers.get('Cookie');
+    const jarCookies = Object.entries(nodeCookieJar).map(([k, v]) => `${k}=${v}`).join('; ');
+    headers.set('Cookie', existingCookie ? `${existingCookie}; ${jarCookies}` : jarCookies);
+  }
+
   const reqOptions: RequestInit = {
     ...options,
     headers,
@@ -44,6 +62,26 @@ export async function fetchClient<T>(
 
   try {
     let response = await fetch(url, reqOptions);
+
+    // Capture set-cookie in Node.js environments
+    if (typeof window === 'undefined') {
+      const setCookieHeaders = typeof (response.headers as any).getSetCookie === 'function'
+        ? (response.headers as any).getSetCookie()
+        : [response.headers.get('set-cookie')].filter(Boolean);
+      for (const rawHeader of setCookieHeaders) {
+        if (typeof rawHeader === 'string') {
+          const cookiePart = rawHeader.split(';')[0]?.trim();
+          if (cookiePart) {
+            const eqIdx = cookiePart.indexOf('=');
+            if (eqIdx !== -1) {
+              const k = cookiePart.slice(0, eqIdx).trim();
+              const v = cookiePart.slice(eqIdx + 1).trim();
+              nodeCookieJar[k] = v;
+            }
+          }
+        }
+      }
+    }
 
     if (response.status === 401 && endpoint !== '/auth/refresh' && endpoint !== '/auth/logout') {
       if (isRefreshing) {
