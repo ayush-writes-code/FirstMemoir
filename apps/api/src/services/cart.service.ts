@@ -3,6 +3,24 @@ import { env } from '../config/env.js';
 import { z } from 'zod';
 import type { AddToCartInput, PrintQualityStatus } from '@repo/api-client';
 
+const cartItemInclude = {
+  product: {
+    include: {
+      images: {
+        orderBy: { sort_order: 'asc' as const }
+      }
+    }
+  },
+  selected_option_values: {
+    include: {
+      option_value: {
+        include: { option: true }
+      }
+    }
+  },
+  upload: true,
+};
+
 export const cartService = {
   /**
    * Fetch the current cart by session ID (and user ID if authenticated)
@@ -12,17 +30,7 @@ export const cartService = {
       where: { session_id: sessionId },
       include: {
         items: {
-          include: {
-            product: true,
-              selected_option_values: {
-                include: {
-                  option_value: {
-                    include: { option: true }
-                  }
-                }
-              },
-            upload: true,
-          }
+          include: cartItemInclude
         }
       }
     });
@@ -35,17 +43,7 @@ export const cartService = {
         },
         include: {
           items: {
-            include: {
-              product: true,
-              selected_option_values: {
-                include: {
-                  option_value: {
-                    include: { option: true }
-                  }
-                }
-              },
-              upload: true,
-            }
+            include: cartItemInclude
           }
         }
       });
@@ -56,17 +54,7 @@ export const cartService = {
         data: { user_id: userId },
         include: {
           items: {
-            include: {
-              product: true,
-              selected_option_values: {
-                include: {
-                  option_value: {
-                    include: { option: true }
-                  }
-                }
-              },
-              upload: true,
-            }
+            include: cartItemInclude
           }
         }
       });
@@ -323,17 +311,7 @@ export const cartService = {
           }))
         }
       },
-      include: {
-        product: true,
-        selected_option_values: {
-          include: {
-            option_value: {
-              include: { option: true }
-            }
-          }
-        },
-        upload: true,
-      }
+      include: cartItemInclude
     });
 
     return lineItem;
@@ -410,17 +388,7 @@ export const cartService = {
     return await prisma.cartLineItem.update({
       where: { id: lineItemId },
       data: { quantity },
-      include: {
-        product: true,
-        selected_option_values: {
-          include: {
-            option_value: {
-              include: { option: true }
-            }
-          }
-        },
-        upload: true,
-      }
+      include: cartItemInclude
     });
   }
 };

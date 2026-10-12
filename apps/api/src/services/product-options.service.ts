@@ -1,5 +1,6 @@
 import { prisma, Prisma } from '@repo/database';
 import { env } from '../config/env.js';
+import { buildProductImageUrl } from './product.service.js';
 
 export interface CreateOptionInput {
   product_id: string;
@@ -43,13 +44,10 @@ export const productOptionsService = {
     return {
       ...product,
       base_price: product.base_price.toString(),
-      images: product.images.map(img => {
-        const isAbsolute = img.file_key.startsWith('http://') || img.file_key.startsWith('https://');
-        return {
-          ...img,
-          url: isAbsolute ? img.file_key : `${env.R2_PUBLIC_URL}/${img.file_key}`
-        };
-      }),
+      images: product.images.map(img => ({
+        ...img,
+        url: buildProductImageUrl(img.file_key)
+      })),
       options: product.options.map(opt => ({
         ...opt,
         values: opt.values.map(v => ({

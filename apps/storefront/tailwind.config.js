@@ -14,7 +14,7 @@ export default {
         'ink': '#222222',
         'body': '#3f3f3f',
         'muted': '#595959',
-        'muted-soft': '#757575',
+        'muted-soft': '#5e5e5e',
         'canvas': '#ffffff',
         'surface-soft': '#f6f6f6',
         'surface-cream': '#fdf6e8',

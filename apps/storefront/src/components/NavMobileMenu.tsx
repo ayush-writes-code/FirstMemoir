@@ -79,9 +79,11 @@ export function NavMobileMenu() {
               isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
             }`}
             aria-hidden={!isOpen}
-            role="dialog"
-            aria-modal="true"
+            inert={!isOpen ? true : undefined}
+            role={isOpen ? "dialog" : undefined}
+            aria-modal={isOpen ? "true" : undefined}
             aria-label="Mobile Navigation"
+            style={{ display: isOpen ? 'block' : 'none' }}
           >
             {/* Backdrop */}
             <div
@@ -214,7 +216,7 @@ export function NavMobileMenu() {
               <div className="mt-auto px-6 py-6 bg-zinc-50/80 border-t border-zinc-100/80 rounded-t-2xl space-y-4">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Account</p>
+                    <p className="text-xs font-semibold text-zinc-600 uppercase tracking-wider">Account</p>
                     {isAuthenticated && (
                       <span className="text-[11px] font-medium text-brand">Signed In</span>
                     )}
@@ -297,7 +299,7 @@ export function NavMobileMenu() {
                   )}
                 </div>
 
-                <div className="pt-2 flex items-center justify-between text-xs text-zinc-400">
+                <div className="pt-2 flex items-center justify-between text-xs text-zinc-600">
                   <span>FirstMemoir Art Prints & Frames</span>
                   <span className="tracking-wide">India</span>
                 </div>

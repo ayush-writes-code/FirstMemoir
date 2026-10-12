@@ -25,6 +25,49 @@ function generateSlug(name: string): string {
 
 import { env } from '../config/env.js';
 
+/**
+ * Builds a sanitized public URL for a product image.
+ * Normalizes leading slashes, verifies allowed URL schemes, rejects directory traversal,
+ * and enforces storage boundary (private keys like customers/* and previews/* cannot be public).
+ */
+export function buildProductImageUrl(fileKey: string): string {
+  if (!fileKey || typeof fileKey !== 'string') return '';
+
+  // 1. Preserve valid absolute HTTP/HTTPS URLs (e.g. external seed imagery)
+  if (fileKey.startsWith('http://') || fileKey.startsWith('https://')) {
+    try {
+      const parsed = new URL(fileKey);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        return fileKey;
+      }
+    } catch {
+      throw new Error(`Invalid URL format for image key: '${fileKey}'`);
+    }
+  }
+
+  // Reject unsupported / arbitrary URL schemes (e.g. javascript:, data:, file:)
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(fileKey)) {
+    throw new Error(`Unsupported URL scheme in image key: '${fileKey}'`);
+  }
+
+  // 2. Normalize leading slashes
+  const normalizedKey = fileKey.replace(/^\/+/, '');
+
+  // 3. Reject directory traversal
+  if (normalizedKey.includes('..')) {
+    throw new Error(`Invalid storage key: path traversal not allowed in '${fileKey}'`);
+  }
+
+  // 4. Enforce storage boundary: customers/* and previews/* are strictly private
+  if (normalizedKey.startsWith('customers/') || normalizedKey.startsWith('previews/')) {
+    throw new Error(`Forbidden: Cannot generate public URL for private key '${fileKey}'.`);
+  }
+
+  // 5. Construct public URL using normalized base and key
+  const baseUrl = (env.R2_PUBLIC_URL || '').replace(/\/+$/, '');
+  return baseUrl ? `${baseUrl}/${normalizedKey}` : `/${normalizedKey}`;
+}
+
 function serializeProduct(product: any) {
   if (!product) return product;
   const serialized = {
@@ -33,14 +76,10 @@ function serializeProduct(product: any) {
   };
 
   if (serialized.images) {
-    serialized.images = serialized.images.map((img: any) => {
-      // If file_key is already an absolute URL (e.g. Unsplash seed image), use it directly
-      const isAbsolute = img.file_key.startsWith('http://') || img.file_key.startsWith('https://');
-      return {
-        ...img,
-        url: isAbsolute ? img.file_key : `${env.R2_PUBLIC_URL}/${img.file_key}`
-      };
-    });
+    serialized.images = serialized.images.map((img: any) => ({
+      ...img,
+      url: buildProductImageUrl(img.file_key)
+    }));
   } else {
     serialized.images = [];
   }
@@ -212,10 +251,9 @@ export const productService = {
       }
     });
 
-    const isAbsolute = newImage.file_key.startsWith('http://') || newImage.file_key.startsWith('https://');
     return {
       ...newImage,
-      url: isAbsolute ? newImage.file_key : `${env.R2_PUBLIC_URL}/${newImage.file_key}`
+      url: buildProductImageUrl(newImage.file_key)
     };
   },
 
@@ -304,12 +342,9 @@ export const productService = {
       orderBy: [{ sort_order: 'asc' }, { id: 'asc' }]
     });
 
-    return updatedImages.map(img => {
-      const isAbsolute = img.file_key.startsWith('http://') || img.file_key.startsWith('https://');
-      return {
-        ...img,
-        url: isAbsolute ? img.file_key : `${env.R2_PUBLIC_URL}/${img.file_key}`
-      };
-    });
+    return updatedImages.map(img => ({
+      ...img,
+      url: buildProductImageUrl(img.file_key)
+    }));
   }
 };

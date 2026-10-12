@@ -66,9 +66,9 @@ export function ProductLivePreview({ baseImage, productSlug, productName, mockup
         {/* Layer 1: Base Background */}
         <Image 
           src={premiumMockup.baseAsset} 
-          alt={`Mockup for ${productName}`} 
+          alt={baseImage.alt_text || productName} 
           fill
-          sizes="(max-width: 768px) 100vw, 50vw"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 60vw, 50vw"
           priority
           className="object-cover"
         />
@@ -132,9 +132,9 @@ export function ProductLivePreview({ baseImage, productSlug, productName, mockup
       {/* Base Mockup Layer */}
       <Image
         src={baseImgSrc}
-        alt={`Mockup for ${productName}`}
+        alt={baseImage.alt_text || productName}
         fill
-        sizes="(max-width: 768px) 100vw, 50vw"
+        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 60vw, 50vw"
         priority
         className="object-cover"
         onError={() => {

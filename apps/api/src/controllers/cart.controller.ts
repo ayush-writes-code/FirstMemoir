@@ -4,6 +4,7 @@ import { cartService } from '../services/cart.service.js';
 import { successResponse } from '../utils/response.js';
 
 import { getSessionId } from '../middlewares/session.middleware.js';
+import { buildProductImageUrl } from '../services/product.service.js';
 
 const FLOAT_TOLERANCE = 1e-7;
 
@@ -60,6 +61,18 @@ function mapLineItemToDto(item: any) {
   const optionValues = item.selected_option_values.map((sov: any) => sov.option_value);
   const unit_price = cartService.calculateLineItemPrice(basePrice, optionValues);
 
+  let product_image: string | null = null;
+  if (item.product?.images && item.product.images.length > 0) {
+    const primaryImg = item.product.images[0];
+    if (primaryImg?.file_key) {
+      try {
+        product_image = buildProductImageUrl(primaryImg.file_key);
+      } catch {
+        product_image = null;
+      }
+    }
+  }
+
   return {
     id: item.id,
     cart_id: item.cart_id,
@@ -78,6 +91,8 @@ function mapLineItemToDto(item: any) {
     updated_at: item.updated_at,
     
     product_name: item.product.name,
+    product_slug: item.product.slug ?? null,
+    product_image: product_image,
     unit_price: unit_price,
     selected_options: optionValues.map((val: any) => ({
       option_id: val.option_id,

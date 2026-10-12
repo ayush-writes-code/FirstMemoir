@@ -4,6 +4,8 @@ import { useCartStore } from '@/store/cart.store';
 import Link from 'next/link';
 import { Trash2, Plus, Minus, ArrowRight, Package, RefreshCw } from 'lucide-react';
 import { useEffect } from 'react';
+import { CartItemThumbnail } from '@/components/cart/CartItemThumbnail';
+import { resolveProductPageHref } from '@/utils/cart-image';
 
 export default function CartPage() {
   const { cart, isLoading, error, fetchCart, updateQuantity, removeItem, mutatingItemIds } = useCartStore();
@@ -83,24 +85,25 @@ export default function CartPage() {
             const isItemMutating = mutatingItemIds?.includes(item.id) || false;
 
             return (
-              <div key={item.id} className="flex gap-6 p-6 rounded-2xl border border-hairline bg-canvas">
-                {/* Thumbnail */}
-                <div className="w-24 h-24 md:w-32 md:h-32 bg-surface rounded-lg overflow-hidden shrink-0 border border-hairline relative">
-                  {item.preview_url ? (
-                    <img src={item.preview_url} alt="Crop preview" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-muted p-2 text-center bg-surface-soft">
-                      <Package size={24} className="mb-1 opacity-40 text-ink" />
-                      <span className="text-[11px] font-medium text-muted">Wall Art</span>
-                    </div>
-                  )}
-                </div>
+              <div 
+                key={item.id} 
+                className={`flex gap-6 p-6 rounded-2xl border border-hairline bg-canvas transition-opacity duration-200 motion-reduce:transition-none ${
+                  isItemMutating ? 'opacity-75' : 'opacity-100'
+                }`}
+              >
+                {/* Thumbnail with canonical resolution and graceful fallback */}
+                <CartItemThumbnail item={item} />
 
                 {/* Item Details */}
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-start gap-4">
-                      <h3 className="font-semibold text-ink text-lg">{item.product_name}</h3>
+                      <Link 
+                        href={resolveProductPageHref(item)}
+                        className="font-semibold text-ink text-lg hover:text-brand transition-colors focus:outline-none focus:underline"
+                      >
+                        {item.product_name}
+                      </Link>
                       <p className="font-medium text-ink">₹{(item.unit_price * item.quantity).toLocaleString()}</p>
                     </div>
                     <div className="mt-2 space-y-1">
@@ -130,7 +133,13 @@ export default function CartPage() {
                       >
                         <Minus size={14} />
                       </button>
-                      <span className="text-sm font-medium w-4 text-center">{item.quantity}</span>
+                      <span className="text-sm font-medium w-6 text-center flex items-center justify-center">
+                        {isItemMutating ? (
+                          <RefreshCw size={12} className="animate-spin text-muted" aria-label="Updating" />
+                        ) : (
+                          item.quantity
+                        )}
+                      </span>
                       <button 
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
                         disabled={isItemMutating}
@@ -145,9 +154,13 @@ export default function CartPage() {
                       onClick={() => removeItem(item.id)}
                       disabled={isItemMutating}
                       className="text-muted hover:text-error transition-colors w-11 h-11 flex items-center justify-center rounded-full hover:bg-surface disabled:opacity-50"
-                      aria-label="Remove item"
+                      aria-label={`Remove ${item.product_name} from cart`}
                     >
-                      <Trash2 size={20} />
+                      {isItemMutating ? (
+                        <RefreshCw size={18} className="animate-spin text-muted" />
+                      ) : (
+                        <Trash2 size={20} />
+                      )}
                     </button>
                   </div>
                 </div>

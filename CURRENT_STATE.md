@@ -98,7 +98,14 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
   - **Authoritative Webhook Receipt**: Webhook event `TmyqRZ37Xm5yhq` (`payment.captured`) delivered to Render staging at `11:28:31.216Z`, HMAC SHA256 validated, recorded in `WebhookEvent` table as `PROCESSED`.
   - **State Transitions**: Order transitioned from `PENDING` to `CONFIRMED` via webhook handler. Cart `d0cb0444-370d-4d97-9599-d1ab0cfc1703` marked `CHECKOUT_STARTED` and items cleared.
   - **Zero False-Confirmation Risk**: Verified `/checkout/success` polls `GET /orders/:id/status` and only renders "Order Confirmed!" when backend confirms `CONFIRMED`.
-- **Slice 6C.5 Milestone Status:** **IN PROGRESS (Optimistic cart & test payment verified; awaiting fresh Vercel deployment under apps/storefront Root Directory).**
+- **Stage 8 Status (Cart Image Coverage, Product Card Gallery & Shopping UX Improvements):** **PASS**
+  - **Cart Image Root Cause & Fix**: Standard catalogue items lacked image mapping in cart DTO. Added `product_slug` and `product_image` to `CartLineItemDto`, updated `cartService` to include product images, and created resilient client fallback resolver in `apps/storefront/src/utils/cart-image.ts`.
+  - **Cart Thumbnail Component**: Implemented `CartItemThumbnail.tsx` with stable dimensions, `onError` fallback, alt text, and product page deep links.
+  - **Product Card Gallery Controls**: Preserved image sort order in `adaptApiProductToStorefront`, added accessible Previous/Next edge controls with event isolation, subtle dot indicators, and touch swipe gestures.
+  - **Performance & A11y Fixes**: Resolved WAVE focusable descendant error in `NavMobileMenu` via `inert` attribute, darkened `muted-soft` to `#5e5e5e` to exceed WCAG AA contrast, and optimized mobile PDP LCP responsive sizes and alt text.
+  - **Admin Safety**: Hardened `apps/admin/src/main.tsx` to require explicit `VITE_API_URL` without silent production fallbacks, added SPA client rewrites in `vercel.json`, and documented setup in `.env.example`.
+  - **Quality Gates**: 32/32 storefront tests passing (100%), 0 TypeScript errors, 100% build pass across all workspaces.
+- **Slice 6C.5 Milestone Status:** **IN PROGRESS (Optimistic cart, image resolution, shopping UX & test payment verified; awaiting authorized deployment to Vercel).**
 
 ---
 
@@ -115,6 +122,8 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 | **RAZORPAY STAGING CHECKOUT** | `VERIFIED` | Stage 3 PASS: test-mode key (`rzp_test_...`), order creation, idempotency, webhook guards verified on live staging API. |
 | **CART PERFORMANCE & OPTIMISTIC UI** | `VERIFIED` | Stage 6 PASS: 0ms perceived quantity update, redundant waterfall eliminated, 25/25 tests passing. |
 | **E2E TEST PAYMENT & WEBHOOK** | `VERIFIED` | Stage 7 PASS: Order `e4415105-...` confirmed via Razorpay `pay_TmypnZQLLSCFfz` and verified webhook `TmyqRZ37Xm5yhq`. |
-| **END-TO-END STAGING** | `VERIFIED` | All Slice 6C.5 stages verified (Catalogue, Upload, Checkout, Cart Performance, E2E Payment). |
+| **SHOPPING UX & CART IMAGE COVERAGE** | `VERIFIED` | Stage 8 PASS: Canonical images in cart, listing gallery navigation, a11y & contrast fixes, 32/32 tests passing. |
+| **ADMIN DEPLOYMENT PREPARATION** | `CONFIGURED_UNBLOCKED` | Explicit `VITE_API_URL` validation, SPA `vercel.json` rewrites, builds in 627ms; pending user-authorized Vercel project connection. |
+| **END-TO-END STAGING** | `VERIFIED` | All Slice 6C.5 stages verified. |
 | **PRODUCTION** | `NOT APPROVED` | Awaiting client acceptance & production credential provisioning. |
 

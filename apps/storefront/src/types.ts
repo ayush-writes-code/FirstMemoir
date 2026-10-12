@@ -48,12 +48,14 @@ export function adaptApiProductToStorefront(apiProduct: ProductDto): StorefrontP
     sku: apiProduct.sku || undefined,
     base_price: apiProduct.base_price,
     is_provisional_price: Boolean(apiProduct.manufacturing_metadata?.provisional_price),
-    images: apiProduct.images?.map(img => ({
-      id: img.id,
-      url: img.url,
-      alt_text: img.alt_text || apiProduct.name,
-      order: 0,
-    })) || [],
+    images: (apiProduct.images || [])
+      .map(img => ({
+        id: img.id,
+        url: img.url,
+        alt_text: img.alt_text || apiProduct.name,
+        order: img.sort_order ?? 0,
+      }))
+      .sort((a, b) => a.order - b.order),
     categories: apiProduct.categories?.map(c => ({
       id: c.category.id,
       name: c.category.name,
