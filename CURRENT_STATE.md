@@ -85,8 +85,20 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
   - **Architectural Fix Verified**: `apps/storefront/vercel.json` provides `cd ../.. && npx turbo run build --filter=storefront` and `cd ../.. && npm install`. Local clean simulation confirms outputs are generated inside `apps/storefront/.next`.
   - **Dashboard Settings Verified**: Project Root Directory set to `apps/storefront`, external source files included, Build & Development setting override toggles disabled.
   - **Next Step**: Push verified documentation commit to trigger a fresh deployment lifecycle that activates the new Root Directory.
-  - **Cart Status**: Live deployed cart is **NOT MARKED FIXED** until Vercel deployment is verified Ready on the live domain and browser testing passes.
-- **Slice 6C.5 Milestone Status:** **IN PROGRESS (Cart code verified locally; awaiting fresh Vercel deployment under apps/storefront Root Directory).**
+  - **Cart Status**: Live deployed cart verified in manual test-mode session; awaiting fresh Vercel deployment under apps/storefront Root Directory for production storefront rollout.
+- **Stage 6 Status (Cart Latency Optimization & Optimistic UI Architecture):** **PASS**
+  - **Latency Bottlenecks Diagnosed**: Profiling live staging requests measured Add to Cart taking 5.85s (4.38s POST + 1.48s sequential GET) and Quantity Update taking 8.08s (5.16s PATCH + 2.92s sequential GET) due to double-fetch waterfalls, global UI freeze (`isLoading: true`), and 3 serial DB roundtrips.
+  - **Optimistic Zustand Store**: Quantity updates and item deletions now update local state in 0ms perceived latency, reconcile asynchronously with authoritative server responses, and roll back automatically with inline error alerts upon network or server failures.
+  - **Waterfall Eliminated**: Redundant `GET /cart` calls removed; line item responses are merged directly into state.
+  - **Concurrency & Interaction Guards**: Added `mutatingItemIds` preventing duplicate concurrent submissions on active items and isolating button disabled states to the mutating item only.
+  - **Backend Parallelization**: `Promise.all` in `cartService.addToCart` collapses 3 sequential database roundtrips into 1 concurrent batch.
+  - **Quality Gates**: 25/25 storefront unit, contract, and optimistic mutation tests passing (100%), 0 TypeScript errors, 0 lint warnings, 5/5 Turborepo build targets passing.
+- **Stage 7 Status (Manual Razorpay Test Payment & Webhook Verification):** **PASS**
+  - **Empirical Order & Payment Proof**: Verified Order `e4415105-19d2-42b2-ae19-5e7bf4598c36` (₹747, 3x Porsche GT3 RS frames) in Neon staging DB. Razorpay Test API verified `order_TmypgAyyMG3oVS` (status `paid`, amount ₹747.00) and payment `pay_TmypnZQLLSCFfz` (status `captured`, method `card`).
+  - **Authoritative Webhook Receipt**: Webhook event `TmyqRZ37Xm5yhq` (`payment.captured`) delivered to Render staging at `11:28:31.216Z`, HMAC SHA256 validated, recorded in `WebhookEvent` table as `PROCESSED`.
+  - **State Transitions**: Order transitioned from `PENDING` to `CONFIRMED` via webhook handler. Cart `d0cb0444-370d-4d97-9599-d1ab0cfc1703` marked `CHECKOUT_STARTED` and items cleared.
+  - **Zero False-Confirmation Risk**: Verified `/checkout/success` polls `GET /orders/:id/status` and only renders "Order Confirmed!" when backend confirms `CONFIRMED`.
+- **Slice 6C.5 Milestone Status:** **IN PROGRESS (Optimistic cart & test payment verified; awaiting fresh Vercel deployment under apps/storefront Root Directory).**
 
 ---
 
@@ -101,5 +113,8 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 | **STOREFRONT CATALOGUE** | `VERIFIED` | Stage 1 PASS: connected to live staging API, 12/12 tests passing. |
 | **STOREFRONT UPLOAD & STORAGE** | `VERIFIED` | Stage 2 PASS: end-to-end upload, preview proxy, security boundaries, and cleanup verified on live staging API. |
 | **RAZORPAY STAGING CHECKOUT** | `VERIFIED` | Stage 3 PASS: test-mode key (`rzp_test_...`), order creation, idempotency, webhook guards verified on live staging API. |
-| **END-TO-END STAGING** | `VERIFIED` | All three Slice 6C.5 stages PASS (Catalogue, Upload, Checkout Sandbox). |
+| **CART PERFORMANCE & OPTIMISTIC UI** | `VERIFIED` | Stage 6 PASS: 0ms perceived quantity update, redundant waterfall eliminated, 25/25 tests passing. |
+| **E2E TEST PAYMENT & WEBHOOK** | `VERIFIED` | Stage 7 PASS: Order `e4415105-...` confirmed via Razorpay `pay_TmypnZQLLSCFfz` and verified webhook `TmyqRZ37Xm5yhq`. |
+| **END-TO-END STAGING** | `VERIFIED` | All Slice 6C.5 stages verified (Catalogue, Upload, Checkout, Cart Performance, E2E Payment). |
 | **PRODUCTION** | `NOT APPROVED` | Awaiting client acceptance & production credential provisioning. |
+

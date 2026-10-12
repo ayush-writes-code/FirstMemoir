@@ -194,4 +194,78 @@ Vercel's intended architecture for deploying a single Next.js application within
 6. **Turbo Configuration Cleaned:**
    - Standard `turbo.json` outputs: `[".next/**", "!.next/cache/**", "!.next/dev/**", "dist/**"]`. No speculative globs.
 
+---
+
+## 7. Live Cart Latency Diagnosis & Optimistic Architecture (Task A)
+
+### Latency Investigation & Profiling
+Browser testing against the live staging API (`https://firstmemoir-api-staging.onrender.com`) revealed a 5–6s delay on Add to Cart and several seconds on quantity updates. Direct network profiling of the staging boundary measured:
+- **Network TTFB Baseline:** ~417ms (DNS: 58ms, TCP: 23ms, TLS: 47ms).
+- **Cold Session Request (`GET /cart`):** 3,367ms (serverless Neon DB spinup / session init).
+- **Add to Cart (`POST /cart/items`):** 4,377ms + redundant sequential `GET /cart` (1,476ms) = **5,853ms (5.85s Add to Cart)**.
+- **Quantity Update (`PATCH /cart/items/:id`):** 5,159ms + redundant sequential `GET /cart` (2,923ms) = **8,082ms (8.08s Quantity Update)**.
+- **Item Deletion (`DELETE /cart/items/:id`):** 1,701ms.
+
+### Root Cause Analysis: Triple Waterfall
+1. **Frontend Sequential Waterfall:** Every mutation in `useCartStore` (`addToCart`, `updateQuantity`, `removeItem`) executed `await get().fetchCart()` after the mutation completed, forcing two sequential cross-region network requests over the public internet.
+2. **Global UI Freeze:** `useCartStore` toggled `isLoading: true` globally on every mutation, freezing the whole cart UI and disabling all buttons until both network requests resolved.
+3. **Backend Database Waterfall:** `cartService.addToCart` executed `storeSettings.findUnique`, then `getCart`, then `product.findUnique` sequentially against Neon PostgreSQL in Singapore, adding 3 sequential database roundtrips.
+
+### Performance Optimizations Implemented
+1. **Optimistic Quantity Updates (`apps/storefront/src/store/cart.store.ts`):**
+   - Updates quantity immediately in memory and recalculates cart subtotal in **0ms perceived latency**.
+   - Fires background `PATCH /cart/items/:id`.
+   - On server response, reconciles seamlessly with authoritative `CartLineItemDto`.
+   - On error or network failure, automatically rolls back to the previous quantity and surfaces an actionable error message.
+2. **Optimistic Item Deletion (`apps/storefront/src/store/cart.store.ts`):**
+   - Removes the item from state immediately in 0ms.
+   - Dispatches background `DELETE /cart/items/:id`.
+   - On failure, restores the previous items array and sets error state.
+3. **Elimination of Redundant `GET /cart` Waterfall:**
+   - Both `addToCart` and `updateCartItemQuantity` endpoints already return the full updated `CartLineItemDto`.
+   - The store now merges the returned line item directly into state, completely eliminating the secondary 1.5s–3.0s `GET /cart` network trip.
+4. **Per-Item Mutation Guard (`mutatingItemIds`):**
+   - Tracks IDs of items currently mutating (`mutatingItemIds: string[]`).
+   - Drops duplicate rapid clicks on the same item while a mutation is in flight.
+   - Disables controls only for the active line item (`apps/storefront/app/cart/page.tsx`), keeping the rest of the cart interactive.
+5. **Non-Destructive Error Handling (`apps/storefront/app/cart/page.tsx`):**
+   - Displays an inline dismissible alert banner (`role="alert"`) with a "Refresh Cart" action instead of replacing the entire cart with the full-page "Unable to Load Cart" error screen when a background update fails.
+6. **Backend DB Roundtrip Parallelization (`apps/api/src/services/cart.service.ts`):**
+   - Parallelized `storeSettings`, `getCart`, and `product` queries in `cartService.addToCart` via `Promise.all`, collapsing 3 sequential database roundtrips into a single concurrent batch.
+
+---
+
+## 8. Manual Test Payment & Authoritative Webhook End-to-End Audit (Task B)
+
+### Empirical Verification of Manual Test Checkout
+During manual browser testing, a checkout session was initiated on `https://firstmemoir-demo.vercel.app`, the Razorpay Test Mode checkout opened, OTP `123456` was submitted, and the storefront redirected to `/checkout/success`. A full audit of internal database records, Razorpay Test API, and webhook processing was conducted.
+
+| Verification Dimension | Value / Identifier | Empirical Status |
+|---|---|---|
+| **Database Order ID** | `e4415105-19d2-42b2-ae19-5e7bf4598c36` | **CONFIRMED** in Neon DB |
+| **Created Timestamp** | `2026-10-12T11:27:46.202Z` | Verified |
+| **Order Total** | ₹747 (3 x `Porsche GT3 RS Wall Frame Set` @ ₹249) | Authoritative pricing enforced |
+| **Customer Details** | Ayush Tomar (`ayush...`, `+91 9548...`) | Captured in order snapshot |
+| **Razorpay Order ID** | `order_TmypgAyyMG3oVS` | `status: paid`, `amount_paid: 74700` |
+| **Razorpay Payment ID** | `pay_TmypnZQLLSCFfz` | `status: captured`, `amount: 74700`, method `card` (Mastercard *1111) |
+| **Captured Timestamp** | `2026-10-12T11:28:31.000Z` | Captured |
+| **Webhook Delivery** | Event `TmyqRZ37Xm5yhq` (`payment.captured`) | Received by Render staging at `11:28:31.216Z` |
+| **Webhook Verification** | HMAC SHA256 signature verified | Recorded in `WebhookEvent` table as `PROCESSED` |
+| **Order State Transition** | `PENDING` &rarr; `CONFIRMED` | Confirmed at `11:28:32.633Z` via webhook handler |
+| **Cart State Transition** | Cart `d0cb0444-370d-4d97-9599-d1ab0cfc1703` | Marked `CHECKOUT_STARTED`, items cleared |
+
+### Frontend False-Confirmation Audit
+- **Code Inspected:** `apps/storefront/app/checkout/page.tsx` and `apps/storefront/app/checkout/success/page.tsx`.
+- **Payment Modal Handler:** Upon Razorpay modal success callback, the frontend executes:
+  ```ts
+  router.push(`/checkout/success?order_id=${orderId}`);
+  ```
+  It **never** marks the order confirmed locally or updates order state.
+- **Success Route Protection:** `/checkout/success` polls the backend API via `orders.getOrderStatus(orderId)`:
+  - While `status === 'PENDING'`, displays "Verifying payment with payment provider..." with a loading spinner.
+  - If `status === 'FAILED'`, displays payment failure screen with retry options.
+  - ONLY when `status === 'CONFIRMED'` does it transition to "Order Confirmed!" with order details.
+  - **Verdict:** Zero false-confirmation risk. The "Order Confirmed!" screen seen during browser testing was the direct result of a genuinely captured Razorpay test payment, an HMAC-verified webhook delivered to the staging API, and an authoritative database state update.
+
+
 

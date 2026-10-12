@@ -6,7 +6,7 @@ import { Trash2, Plus, Minus, ArrowRight, Package, RefreshCw } from 'lucide-reac
 import { useEffect } from 'react';
 
 export default function CartPage() {
-  const { cart, isLoading, error, fetchCart, updateQuantity, removeItem } = useCartStore();
+  const { cart, isLoading, error, fetchCart, updateQuantity, removeItem, mutatingItemIds } = useCartStore();
 
   useEffect(() => {
     fetchCart();
@@ -21,7 +21,7 @@ export default function CartPage() {
     );
   }
 
-  if (error) {
+  if (error && !cart) {
     return (
       <div className="max-w-content mx-auto px-4 py-24 text-center">
         <h1 className="text-3xl font-serif font-bold text-ink mb-4">Unable to Load Cart</h1>
@@ -69,78 +69,91 @@ export default function CartPage() {
     <div className="max-w-content mx-auto px-4 py-12 md:py-16">
       <h1 className="text-3xl font-serif font-bold text-ink mb-8">Your Cart</h1>
       
+      {error && (
+        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex justify-between items-center" role="alert">
+          <span>{error}</span>
+          <button onClick={() => fetchCart()} className="underline font-medium ml-4 hover:text-red-950">Refresh Cart</button>
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-12">
         {/* Cart Items List */}
         <div className="w-full lg:w-2/3 space-y-6">
-          {cart.items.map((item) => (
-            <div key={item.id} className="flex gap-6 p-6 rounded-2xl border border-hairline bg-canvas">
-              {/* Thumbnail */}
-              <div className="w-24 h-24 md:w-32 md:h-32 bg-surface rounded-lg overflow-hidden shrink-0 border border-hairline relative">
-                {item.preview_url ? (
-                  <img src={item.preview_url} alt="Crop preview" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center text-muted p-2 text-center bg-surface-soft">
-                    <Package size={24} className="mb-1 opacity-40 text-ink" />
-                    <span className="text-[11px] font-medium text-muted">Wall Art</span>
-                  </div>
-                )}
-              </div>
+          {cart.items.map((item) => {
+            const isItemMutating = mutatingItemIds?.includes(item.id) || false;
 
-              {/* Item Details */}
-              <div className="flex-1 flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-start gap-4">
-                    <h3 className="font-semibold text-ink text-lg">{item.product_name}</h3>
-                    <p className="font-medium text-ink">₹{(item.unit_price * item.quantity).toLocaleString()}</p>
-                  </div>
-                  <div className="mt-2 space-y-1">
-                    {item.selected_options.map(opt => (
-                      <p key={opt.option_id} className="text-sm text-muted">
-                        {opt.option_name}: <span className="text-ink">{opt.value_name}</span>
-                        {opt.price_modifier > 0 && ` (+₹${opt.price_modifier})`}
-                      </p>
-                    ))}
-                  </div>
+            return (
+              <div key={item.id} className="flex gap-6 p-6 rounded-2xl border border-hairline bg-canvas">
+                {/* Thumbnail */}
+                <div className="w-24 h-24 md:w-32 md:h-32 bg-surface rounded-lg overflow-hidden shrink-0 border border-hairline relative">
+                  {item.preview_url ? (
+                    <img src={item.preview_url} alt="Crop preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-muted p-2 text-center bg-surface-soft">
+                      <Package size={24} className="mb-1 opacity-40 text-ink" />
+                      <span className="text-[11px] font-medium text-muted">Wall Art</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Actions */}
-                <div className="flex items-center justify-between mt-4">
-                  <div className="flex items-center gap-4 bg-surface rounded-full p-1 border border-hairline">
-                    <button 
-                      onClick={() => {
-                        if (item.quantity === 1) {
-                          removeItem(item.id);
-                        } else {
-                          updateQuantity(item.id, item.quantity - 1);
-                        }
-                      }}
-                      disabled={isLoading}
-                      className="w-11 h-11 rounded-full flex items-center justify-center hover:bg-canvas text-ink transition-colors disabled:opacity-50"
-                    >
-                      <Minus size={14} />
-                    </button>
-                    <span className="text-sm font-medium w-4 text-center">{item.quantity}</span>
-                    <button 
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      disabled={isLoading}
-                      className="w-11 h-11 rounded-full flex items-center justify-center hover:bg-canvas text-ink transition-colors disabled:opacity-50"
-                    >
-                      <Plus size={14} />
-                    </button>
+                {/* Item Details */}
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-start gap-4">
+                      <h3 className="font-semibold text-ink text-lg">{item.product_name}</h3>
+                      <p className="font-medium text-ink">₹{(item.unit_price * item.quantity).toLocaleString()}</p>
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      {item.selected_options.map(opt => (
+                        <p key={opt.option_id} className="text-sm text-muted">
+                          {opt.option_name}: <span className="text-ink">{opt.value_name}</span>
+                          {opt.price_modifier > 0 && ` (+₹${opt.price_modifier})`}
+                        </p>
+                      ))}
+                    </div>
                   </div>
 
-                  <button 
-                    onClick={() => removeItem(item.id)}
-                    disabled={isLoading}
-                    className="text-muted hover:text-error transition-colors w-11 h-11 flex items-center justify-center rounded-full hover:bg-surface"
-                    aria-label="Remove item"
-                  >
-                    <Trash2 size={20} />
-                  </button>
+                  {/* Actions */}
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center gap-4 bg-surface rounded-full p-1 border border-hairline">
+                      <button 
+                        onClick={() => {
+                          if (item.quantity === 1) {
+                            removeItem(item.id);
+                          } else {
+                            updateQuantity(item.id, item.quantity - 1);
+                          }
+                        }}
+                        disabled={isItemMutating}
+                        className="w-11 h-11 rounded-full flex items-center justify-center hover:bg-canvas text-ink transition-colors disabled:opacity-50"
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus size={14} />
+                      </button>
+                      <span className="text-sm font-medium w-4 text-center">{item.quantity}</span>
+                      <button 
+                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        disabled={isItemMutating}
+                        className="w-11 h-11 rounded-full flex items-center justify-center hover:bg-canvas text-ink transition-colors disabled:opacity-50"
+                        aria-label="Increase quantity"
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
+
+                    <button 
+                      onClick={() => removeItem(item.id)}
+                      disabled={isItemMutating}
+                      className="text-muted hover:text-error transition-colors w-11 h-11 flex items-center justify-center rounded-full hover:bg-surface disabled:opacity-50"
+                      aria-label="Remove item"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Order Summary */}

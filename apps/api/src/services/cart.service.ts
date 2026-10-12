@@ -108,28 +108,28 @@ export const cartService = {
    * Add item to cart
    */
   async addToCart(input: AddToCartInput, sessionId: string, userId?: string) {
-    // 1. Fetch current pricing version from StoreSettings
-    let storeSettings = await prisma.storeSettings.findUnique({ where: { id: 'default' } });
+    // 1. Concurrently fetch StoreSettings, Cart, and Product to eliminate sequential database roundtrips
+    const [storeSettingsResult, cart, product] = await Promise.all([
+      prisma.storeSettings.findUnique({ where: { id: 'default' } }),
+      this.getCart(sessionId, userId),
+      prisma.product.findUnique({
+        where: { id: input.product_id },
+        include: {
+          options: {
+            include: { values: true }
+          },
+          categories: {
+            include: { category: true }
+          }
+        }
+      })
+    ]);
+
+    let storeSettings = storeSettingsResult;
     if (!storeSettings) {
       storeSettings = await prisma.storeSettings.create({ data: { id: 'default', pricing_version: 1 } });
     }
     const currentPricingVersion = storeSettings.pricing_version;
-
-    // 2. Fetch the cart
-    const cart = await this.getCart(sessionId, userId);
-
-    // 3. Verify Product and Options
-    const product = await prisma.product.findUnique({
-      where: { id: input.product_id },
-      include: {
-        options: {
-          include: { values: true }
-        },
-        categories: {
-          include: { category: true }
-        }
-      }
-    });
 
     if (!product) {
       throw { statusCode: 404, message: 'Product not found' };
