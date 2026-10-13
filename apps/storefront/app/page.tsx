@@ -1,9 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { categories as categoriesApi, products as productsApi } from '@/lib/api-client';
-
-// Prevent Next.js from prerendering this page at build time since it relies on an external API
-export const dynamic = 'force-dynamic';
+// Static catalog configuration with periodic ISR revalidation
+export const revalidate = 3600;
 
 // Real catalog images from client-supplied listing data
 const CATALOG_IMAGES = {
@@ -23,18 +21,7 @@ const CATALOG_IMAGES = {
   collection: '/catalog/frames/cars-supra-1.jpg',
 };
 
-export default async function Home() {
-  let categoriesRes;
-
-  try {
-    categoriesRes = await categoriesApi.getCategories();
-  } catch (error) {
-    console.error("Failed to fetch catalog data for homepage", error);
-    categoriesRes = { success: false };
-  }
-
-  const categories = categoriesRes?.success ? categoriesRes.data || [] : [];
-
+export default function Home() {
   return (
     <div className="flex flex-col">
 
@@ -47,6 +34,7 @@ export default async function Home() {
           sizes="100vw"
           className="object-cover opacity-60"
           priority
+          fetchPriority="high"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/50" />
 
@@ -152,7 +140,7 @@ export default async function Home() {
                     src={item.src}
                     alt={item.alt}
                     fill
-                    sizes="(max-width: 768px) 50vw, 25vw"
+                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 290px"
                     className="object-cover group-hover:scale-[1.03] transition-transform duration-700 ease-out"
                   />
                 </div>
@@ -205,18 +193,18 @@ export default async function Home() {
           <h2 className="text-3xl md:text-5xl font-serif text-ink tracking-tight text-center mb-14">Collections</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-center">
             {[
-              { name: 'Football Legends', href: '/products?category=frames', img: CATALOG_IMAGES.hero },
-              { name: 'Motivational Quotes', href: '/products?category=frames', img: CATALOG_IMAGES.editorial },
-              { name: 'Anime', href: '/products?category=posters', img: CATALOG_IMAGES.featured[3]!.src },
-              { name: 'Supercars', href: '/products?category=posters', img: CATALOG_IMAGES.collection },
+              { name: 'Football Legends', href: '/products?category=frames', img: CATALOG_IMAGES.hero, alt: 'Football Legends framed jersey prints' },
+              { name: 'Motivational Quotes', href: '/products?category=frames', img: CATALOG_IMAGES.editorial, alt: 'Motivational quote wall frame art' },
+              { name: 'Anime', href: '/products?category=posters', img: CATALOG_IMAGES.featured[3]!.src, alt: 'Anime aesthetic posters and collage sets' },
+              { name: 'Supercars', href: '/products?category=posters', img: CATALOG_IMAGES.collection, alt: 'Supercars and automotive art prints' },
             ].map((col, idx) => (
               <Link key={idx} href={col.href} className="group flex flex-col items-center">
                 <div className="relative w-full aspect-square rounded-full overflow-hidden bg-surface-soft mb-4">
                   <Image
                     src={col.img}
-                    alt={col.name}
+                    alt={col.alt}
                     fill
-                    sizes="(max-width: 768px) 50vw, 25vw"
+                    sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 200px"
                     className="object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                 </div>
@@ -234,15 +222,15 @@ export default async function Home() {
             <h2 className="text-3xl md:text-5xl font-serif tracking-tight">Why FirstMemoir</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 mt-12 text-left md:text-center">
               <div>
-                <h4 className="text-lg font-medium text-brand mb-2">300 GSM Paper</h4>
+                <h3 className="text-lg font-medium text-white mb-2">300 GSM Paper</h3>
                 <p className="text-white/70 leading-relaxed text-sm">Heavyweight photographic-grade paper for vivid, long-lasting prints.</p>
               </div>
               <div>
-                <h4 className="text-lg font-medium text-brand mb-2">Ready to Hang</h4>
+                <h3 className="text-lg font-medium text-white mb-2">Ready to Hang</h3>
                 <p className="text-white/70 leading-relaxed text-sm">Every framed print arrives assembled and ready for your wall.</p>
               </div>
               <div>
-                <h4 className="text-lg font-medium text-brand mb-2">Pan-India Delivery</h4>
+                <h3 className="text-lg font-medium text-white mb-2">Pan-India Delivery</h3>
                 <p className="text-white/70 leading-relaxed text-sm">Secure packaging and tracked shipping across the country.</p>
               </div>
             </div>

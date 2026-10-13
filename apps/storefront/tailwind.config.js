@@ -9,8 +9,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        'brand': '#E8620A',
-        'brand-pressed': '#C4500A',
+        'brand': '#BE4C06',
+        'brand-pressed': '#983B04',
         'ink': '#222222',
         'body': '#3f3f3f',
         'muted': '#595959',
@@ -24,8 +24,8 @@ export default {
         'error': '#b3261e',
       },
       fontFamily: {
-        sans: ['Inter', 'var(--font-inter)', ...defaultTheme.fontFamily.sans],
-        serif: ['"Playfair Display"', 'var(--font-playfair)', ...defaultTheme.fontFamily.serif],
+        sans: ['var(--font-inter)', ...defaultTheme.fontFamily.sans],
+        serif: ['var(--font-playfair)', ...defaultTheme.fontFamily.serif],
       },
       borderRadius: {
         'card': '8px',

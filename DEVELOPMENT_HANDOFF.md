@@ -43,6 +43,8 @@ WePrintIt.in/
 │   ├── api-client/          # Shared HTTP client for Storefront & Admin
 │   ├── database/            # prisma/schema.prisma & Prisma client export
 │   └── shared/              # Cross-package DTOs, Zod schemas, & types
+├── docs/
+│   └── security/            # ANTIGRAVITY_SECURITY_RULES.md (Permanent Security Guardrails)
 ├── PROJECT_STATE.md         # Comprehensive project milestone documentation
 ├── DEVELOPMENT_HANDOFF.md   # Architectural reference and developer handoff
 └── CHANGELOG.md             # Project change ledger

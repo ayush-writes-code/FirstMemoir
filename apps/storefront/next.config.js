@@ -38,6 +38,7 @@ if (configuredR2Hostname && !remotePatterns.some((p) => p.hostname === configure
 const nextConfig = {
   transpilePackages: ['@repo/api-client'],
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns,
   },
 };

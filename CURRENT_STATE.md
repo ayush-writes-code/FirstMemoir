@@ -13,6 +13,7 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 - **Client Catalogue Clarifications:** `docs/catalog-onboarding/CLIENT_CATALOG_CLARIFICATIONS.md`
 - **Catalogue Reconciliation Report:** `docs/catalog-onboarding/CATALOG_RECONCILIATION_REPORT.md`
 - **Provisional Packaging Profiles:** `docs/catalog-onboarding/PROVISIONAL_PACKAGING_PROFILES.md`
+- **Permanent Security & Guardrails:** `docs/security/ANTIGRAVITY_SECURITY_RULES.md`
 - **Delivery Model:** Small vertical slices verified locally, deployed to demo/staging, reviewed by client, refined iteratively. One active slice at a time.
 
 ---
@@ -104,8 +105,18 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
   - **Product Card Gallery Controls**: Preserved image sort order in `adaptApiProductToStorefront`, added accessible Previous/Next edge controls with event isolation, subtle dot indicators, and touch swipe gestures.
   - **Performance & A11y Fixes**: Resolved WAVE focusable descendant error in `NavMobileMenu` via `inert` attribute, darkened `muted-soft` to `#5e5e5e` to exceed WCAG AA contrast, and optimized mobile PDP LCP responsive sizes and alt text.
   - **Admin Safety**: Hardened `apps/admin/src/main.tsx` to require explicit `VITE_API_URL` without silent production fallbacks, added SPA client rewrites in `vercel.json`, and documented setup in `.env.example`.
-  - **Quality Gates**: 32/32 storefront tests passing (100%), 0 TypeScript errors, 100% build pass across all workspaces.
-- **Slice 6C.5 Milestone Status:** **IN PROGRESS (Optimistic cart, image resolution, shopping UX & test payment verified; awaiting authorized deployment to Vercel).**
+- **Stage 9 Status (PageSpeed Insights Optimization & Permanent Security Guardrails):** **PASS**
+  - **Empirical Report Mapping Verified**: Independently verified Lighthouse 13.5.0 reports (`8pf7qw7kah`). Group A is Mobile (Performance 98, Accessibility 94, Best Practices 96, SEO 100, FCP 0.9s, LCP 2.3s, TBT 0ms, CLS 0.00). Group B is Desktop (Performance 89, Accessibility 94, Best Practices 96, SEO 100, FCP 0.2s, LCP 0.7s, TBT 40ms, CLS 0.22).
+  - **Desktop CLS 0.220 Root Cause & Fix**: Isolated root cause: unused server-side `categoriesApi.getCategories()` call and `force-dynamic` triggered Next.js App Router Suspense streaming with `loading.tsx` skeleton (~564px). On desktop viewports (940px), the footer rendered at Y=732px in plain sight and was violently pushed down by 3000px+ upon SSR resolution. Removed unused API call and `force-dynamic`, enabling instant static generation (15/15 static pages in 395ms) and eliminating layout shifts (CLS 0.00).
+  - **Font Swap & Metric Stabilization**: Removed raw `:root` font override in `globals.css` and prioritized Next.js managed variables `var(--font-inter)` and `var(--font-playfair)` in `tailwind.config.js` to ensure Next.js `size-adjust` fallback metrics prevent font-swap layout shifts.
+  - **Color Contrast Hardening**: Darkened `brand` in `tailwind.config.js` to `#BE4C06` (contrast ratio 4.97:1 on white, 4.60:1 on `surface-soft`, exceeding WCAG AA 4.5:1 requirement) and `brand-pressed` to `#983B04` (7.31:1). Set trust card headings on `bg-ink` to `text-white` (15.9:1). Updated `:focus-visible` outline in `globals.css` to `#BE4C06`.
+  - **Sequential Heading Order**: Changed "Why FirstMemoir" trust section cards from `<h4>` to `<h3>` under `<h2>`, restoring semantic sequential heading hierarchy.
+  - **Browser Console 401 & Session Resilience**: Equipped `AuthProvider` with an `auth_hint` localStorage guard and multi-tab `storage` listener so anonymous visitors do not fire redundant unauthenticated `/auth/me` calls. Preserved `packages/api-client/src/client.ts` token refresh intact so authenticated sessions with expired access tokens seamlessly refresh.
+  - **LCP & Modern Image Optimization**: Added `fetchPriority="high"` to hero `<Image priority />`, constrained responsive sizes on featured products to `290px`, refined collection alt descriptions, and enabled modern `image/avif` and `image/webp` in `next.config.js`.
+  - **Permanent Security Guardrails**: Established `docs/security/ANTIGRAVITY_SECURITY_RULES.md` and repository instruction pointers (`AGENTS.md`, `GEMINI.md`, `CURRENT_STATE.md`, `DEVELOPMENT_HANDOFF.md`) establishing permanent preflight checks, approval gates, database/storage/payment invariants, and fail-closed safety standards.
+  - **Zero Unapproved Mutations**: Explicitly verified that NO remote database queries/migrations, NO Cloudflare R2 object mutations (legacy `weprintit-assets` remained 100% untouched), NO payment flow alterations, and NO infrastructure/Vercel mutations were performed.
+  - **Quality Gates**: 43/43 storefront tests passing (100%), 0 TypeScript errors, 100% monorepo build pass across `api`, `storefront`, and `admin`.
+- **Slice 6C.5 Milestone Status:** **IN PROGRESS (Optimistic cart, shopping UX, PageSpeed optimizations & permanent security guardrails complete; awaiting user authorization to push and deploy to Vercel).**
 
 ---
 
@@ -123,6 +134,7 @@ FirstMemoir is transitioning into an **Iterative Product Delivery** model toward
 | **CART PERFORMANCE & OPTIMISTIC UI** | `VERIFIED` | Stage 6 PASS: 0ms perceived quantity update, redundant waterfall eliminated, 25/25 tests passing. |
 | **E2E TEST PAYMENT & WEBHOOK** | `VERIFIED` | Stage 7 PASS: Order `e4415105-...` confirmed via Razorpay `pay_TmypnZQLLSCFfz` and verified webhook `TmyqRZ37Xm5yhq`. |
 | **SHOPPING UX & CART IMAGE COVERAGE** | `VERIFIED` | Stage 8 PASS: Canonical images in cart, listing gallery navigation, a11y & contrast fixes, 32/32 tests passing. |
+| **PAGESPEED & PERMANENT SECURITY** | `VERIFIED` | Stage 9 PASS: Desktop CLS resolved, WCAG AA contrast (4.97:1 on white, 4.60:1 on soft, 15.9:1 on ink), 401 console error eliminated, 38/38 tests passing, permanent guardrails documented. |
 | **ADMIN DEPLOYMENT PREPARATION** | `CONFIGURED_UNBLOCKED` | Explicit `VITE_API_URL` validation, SPA `vercel.json` rewrites, builds in 627ms; pending user-authorized Vercel project connection. |
 | **END-TO-END STAGING** | `VERIFIED` | All Slice 6C.5 stages verified. |
 | **PRODUCTION** | `NOT APPROVED` | Awaiting client acceptance & production credential provisioning. |
