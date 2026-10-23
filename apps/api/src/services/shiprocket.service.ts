@@ -111,11 +111,12 @@ export const shiprocketService = {
     return String(awbCode);
   },
 
-  async recoverExistingShipment(orderId: string, token: string): Promise<{ shiprocketOrderId: string; shipmentId: string }> {
+  async recoverExistingShipment(orderId: string, token: string): Promise<{ shiprocketOrderId: string; shipmentId: string; awbCode?: string } | null> {
     if (process.env.SHIPROCKET_DRY_RUN === 'true') {
       return {
         shiprocketOrderId: `mock_ord_${orderId}`,
-        shipmentId: `mock_ship_${orderId}`
+        shipmentId: `mock_ship_${orderId}`,
+        awbCode: `MOCK-AWB-${orderId}`
       };
     }
 
@@ -128,19 +129,26 @@ export const shiprocketService = {
     });
 
     if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
       throw new AppError('Shiprocket duplicate order recovery failed', 502);
     }
 
-    const data = await response.json();
-    const result = data?.data?.[0] || data?.data; // Depending on API response shape
+    const data = await response.json().catch(() => null);
+    const result = Array.isArray(data?.data) ? data.data[0] : (data?.data || null);
 
     if (!result || !result.id || !result.shipments?.[0]?.id) {
-      throw new AppError('Failed to extract order identifiers from recovery endpoint', 502);
+      return null;
     }
+
+    const shipment = result.shipments[0];
+    const awbCode = shipment.awb || shipment.awb_code ? String(shipment.awb || shipment.awb_code) : undefined;
 
     return {
       shiprocketOrderId: String(result.id),
-      shipmentId: String(result.shipments[0].id)
+      shipmentId: String(shipment.id),
+      awbCode
     };
   },
 
@@ -245,46 +253,95 @@ export const shiprocketService = {
       weight: totalWeight
     };
 
-    let shiprocketOrderId: string;
-    let shipmentId: string;
+    let shiprocketOrderId = '';
+    let shipmentId = '';
+    let existingAwbCode: string | undefined;
 
     if (process.env.SHIPROCKET_DRY_RUN === 'true') {
       shiprocketOrderId = `mock_ord_${order.id}`;
       shipmentId = `mock_ship_${order.id}`;
+      existingAwbCode = `MOCK-AWB-${order.id}`;
     } else {
-      const response = await fetch('https://apiv2.shiprocket.in/v1/external/orders/create/adhoc', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      // Proactive idempotency: check if order already exists in Shiprocket before creating
+      let recovered = false;
+      try {
+        const existing = await this.recoverExistingShipment(order.id, token);
+        if (existing?.shiprocketOrderId && existing?.shipmentId) {
+          shiprocketOrderId = existing.shiprocketOrderId;
+          shipmentId = existing.shipmentId;
+          existingAwbCode = existing.awbCode;
+          recovered = true;
+        }
+      } catch {
+        // Recovery lookup not found or failed; proceed with adhoc order creation
+      }
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.message || response.statusText;
-        
-        // Idempotency check Phase 3: DB write failed previously, but Shiprocket already has the order
-        if (response.status === 400 && errorMessage.toLowerCase().includes('already exists')) {
-          const recovered = await this.recoverExistingShipment(order.id, token);
-          shiprocketOrderId = recovered.shiprocketOrderId;
-          shipmentId = recovered.shipmentId;
-        } else {
-          throw new AppError(`Shiprocket API failure: ${errorMessage}`, 502);
+      if (!recovered) {
+        let response: Response | null = null;
+        try {
+          response = await fetch('https://apiv2.shiprocket.in/v1/external/orders/create/adhoc', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+          });
+        } catch (fetchErr: any) {
+          // Ambiguous network failure or timeout: Shiprocket might have received the request and created the shipment
+          // Attempt recovery check before failing
+          try {
+            const recoveredShipment = await this.recoverExistingShipment(order.id, token);
+            if (recoveredShipment?.shiprocketOrderId && recoveredShipment?.shipmentId) {
+              shiprocketOrderId = recoveredShipment.shiprocketOrderId;
+              shipmentId = recoveredShipment.shipmentId;
+              existingAwbCode = recoveredShipment.awbCode;
+              recovered = true;
+            }
+          } catch {
+            // Recovery failed or order does not exist
+          }
+          if (!recovered) {
+            throw new AppError(`Shiprocket network failure or timeout: ${fetchErr.message || 'Connection interrupted'}. Please retry shipment generation.`, 504);
+          }
         }
-      } else {
-        const data = await response.json();
-        if (!data || !data.order_id || !data.shipment_id) {
-          throw new AppError('Malformed Shiprocket order creation response', 502);
+
+        if (!recovered && response) {
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const errorMessage = errorData.message || response.statusText;
+            
+            // Idempotency check Phase 3: DB write failed previously, but Shiprocket already has the order
+            if (response.status === 400 && errorMessage.toLowerCase().includes('already exists')) {
+              const recoveredShipment = await this.recoverExistingShipment(order.id, token);
+              if (recoveredShipment?.shiprocketOrderId && recoveredShipment?.shipmentId) {
+                shiprocketOrderId = recoveredShipment.shiprocketOrderId;
+                shipmentId = recoveredShipment.shipmentId;
+                existingAwbCode = recoveredShipment.awbCode;
+              } else {
+                throw new AppError('Shiprocket order already exists but could not be extracted via recovery endpoint', 502);
+              }
+            } else {
+              throw new AppError(`Shiprocket API failure: ${errorMessage}`, 502);
+            }
+          } else {
+            const data = await response.json();
+            if (!data || !data.order_id || !data.shipment_id) {
+              throw new AppError('Malformed Shiprocket order creation response', 502);
+            }
+            shiprocketOrderId = String(data.order_id);
+            shipmentId = String(data.shipment_id);
+          }
         }
-        shiprocketOrderId = String(data.order_id);
-        shipmentId = String(data.shipment_id);
       }
     }
 
-    // Explicit AWB Generation step
-    const awbCode = await this.assignAwb(shipmentId, token);
+    if (!shiprocketOrderId || !shipmentId) {
+      throw new AppError('Failed to obtain Shiprocket order or shipment identifier', 502);
+    }
+
+    // Explicit AWB Generation step (only assign if not already assigned)
+    const awbCode = existingAwbCode || await this.assignAwb(shipmentId, token);
 
     return {
       shiprocketOrderId,

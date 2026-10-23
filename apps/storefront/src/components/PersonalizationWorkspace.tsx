@@ -9,16 +9,27 @@ import { PhotoCropper } from "./PhotoCropper";
 import { ProductLivePreview } from "./ProductLivePreview";
 import type { CropRect } from "../utils/cropMath";
 
+export interface PersonalizationSaveData {
+  uploadId: string | null;
+  previewUrl: string | null;
+  cropData: CropRect;
+  rotation: number;
+  printOrientation: PrintOrientation;
+  zoom: number;
+  cropTranslation: { x: number; y: number };
+}
+
 interface Props {
   product: ProductDto;
   physicalWidth: number;
   physicalHeight: number;
   onClose: () => void;
-  onSave: () => void;
+  onSave: (data: PersonalizationSaveData) => void;
   initialImageWidth: number;
   initialImageHeight: number;
   onImageSizeChange: (w: number, h: number) => void;
 }
+
 
 export function PersonalizationWorkspace({
   product,
@@ -80,8 +91,28 @@ export function PersonalizationWorkspace({
   }, []);
 
   const handleSave = () => {
-    onSave();
+    snapshot.current = {
+      uploadId,
+      previewUrl,
+      cropData,
+      rotation,
+      printOrientation,
+      zoom,
+      cropTranslation,
+      imageWidth: initialImageWidth,
+      imageHeight: initialImageHeight,
+    };
+    onSave({
+      uploadId,
+      previewUrl,
+      cropData,
+      rotation,
+      printOrientation,
+      zoom,
+      cropTranslation,
+    });
   };
+
 
   const handleUploadSuccess = (
     id: string,

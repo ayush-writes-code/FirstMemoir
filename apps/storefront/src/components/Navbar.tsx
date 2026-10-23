@@ -71,6 +71,18 @@ export function Navbar() {
               Posters
             </Link>
             <Link
+              href="/products?category=wall-art"
+              className="text-sm font-medium text-ink hover:text-brand transition-colors py-1"
+            >
+              Wall Art
+            </Link>
+            <Link
+              href="/products?category=bookmarks"
+              className="text-sm font-medium text-ink hover:text-brand transition-colors py-1"
+            >
+              Bookmarks
+            </Link>
+            <Link
               href="/track-order"
               className="text-sm font-medium text-ink hover:text-brand transition-colors py-1"
             >
@@ -108,6 +120,14 @@ export function Navbar() {
                       {user?.first_name ? `${user.first_name} ${user.last_name || ''}` : user?.phone_number}
                     </p>
                   </div>
+                  <Link
+                    href="/account"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-black transition-colors"
+                    onClick={() => setIsDropdownOpen(false)}
+                  >
+                    <UserCircle size={16} strokeWidth={1.5} />
+                    Account Overview
+                  </Link>
                   <Link
                     href="/account/orders"
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 hover:text-black transition-colors"

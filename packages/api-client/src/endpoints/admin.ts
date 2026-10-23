@@ -14,17 +14,48 @@ export const getNotifications = async (params?: { page?: number; limit?: number 
   return fetchClient<AdminNotificationsResponse>(`/admin/notifications${queryString}`);
 };
 
-export const listOrders = async (params?: { page?: number; limit?: number }) => {
+export interface ListOrdersParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+  payment_status?: string;
+  search?: string;
+}
+
+export interface ListOrdersResponse {
+  orders: any[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface OrderDetailResponse {
+  order: any;
+  fulfillmentDataComplete: boolean;
+  missingFields: string[];
+  shiprocketStatus?: {
+    isConfigured: boolean;
+    isDryRun: boolean;
+  };
+}
+
+export const listOrders = async (params?: ListOrdersParams) => {
   const query = new URLSearchParams();
   if (params?.page) query.append('page', params.page.toString());
   if (params?.limit) query.append('limit', params.limit.toString());
+  if (params?.status && params.status !== 'ALL') query.append('status', params.status);
+  if (params?.payment_status && params.payment_status !== 'ALL') query.append('payment_status', params.payment_status);
+  if (params?.search && params.search.trim()) query.append('search', params.search.trim());
   const queryString = query.toString() ? `?${query.toString()}` : '';
 
-  return fetchClient<{ orders: any[]; pagination: any }>(`/admin/orders${queryString}`);
+  return fetchClient<ListOrdersResponse>(`/admin/orders${queryString}`);
 };
 
 export const getOrderDetail = async (id: string) => {
-  return fetchClient<{ order: any; fulfillmentDataComplete: boolean; missingFields: string[] }>(`/admin/orders/${id}`);
+  return fetchClient<OrderDetailResponse>(`/admin/orders/${id}`);
 };
 
 export const processOrder = async (id: string) => {

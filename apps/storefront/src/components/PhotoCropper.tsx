@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo } from "react";
 import Cropper from "react-easy-crop";
-import { visualCropToCanonicalCrop, CropRect } from "../utils/cropMath";
+import { visualCropToCanonicalCrop, computeCropDimensions, CropRect } from "../utils/cropMath";
 import { DEFAULT_MANUFACTURING_PROFILE } from "../config/manufacturing";
 import { ZoomIn, ZoomOut, RotateCw } from "lucide-react";
 import type { PrintOrientation } from "@repo/api-client";
@@ -49,19 +49,18 @@ export function PhotoCropper({
   // Allow switching orientation if product supports it (i.e. not square)
   const isSquare = printWidth === printHeight;
 
-  // Calculate aspect ratio including bleed
-  const profile = DEFAULT_MANUFACTURING_PROFILE;
-  const targetWidth = printWidth + 2 * profile.bleedInches;
-  const targetHeight = printHeight + 2 * profile.bleedInches;
-  const aspect = targetWidth / targetHeight;
+  // Calculate orientation-aware aspect ratio including bleed
+  const {
+    aspect,
+    bleedPctX,
+    bleedPctY,
+    safeZonePctX,
+    safeZonePctY,
+  } = useMemo(
+    () => computeCropDimensions(printWidth, printHeight, orientation),
+    [printWidth, printHeight, orientation],
+  );
 
-  // Percentage of the crop area that is bleed and safe zone
-  const bleedPctX = (profile.bleedInches / targetWidth) * 100;
-  const bleedPctY = (profile.bleedInches / targetHeight) * 100;
-  const safeZonePctX =
-    ((profile.bleedInches + profile.safeZoneInches) / targetWidth) * 100;
-  const safeZonePctY =
-    ((profile.bleedInches + profile.safeZoneInches) / targetHeight) * 100;
 
   const handleRotation = () => {
     setRotation((prev) => ((prev + 90) % 360) as 0 | 90 | 180 | 270);

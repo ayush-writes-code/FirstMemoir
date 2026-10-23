@@ -7,6 +7,7 @@ interface CartState {
   isLoading: boolean;
   mutatingItemIds: string[];
   error: string | null;
+  isDrawerOpen: boolean;
 
   // Actions
   fetchCart: () => Promise<void>;
@@ -14,6 +15,8 @@ interface CartState {
   updateQuantity: (lineItemId: string, quantity: number) => Promise<void>;
   removeItem: (lineItemId: string) => Promise<void>;
   clearCart: () => void;
+  openDrawer: () => void;
+  closeDrawer: () => void;
 }
 
 export const useCartStore = create<CartState>((set, get) => ({
@@ -21,6 +24,10 @@ export const useCartStore = create<CartState>((set, get) => ({
   isLoading: false,
   mutatingItemIds: [],
   error: null,
+  isDrawerOpen: false,
+
+  openDrawer: () => set({ isDrawerOpen: true }),
+  closeDrawer: () => set({ isDrawerOpen: false }),
 
   fetchCart: async () => {
     set({ isLoading: true, error: null });
@@ -54,10 +61,12 @@ export const useCartStore = create<CartState>((set, get) => ({
               items: updatedItems,
             },
             isLoading: false,
+            isDrawerOpen: true,
           });
         } else {
           // If cart was not yet in memory, fetch complete cart
           await get().fetchCart();
+          set({ isDrawerOpen: true });
         }
       } else {
         set({ error: response.error || 'Failed to add to cart', isLoading: false });
@@ -220,3 +229,7 @@ export const useCartStore = create<CartState>((set, get) => ({
     set({ cart: null, mutatingItemIds: [], error: null });
   },
 }));
+
+if (typeof window !== 'undefined') {
+  (window as unknown as { __cartStore?: typeof useCartStore }).__cartStore = useCartStore;
+}

@@ -87,7 +87,7 @@ describe('Auth Context Resilience & Hint Invariant Tests', () => {
   });
 
   it('multi-tab synchronization: storage event with removed hint signals signout', () => {
-    let currentUser: any = { id: 'u1' };
+    let currentUser: Record<string, unknown> | null = { id: 'u1' };
 
     // Test exported resolveStorageEvent directly
     const action = resolveStorageEvent({ key: 'auth_hint', newValue: null });
@@ -116,14 +116,14 @@ describe('Auth Context Resilience & Hint Invariant Tests', () => {
 
   it('race condition safety: in-flight refresh aborted if logout occurs before network response', async () => {
     let reqId = 0;
-    let currentUser: any = { id: 'initial-user' };
+    let currentUser: Record<string, unknown> | null = { id: 'initial-user' };
     fakeLocalStorage.setItem('auth_hint', 'true');
 
     // 1. Tab triggers refreshUser()
     const thisReqId = ++reqId;
 
     // Simulate slow network promise
-    const slowNetwork = new Promise<{ success: boolean; data: any }>((resolve) => {
+    const slowNetwork = new Promise<{ success: boolean; data: { user: { id: string } } }>((resolve) => {
       setTimeout(() => {
         resolve({ success: true, data: { user: { id: 'resurrected-user' } } });
       }, 50);

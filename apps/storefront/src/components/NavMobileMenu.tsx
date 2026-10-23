@@ -179,6 +179,34 @@ export function NavMobileMenu() {
                 <div className="w-12 h-px bg-zinc-100" />
 
                 <Link
+                  href="/products?category=wall-art"
+                  onClick={() => setIsOpen(false)}
+                  className="group flex items-center justify-between py-2 text-2xl sm:text-3xl font-serif text-ink tracking-tight hover:text-brand transition-colors"
+                >
+                  <span>Wall Art</span>
+                  <ArrowRight
+                    size={20}
+                    className="text-zinc-300 group-hover:text-brand group-hover:translate-x-1 transition-all"
+                  />
+                </Link>
+
+                <div className="w-12 h-px bg-zinc-100" />
+
+                <Link
+                  href="/products?category=bookmarks"
+                  onClick={() => setIsOpen(false)}
+                  className="group flex items-center justify-between py-2 text-2xl sm:text-3xl font-serif text-ink tracking-tight hover:text-brand transition-colors"
+                >
+                  <span>Bookmarks</span>
+                  <ArrowRight
+                    size={20}
+                    className="text-zinc-300 group-hover:text-brand group-hover:translate-x-1 transition-all"
+                  />
+                </Link>
+
+                <div className="w-12 h-px bg-zinc-100" />
+
+                <Link
                   href="/track-order"
                   onClick={() => setIsOpen(false)}
                   className="group flex items-center justify-between py-2 text-2xl sm:text-3xl font-serif text-ink tracking-tight hover:text-brand transition-colors"
@@ -247,7 +275,7 @@ export function NavMobileMenu() {
                       </Link>
 
                       <Link
-                        href="/account/orders"
+                        href="/account"
                         onClick={() => setIsOpen(false)}
                         className="flex items-center justify-between p-3 bg-white border border-zinc-200/70 rounded-xl text-sm font-medium text-ink hover:text-brand hover:border-brand/40 transition-colors shadow-xs"
                       >

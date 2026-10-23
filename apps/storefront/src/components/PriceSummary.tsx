@@ -52,29 +52,38 @@ export function PriceSummary({ product, selectedValueIds }: Props) {
 
   const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
+  // If there are no modifiers and no options, the price is already clearly stated at the top of the purchase section
+  if (modifiers.length === 0 && (!product.options || product.options.length === 0)) {
+    return null;
+  }
+
   return (
-    <div className="space-y-1">
+    <div className="bg-canvas-warm/80 border border-editorial-border rounded-xl p-3.5 space-y-2">
       {modifiers.length > 0 ? (
         <>
-          <div className="flex justify-between text-sm text-muted">
+          <div className="flex justify-between text-xs text-muted-soft">
             <span>Base price</span>
             <span>{fmt(basePrice)}</span>
           </div>
           {modifiers.map((m, i) => (
-            <div key={i} className="flex justify-between text-sm text-muted">
+            <div key={i} className="flex justify-between text-xs text-muted-soft">
               <span>{m.label}</span>
               <span>+{fmt(Math.round(m.amount))}</span>
             </div>
           ))}
-          <div className="flex justify-between text-xl font-semibold text-ink pt-1 border-t border-hairline">
-            <span>Total</span>
-            <span className="text-brand">{fmt(total)}</span>
+          <div className="flex justify-between items-baseline text-sm font-medium text-ink-deep pt-2 border-t border-editorial-border">
+            <span>Configured Total</span>
+            <span className="text-lg font-semibold text-ink-deep">{fmt(total)}</span>
           </div>
         </>
       ) : (
-        <p className="text-3xl font-semibold text-brand">{fmt(total)}</p>
+        <div className="flex justify-between items-baseline text-sm font-medium text-ink-deep">
+          <span className="text-xs uppercase tracking-wider text-muted-soft font-mono">Total</span>
+          <span className="text-lg font-semibold text-ink-deep">{fmt(total)}</span>
+        </div>
       )}
-      <p className="text-xs text-muted">Final price calculated at checkout</p>
+      <p className="text-[11px] text-muted-soft">Final authoritative price confirmed at checkout</p>
     </div>
   );
 }
+

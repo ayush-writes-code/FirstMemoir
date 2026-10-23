@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Package } from 'lucide-react';
 import {
   resolveCanonicalCartImageUrl,
@@ -22,7 +23,7 @@ export function CartItemThumbnail({ item, className = '' }: CartItemThumbnailPro
 
   return (
     <div
-      className={`w-24 h-24 md:w-32 md:h-32 bg-surface rounded-xl overflow-hidden shrink-0 border border-hairline relative group ${className}`}
+      className={`w-24 h-24 md:w-28 md:h-28 bg-canvas-warm rounded-xl overflow-hidden shrink-0 border border-editorial-border/90 relative group ${className}`}
     >
       <Link
         href={productHref}
@@ -31,12 +32,12 @@ export function CartItemThumbnail({ item, className = '' }: CartItemThumbnailPro
         aria-label={`View ${item.product_name || 'product'}`}
       >
         {imageUrl && !imageError ? (
-          <img
+          <Image
             src={imageUrl}
             alt={altText}
             width={128}
             height={128}
-            loading="lazy"
+            unoptimized={imageUrl.startsWith('data:')}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 motion-reduce:transition-none motion-reduce:transform-none"
             onError={() => setImageError(true)}
           />

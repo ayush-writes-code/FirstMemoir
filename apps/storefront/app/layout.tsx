@@ -14,6 +14,7 @@ const playfair = Playfair_Display({
   subsets: ['latin'],
   variable: '--font-playfair',
   display: 'swap',
+  style: ['normal', 'italic'],
 });
 
 export const metadata: Metadata = {
@@ -32,6 +33,7 @@ export const metadata: Metadata = {
 };
 
 import { AuthProvider } from '@/store/auth.context';
+import { CartDrawer } from '@/components/cart/CartDrawer';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -39,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans antialiased bg-canvas text-ink">
         <AuthProvider>
           <Navbar />
+          <CartDrawer />
           <main>{children}</main>
           <Footer />
         </AuthProvider>

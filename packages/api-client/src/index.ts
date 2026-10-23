@@ -9,4 +9,6 @@ export * as storage from './endpoints/storage';
 export * as cart from './endpoints/cart';
 export * as checkout from './endpoints/checkout';
 export * as admin from './endpoints/admin';
+export type { ListOrdersParams, ListOrdersResponse, OrderDetailResponse } from './endpoints/admin';
 export * as orders from './endpoints/orders';
+

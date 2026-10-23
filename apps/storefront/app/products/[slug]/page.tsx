@@ -51,91 +51,141 @@ export default async function ProductPage({
 
   const product = res.data;
   const primaryCategory = product.categories?.[0]?.category;
+  const hasOptions = Boolean(product.options && product.options.length > 0);
+
+  // Extract strictly verified specifications from provenance metadata
+  const confirmedSpecs: { label: string; value: string }[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawSpecs = (product.manufacturing_metadata as any)?.product_specs;
+  if (rawSpecs && typeof rawSpecs === "object") {
+    if (rawSpecs.dimensions?.status === "SOURCE_CONFIRMED" && rawSpecs.dimensions.value) {
+      confirmedSpecs.push({ label: "Print Dimensions", value: String(rawSpecs.dimensions.value) });
+    }
+    if (rawSpecs.paper?.status === "SOURCE_CONFIRMED" && rawSpecs.paper.value) {
+      confirmedSpecs.push({ label: "Paper Stock", value: String(rawSpecs.paper.value) });
+    }
+    if (rawSpecs.raw_weight?.status === "SOURCE_CONFIRMED" && rawSpecs.raw_weight.value) {
+      confirmedSpecs.push({ label: "Approx. Weight", value: String(rawSpecs.raw_weight.value) });
+    }
+  }
 
   return (
-    <div className="max-w-content mx-auto px-4 md:px-8 py-8 md:py-12 pb-32 lg:pb-12">
+    <div className="max-w-content mx-auto px-4 md:px-8 py-8 md:py-12 pb-32 lg:pb-16">
       <ProductPreviewProvider>
-        <div className="flex flex-col lg:flex-row gap-12 lg:gap-16">
-          <div className="w-full lg:w-3/5 lg:sticky lg:top-28 lg:self-start lg:max-h-[calc(100vh-112px)] lg:overflow-y-auto lg:pr-2">
-            <div>
-              <ProductImageGallery
-                images={product.images || []}
-                productName={product.name}
-                productSlug={product.slug}
-                mockupMetadata={product.mockup_metadata}
-              />
-              {product.description && (
-                <div className="hidden lg:block mt-12 border-t border-hairline pt-8">
-                  <h2 className="text-xl font-semibold text-ink mb-4">Product Details</h2>
-                  <div className="text-body leading-relaxed whitespace-pre-wrap">{product.description}</div>
-                </div>
-              )}
-            </div>
+        <div className="flex flex-col lg:flex-row gap-10 lg:gap-14 items-start">
+          {/* Left Column: Interactive Visual Showcase (Sticky on Desktop) */}
+          <div className="w-full lg:w-[56%] lg:sticky lg:top-28 lg:self-start">
+            <ProductImageGallery
+              images={product.images || []}
+              productName={product.name}
+              productSlug={product.slug}
+              mockupMetadata={product.mockup_metadata}
+            />
           </div>
 
-          <div className="w-full lg:w-2/5">
-            <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted mb-6">
-              <Link href="/products" className="hover:text-ink transition-colors">All Prints</Link>
-              {primaryCategory && (
-                <>
-                  <span className="text-hairline">/</span>
-                  <Link href={`/products?category=${primaryCategory.slug}`} className="hover:text-ink transition-colors">
-                    {primaryCategory.name}
-                  </Link>
-                </>
-              )}
-            </div>
-            <h1 className="text-4xl lg:text-5xl font-serif text-ink tracking-tight mb-2 leading-tight">
-              {product.name}
-            </h1>
-            <div className="mb-8">
-              <p className="text-muted text-base">
-                Starting from <span className="font-medium text-ink">₹{Number(product.base_price).toLocaleString("en-IN")}</span>
-              </p>
-              {product.manufacturing_metadata?.provisional_price && (
-                <div className="mt-2">
-                  <span className="inline-flex items-center text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
-                    Provisional Estimate
+          {/* Right Column: Editorial Product Narrative & Customization */}
+          <div className="w-full lg:w-[44%] space-y-6">
+            <div>
+              {/* Breadcrumbs / Collection Kicker */}
+              <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-[11px] font-mono uppercase tracking-[0.14em] text-muted-soft mb-3.5 flex-wrap">
+                <Link href="/products" className="hover:text-brand transition-colors">Catalog</Link>
+                {primaryCategory && (
+                  <>
+                    <span className="text-editorial-border">/</span>
+                    <Link href={`/products?category=${primaryCategory.slug}`} className="hover:text-brand transition-colors">
+                      {primaryCategory.name}
+                    </Link>
+                  </>
+                )}
+                <span className="text-editorial-border">/</span>
+                <span className="text-ink-deep font-semibold truncate max-w-[220px]">{product.name}</span>
+              </nav>
+
+              {/* Editorial Title */}
+              <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-serif text-ink-deep font-normal tracking-tight leading-[1.14] mb-3">
+                {product.name}
+              </h1>
+
+              {/* Authoritative Pricing & Provenance */}
+              <div className="space-y-2">
+                <div className="flex items-baseline gap-2.5">
+                  {hasOptions && (
+                    <span className="text-[11px] font-mono uppercase tracking-wider text-muted-soft">
+                      Starts from
+                    </span>
+                  )}
+                  <span className="text-3xl font-serif text-ink-deep font-normal tracking-tight">
+                    ₹{Number(product.base_price).toLocaleString("en-IN")}
                   </span>
-                  <p className="text-xs text-muted mt-1">
-                    Initial estimated selling price — editable via catalogue/admin.
-                  </p>
+                  <span className="text-xs text-muted-soft">
+                    Incl. of all taxes • Pan-India delivery
+                  </span>
                 </div>
-              )}
-              {product.sku && (
-                <p className="text-xs text-muted-soft mt-1.5 font-mono">
-                  SKU: {product.sku}
-                </p>
-              )}
-            </div>
 
-            <ProductCustomizer product={product} />
+                {product.manufacturing_metadata?.provisional_price && (
+                  <div className="inline-flex items-center gap-1.5 text-xs text-amber-800 bg-amber-50/80 border border-amber-200/80 px-2.5 py-1 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                    <span>Provisional catalog estimate</span>
+                  </div>
+                )}
 
-            <div className="grid grid-cols-3 gap-6 mt-10 pt-10 border-t border-hairline">
-              <div className="flex flex-col items-center text-center group">
-                <div className="w-10 h-10 rounded-full bg-surface-soft flex items-center justify-center mb-3 text-ink">
-                  <Package size={18} strokeWidth={1.5} />
-                </div>
-                <span className="text-xs font-medium text-ink">Secure Packaging</span>
-              </div>
-              <div className="flex flex-col items-center text-center group">
-                <div className="w-10 h-10 rounded-full bg-surface-soft flex items-center justify-center mb-3 text-ink">
-                  <Award size={18} strokeWidth={1.5} />
-                </div>
-                <span className="text-xs font-medium text-ink">Quality Guarantee</span>
-              </div>
-              <div className="flex flex-col items-center text-center group">
-                <div className="w-10 h-10 rounded-full bg-surface-soft flex items-center justify-center mb-3 text-ink">
-                  <ShieldCheck size={18} strokeWidth={1.5} />
-                </div>
-                <span className="text-xs font-medium text-ink">Secure Checkout</span>
+                {product.sku && (
+                  <div className="text-[11px] font-mono tracking-wider text-muted-soft uppercase">
+                    SKU: {product.sku}
+                  </div>
+                )}
               </div>
             </div>
 
-            {product.description && (
-              <div className="lg:hidden mt-12 border-t border-hairline pt-8">
-                <h2 className="text-xl font-semibold text-ink mb-4">Product Details</h2>
-                <div className="text-body leading-relaxed whitespace-pre-wrap">{product.description}</div>
+            {/* Interactive Customizer & Add to Cart */}
+            <div className="pt-2">
+              <ProductCustomizer product={product} />
+            </div>
+
+            {/* Neutral Verified Trust Assurances */}
+            <div className="grid grid-cols-3 gap-2.5 p-3.5 rounded-2xl bg-canvas-warm/80 border border-editorial-border/80 text-center divide-x divide-editorial-border/60">
+              <div className="flex flex-col items-center justify-center gap-1 px-1">
+                <Package size={17} strokeWidth={1.75} className="text-ink-deep" />
+                <span className="text-[11px] font-medium text-ink-deep">Secure Packaging</span>
+              </div>
+              <div className="flex flex-col items-center justify-center gap-1 px-1">
+                <Award size={17} strokeWidth={1.75} className="text-ink-deep" />
+                <span className="text-[11px] font-medium text-ink-deep">Quality Guarantee</span>
+              </div>
+              <div className="flex flex-col items-center justify-center gap-1 px-1">
+                <ShieldCheck size={17} strokeWidth={1.75} className="text-ink-deep" />
+                <span className="text-[11px] font-medium text-ink-deep">Encrypted Checkout</span>
+              </div>
+            </div>
+
+            {/* Archival Notes & Verified Specifications */}
+            {(product.description || confirmedSpecs.length > 0) && (
+              <div className="pt-6 border-t border-editorial-border/60 space-y-3.5">
+                <h2 className="text-base font-serif text-ink-deep font-normal">
+                  Archival Details & Specifications
+                </h2>
+                {product.description && (
+                  <div className="text-sm text-body leading-relaxed whitespace-pre-wrap">
+                    {product.description}
+                  </div>
+                )}
+                {confirmedSpecs.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    {confirmedSpecs.map((spec) => (
+                      <div
+                        key={spec.label}
+                        className="p-3 rounded-xl bg-canvas-warm/60 border border-editorial-border/60 flex flex-col gap-0.5"
+                      >
+                        <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-muted-soft">
+                          {spec.label}
+                        </span>
+                        <span className="text-xs font-medium text-ink-deep">
+                          {spec.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

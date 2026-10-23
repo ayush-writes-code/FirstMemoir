@@ -19,4 +19,5 @@ export interface INotificationService {
   dispatchOrderProcessing(orderId: string): Promise<void>;
   dispatchOrderShipped(orderId: string): Promise<void>;
   dispatchOrderDelivered(orderId: string): Promise<void>;
+  reclaimStaleProcessingNotifications?(staleThresholdMs?: number): Promise<number>;
 }

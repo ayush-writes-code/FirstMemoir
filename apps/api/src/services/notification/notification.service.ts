@@ -168,21 +168,183 @@ export class NotificationService implements INotificationService {
       });
     } catch (error: any) {
       if (error.code === 'P2002') {
-        logger.info(`[NotificationService] Idempotency guard: Skipping duplicate ${data.channel} notification for ${data.eventType} on order ${data.orderId}`);
+        const existing = await prisma.notificationLog.findFirst({
+          where: {
+            order_id: data.orderId,
+            channel: data.channel,
+            event_type: data.eventType
+          }
+        });
+        const MAX_NOTIFICATION_ATTEMPTS = 5;
+        const attempts = existing?.attempt_count ?? 0;
+        // 1. Recover previously failed notifications within retry bounds
+        if (existing && existing.status === 'FAILED' && attempts < MAX_NOTIFICATION_ATTEMPTS) {
+          logger.info(`[NotificationService] Retrying previously failed notification ${existing.id} (attempt ${attempts}/${MAX_NOTIFICATION_ATTEMPTS}) for order ${data.orderId}`);
+          await prisma.notificationLog.update({
+            where: { id: existing.id },
+            data: { status: 'PENDING', error_message: null }
+          });
+          setImmediate(() => {
+            this.processNotification(existing.id).catch((err) => {
+              logger.error(err, `[NotificationService] Unhandled async error retrying notification ${existing.id}`);
+            });
+          });
+          return;
+        }
+
+        // 2. Recover stale PROCESSING notifications whose worker lease expired (> 5 minutes old)
+        if (existing && existing.status === 'PROCESSING') {
+          let leaseTime = 0;
+          if (existing.error_message?.startsWith('LEASE:')) {
+            leaseTime = Number(existing.error_message.replace('LEASE:', ''));
+          } else if (existing.created_at) {
+            leaseTime = new Date(existing.created_at).getTime();
+          }
+
+          const isStale = leaseTime > 0 && (Date.now() - leaseTime > 300_000);
+          if (isStale) {
+            if (attempts < MAX_NOTIFICATION_ATTEMPTS) {
+              logger.warn(`[NotificationService] Reclaiming stale PROCESSING notification ${existing.id} (lease expired, attempt ${attempts}/${MAX_NOTIFICATION_ATTEMPTS}) for order ${data.orderId}`);
+              const reclaimed = await prisma.notificationLog.updateMany({
+                where: {
+                  id: existing.id,
+                  status: 'PROCESSING',
+                  attempt_count: existing.attempt_count
+                },
+                data: {
+                  status: 'PENDING',
+                  error_message: 'Reclaimed from expired PROCESSING worker lease'
+                }
+              });
+              if (reclaimed.count > 0) {
+                setImmediate(() => {
+                  this.processNotification(existing.id).catch((err) => {
+                    logger.error(err, `[NotificationService] Unhandled async error processing reclaimed notification ${existing.id}`);
+                  });
+                });
+                return;
+              }
+            } else {
+              logger.warn(`[NotificationService] Stale notification ${existing.id} reached retry limit (${MAX_NOTIFICATION_ATTEMPTS}). Marking FAILED.`);
+              await prisma.notificationLog.update({
+                where: { id: existing.id },
+                data: {
+                  status: 'FAILED',
+                  error_message: `Exceeded maximum retry limit (${MAX_NOTIFICATION_ATTEMPTS}) after worker crash`
+                }
+              });
+              return;
+            }
+          }
+        }
+
+        if (existing && (existing.status === 'FAILED' || existing.status === 'PROCESSING') && attempts >= MAX_NOTIFICATION_ATTEMPTS) {
+          logger.warn(`[NotificationService] Notification ${existing.id} has reached maximum retry limit (${MAX_NOTIFICATION_ATTEMPTS}). Skipping retry.`);
+          return;
+        }
+        logger.info(`[NotificationService] Idempotency guard: Skipping duplicate ${data.channel} notification for ${data.eventType} on order ${data.orderId} (status: ${existing?.status || 'UNKNOWN'})`);
         return;
       }
       logger.error(error, `[NotificationService] Error enqueuing notification for order ${data.orderId}`);
     }
   }
 
-  private async processNotification(logId: string) {
-    let log = await prisma.notificationLog.findUnique({ where: { id: logId } });
-    if (!log || log.status !== 'PENDING') return;
+  /**
+   * Reclaims notifications that were claimed by a worker that subsequently crashed
+   * or timed out without writing a final SENT or FAILED status.
+   *
+   * Note on Delivery Guarantees:
+   * External email/SMS gateways do not support two-phase commit. A crashed worker might
+   * have already transmitted the message before dying. Therefore, recovering stale claims
+   * guarantees AT-LEAST-ONCE delivery with bounded retries (max 5 attempts), NOT exactly-once.
+   */
+  async reclaimStaleProcessingNotifications(staleThresholdMs = 300_000): Promise<number> {
+    try {
+      const MAX_NOTIFICATION_ATTEMPTS = 5;
+      const processingLogs = await prisma.notificationLog.findMany({
+        where: {
+          status: 'PROCESSING'
+        }
+      });
 
-    log = await prisma.notificationLog.update({
-      where: { id: logId },
-      data: { attempt_count: log.attempt_count + 1 }
+      let reclaimedCount = 0;
+      const now = Date.now();
+
+      for (const log of processingLogs) {
+        let leaseTime = 0;
+        if (log.error_message?.startsWith('LEASE:')) {
+          leaseTime = Number(log.error_message.replace('LEASE:', ''));
+        } else if (log.created_at) {
+          leaseTime = new Date(log.created_at).getTime();
+        }
+
+        if (leaseTime > 0 && (now - leaseTime) > staleThresholdMs) {
+          if (log.attempt_count >= MAX_NOTIFICATION_ATTEMPTS) {
+            await prisma.notificationLog.update({
+              where: { id: log.id },
+              data: {
+                status: 'FAILED',
+                error_message: `Exceeded maximum retry limit (${MAX_NOTIFICATION_ATTEMPTS}) after worker crash`
+              }
+            });
+            continue;
+          }
+
+          const reclaimed = await prisma.notificationLog.updateMany({
+            where: {
+              id: log.id,
+              status: 'PROCESSING',
+              attempt_count: log.attempt_count
+            },
+            data: {
+              status: 'PENDING',
+              error_message: 'Reclaimed from crashed worker lease'
+            }
+          });
+
+          if (reclaimed.count > 0) {
+            reclaimedCount++;
+            setImmediate(() => {
+              this.processNotification(log.id).catch((err) => {
+                logger.error(err, `[NotificationService] Error processing reclaimed notification ${log.id}`);
+              });
+            });
+          }
+        }
+      }
+
+      if (reclaimedCount > 0) {
+        logger.info(`[NotificationService] Successfully reclaimed ${reclaimedCount} stale PROCESSING notifications`);
+      }
+      return reclaimedCount;
+    } catch (error) {
+      logger.error(error, '[NotificationService] Error reclaiming stale notifications');
+      return 0;
+    }
+  }
+
+  private async processNotification(logId: string) {
+    // 1. Atomically claim the pending notification log with a lease timestamp
+    const now = Date.now();
+    const claim = await prisma.notificationLog.updateMany({
+      where: {
+        id: logId,
+        status: 'PENDING'
+      },
+      data: {
+        status: 'PROCESSING',
+        attempt_count: { increment: 1 },
+        error_message: `LEASE:${now}`
+      }
     });
+
+    if (claim.count === 0) {
+      // Either already claimed by another concurrent worker or already in PROCESSING/SENT state
+      return;
+    }
+
+    const log = await prisma.notificationLog.findUnique({ where: { id: logId } });
+    if (!log) return;
 
     try {
       let result;
@@ -202,7 +364,8 @@ export class NotificationService implements INotificationService {
           data: {
             status: 'SENT',
             provider_ref: result.providerRef,
-            sent_at: new Date()
+            sent_at: new Date(),
+            error_message: null
           }
         });
       } else {

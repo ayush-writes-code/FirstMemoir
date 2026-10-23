@@ -12,8 +12,6 @@ import { PersonalizationWorkspace } from "./PersonalizationWorkspace";
 import { ImagePlus, Crop } from "lucide-react";
 import { PriceSummary, useProductPrice } from "./PriceSummary";
 import { DpiAcknowledgmentBanner } from "./DpiAcknowledgmentBanner";
-import { FileUploader } from "./FileUploader";
-import { PhotoCropper } from "./PhotoCropper";
 import type { PrintOrientation } from "@repo/api-client";
 import type { CropRect } from "../utils/cropMath";
 import { useCartStore } from "../store/cart.store";
@@ -206,15 +204,15 @@ export function ProductCustomizer({ product }: Props) {
     };
   }, [selectedOptions, product.options, printOrientation]);
 
-  // Ensure orientation is SQUARE if physical dimensions are square
-  useMemo(() => {
+  // Ensure orientation is SQUARE if physical dimensions are square, and restore PORTRAIT if switching away from square
+  useEffect(() => {
     if (isSquare && printOrientation !== "SQUARE") {
       setPrintOrientation("SQUARE");
+    } else if (!isSquare && printOrientation === "SQUARE") {
+      setPrintOrientation("PORTRAIT");
     }
   }, [isSquare, printOrientation]);
 
-  // ---------------------------------------------------------------------------
-  // Dynamic DPI Calculation
   // ---------------------------------------------------------------------------
   // Dynamic DPI Calculation
   // ---------------------------------------------------------------------------
@@ -260,8 +258,7 @@ export function ProductCustomizer({ product }: Props) {
         printQualityStatus: status,
         dpiAcknowledgmentRequired: requiresAck,
       };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [imageWidth, imageHeight, physicalWidth, physicalHeight, cropData]);
+    }, [imageWidth, imageHeight, physicalWidth, physicalHeight, cropData, rotation]);
 
   const handleUploadSuccess = useCallback(
     (id: string, url: string, w: number, h: number) => {
@@ -327,40 +324,53 @@ export function ProductCustomizer({ product }: Props) {
     <div className="space-y-6">
       {/* Personalization Trigger */}
       {isPersonalizable && (
-        <div>
-          <h3 className="text-lg font-semibold text-ink mb-3">
-            1. Personalize Print
+        <div className="space-y-2.5">
+          <h3 className="text-xs font-mono uppercase tracking-[0.14em] text-muted-soft">
+            Step 1 • Your Artwork
           </h3>
           {!uploadId ? (
             <button
+              type="button"
               onClick={() => setIsWorkspaceOpen(true)}
-              className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-hairline hover:border-brand hover:bg-brand/5 text-ink hover:text-brand font-medium rounded-lg h-24 transition-colors"
+              className="group w-full flex flex-col items-center justify-center gap-2 border border-dashed border-editorial-border hover:border-brand bg-canvas-warm/70 hover:bg-brand-tint/30 text-ink-deep rounded-2xl p-6 transition-all duration-200 text-center focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
             >
-              <ImagePlus size={24} className="text-muted" />
-              Upload Photo
+              <div className="w-10 h-10 rounded-full bg-white shadow-sm border border-editorial-border/60 flex items-center justify-center text-brand group-hover:scale-105 transition-transform">
+                <ImagePlus size={20} strokeWidth={1.8} />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-ink-deep group-hover:text-brand transition-colors">
+                  Upload your photo
+                </span>
+                <span className="text-xs text-muted-soft">
+                  JPEG, PNG, WebP up to 50MB • Visual crop & live preview
+                </span>
+              </div>
             </button>
           ) : (
-            <div className="p-4 border border-hairline rounded-lg flex items-center justify-between bg-surface-soft">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded bg-canvas border border-hairline overflow-hidden flex-shrink-0 relative">
+            <div className="p-4 border border-editorial-border rounded-2xl flex items-center justify-between bg-canvas-warm/80 ring-1 ring-inset ring-black/[0.03]">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-xl bg-white border border-editorial-border overflow-hidden flex-shrink-0 relative shadow-sm">
                   <img
                     src={previewUrl!}
-                    alt="Thumbnail"
+                    alt="Uploaded photo preview"
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-ink">
-                    Photo uploaded
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-muted-soft">
+                    Photo Attached
                   </span>
-                  <span className="text-xs text-muted">Ready for print</span>
+                  <span className="text-sm font-medium text-ink-deep">
+                    Ready for archival print
+                  </span>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsWorkspaceOpen(true)}
-                className="px-4 py-2 text-sm font-medium text-brand hover:bg-brand/10 rounded-full transition-colors flex items-center gap-1"
+                className="px-3.5 py-1.5 text-xs font-medium text-ink-deep bg-white border border-editorial-border hover:border-ink/50 rounded-full transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
               >
-                <Crop size={16} />
+                <Crop size={14} />
                 Edit Crop
               </button>
             </div>
@@ -380,12 +390,20 @@ export function ProductCustomizer({ product }: Props) {
             setImageHeight(h);
           }}
           onClose={() => setIsWorkspaceOpen(false)}
-          onSave={() => {
-            // Sync context upload data back to local state
-            if (contextUploadId && contextPreviewUrl) {
-              setUploadId(contextUploadId);
-              setPreviewUrl(contextPreviewUrl);
+          onSave={(saved) => {
+            if (saved.uploadId && saved.previewUrl) {
+              setUploadId(saved.uploadId);
+              setPreviewUrl(saved.previewUrl);
             }
+            setCropData(saved.cropData);
+            setRotation(saved.rotation);
+            setPrintOrientation(saved.printOrientation);
+            setContextCrop(saved.cropData);
+            setContextRotation(saved.rotation);
+            setContextOrientation(saved.printOrientation);
+            setContextZoom(saved.zoom);
+            setContextCropTranslation(saved.cropTranslation);
+            setHasAcknowledgedDpi(false);
             setIsWorkspaceOpen(false);
           }}
         />
@@ -393,9 +411,9 @@ export function ProductCustomizer({ product }: Props) {
 
       {/* Option Selectors */}
       {product.options && product.options.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold text-ink mb-3 mt-8">
-            {isPersonalizable ? "2. Customize Print" : "Customize"}
+        <div className="border-t border-editorial-border/60 pt-6">
+          <h3 className="text-xs font-mono uppercase tracking-[0.14em] text-muted-soft mb-4">
+            {isPersonalizable ? "Step 2 • Frame & Size Specifications" : "Specifications & Options"}
           </h3>
           <div className="space-y-6">
             {product.options.map((option) => (
@@ -419,6 +437,7 @@ export function ProductCustomizer({ product }: Props) {
       {/* DPI acknowledgment banner — shown when print quality is too low */}
       {isPersonalizable && dpiAcknowledgmentRequired && uploadId && (
         <DpiAcknowledgmentBanner
+          status={printQualityStatus}
           acknowledged={hasAcknowledgedDpi}
           onAcknowledge={() => setHasAcknowledgedDpi(true)}
         />
@@ -427,33 +446,33 @@ export function ProductCustomizer({ product }: Props) {
       {/* Add to Cart CTA */}
       <button
         disabled={!canAddToCart || isCartLoading}
-        className="w-full flex items-center justify-center bg-brand hover:bg-brand-pressed disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-lg rounded-pill h-12 mt-2 transition-colors"
+        className="w-full flex items-center justify-center bg-brand hover:bg-brand-pressed disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-base sm:text-lg rounded-pill h-12 mt-2 transition-all duration-200 shadow-sm focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 active:scale-[0.99]"
         onClick={handleAddToCart}
       >
         {isCartLoading ? "Adding..." : justAdded ? "Added to Cart ✓" : "Add to Cart"}
       </button>
 
-      <p className="text-sm text-center text-muted">
-        Estimated delivery: 5–7 business days
+      <p className="text-xs text-center text-muted-soft font-mono tracking-wide">
+        Estimated Dispatch: 2–3 business days • Pan-India Delivery
       </p>
 
       {/* Structural clearance for the fixed mobile CTA */}
       <div className="h-[calc(4.5rem+env(safe-area-inset-bottom))] lg:hidden" aria-hidden="true" />
 
       {/* Sticky Mobile Add To Cart CTA */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-canvas border-t border-hairline px-4 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-editorial-border px-4 pt-3 pb-[max(env(safe-area-inset-bottom),1rem)] z-50 shadow-[0_-4px_20px_rgba(20,15,10,0.08)]">
         <div className="flex items-center justify-between gap-4 max-w-content mx-auto">
           <div className="flex flex-col">
-            <span className="text-xs text-muted font-medium uppercase tracking-wider">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-soft">
               Total
             </span>
-            <span className="text-lg font-semibold text-ink">
+            <span className="text-lg font-semibold text-ink-deep">
               ₹{total.toLocaleString("en-IN")}
             </span>
           </div>
           <button
             disabled={!canAddToCart || isCartLoading}
-            className="flex-1 bg-brand hover:bg-brand-pressed disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-base rounded-pill h-11 transition-colors flex items-center justify-center max-w-[200px]"
+            className="flex-1 bg-brand hover:bg-brand-pressed disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-base rounded-pill h-11 transition-all flex items-center justify-center max-w-[200px] shadow-sm active:scale-95"
             onClick={handleAddToCart}
           >
             {isCartLoading ? "Adding..." : justAdded ? "Added ✓" : "Add to Cart"}
@@ -463,3 +482,4 @@ export function ProductCustomizer({ product }: Props) {
     </div>
   );
 }
+

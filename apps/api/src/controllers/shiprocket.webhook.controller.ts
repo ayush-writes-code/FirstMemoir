@@ -14,18 +14,15 @@ export const shiprocketWebhookController = {
     try {
       // 1. Authenticate using x-api-key
       const apiKey = req.headers['x-api-key'];
-      if (!apiKey || apiKey !== env.SHIPROCKET_WEBHOOK_TOKEN) {
+      if (!apiKey || !env.SHIPROCKET_WEBHOOK_TOKEN || apiKey !== env.SHIPROCKET_WEBHOOK_TOKEN) {
         return res.status(401).send('Unauthorized webhook token');
       }
 
-      // 2. Validate raw body and generate deterministic idempotency fingerprint
+      // 2. Validate raw body and parse JSON safely
       if (!Buffer.isBuffer(req.body)) {
         return res.status(400).send('Expected raw buffer body');
       }
       const rawBody = req.body;
-      const idempotencyKey = 'sr_wh_' + crypto.createHash('sha256').update(rawBody).digest('hex');
-
-      // 3. Parse JSON safely
       let payload: any;
       try {
         payload = JSON.parse(rawBody.toString('utf8'));
@@ -42,6 +39,21 @@ export const shiprocketWebhookController = {
       const awb = payload.awb;
       const channelOrderId = payload.channel_order_id;
       const currentStatusId = Number(payload.current_status_id);
+
+      // Logical event identity: prefer stable provider event/scan ID, fallback to composite key
+      const providerEventId = payload.event_id || payload.scan_id || payload.webhook_id || payload.id;
+      const shipmentIdentifier = payload.shipment_id || awb || channelOrderId;
+      const scan = Array.isArray(payload.scans) && payload.scans.length > 0 ? payload.scans[0] : (payload.scan || {});
+      const scanTimestamp = payload.current_timestamp || payload.status_date || scan.date || scan.time || '';
+      const scanLocation = payload.location || scan.location || '';
+      const scanActivity = payload.activity || scan.activity || '';
+      const scanDetails = [scanTimestamp, scanLocation, scanActivity].filter(Boolean).join('_');
+
+      const idempotencyKey = providerEventId
+        ? `sr_evt_${providerEventId}`
+        : (shipmentIdentifier && currentStatusId
+            ? `sr_evt_${shipmentIdentifier}_${currentStatusId}${scanDetails ? `_${scanDetails}` : ''}`
+            : 'sr_wh_' + crypto.createHash('sha256').update(rawBody).digest('hex'));
 
       // Track successful transition for post-transaction notifications
       let postTxOrderId: string | null = null;
@@ -106,36 +118,66 @@ export const shiprocketWebhookController = {
 
         // 8. Apply only valid forward transitions
         let nextStatus: OrderStatus | null = null;
+        let recordTransitHistory = false;
 
-        // Group A: Advances Order state to SHIPPED
-        // 42 = Picked Up, 6 = Shipped, 18 = In Transit, 17 = Out For Delivery
-        const shippedStatusIds = [42, 6, 18, 17];
-        
-        // Group B: Advances Order state to DELIVERED
-        // 7 = Delivered
-        const deliveredStatusIds = [7];
+        // Terminal state regression guard: Once delivered, order cannot revert or re-transition from carrier webhooks
+        if (order.status === OrderStatus.DELIVERED) {
+          logger.info(`[ShiprocketWebhook] Order ${targetOrderId} is already DELIVERED; ignoring incoming carrier update with status_id ${currentStatusId}`);
+        } else {
+          // Group A: Advances Order state to SHIPPED
+          // 42 = Picked Up, 6 = Shipped, 18 = In Transit, 17 = Out For Delivery
+          const shippedStatusIds = [42, 6, 18, 17];
+          
+          // Group B: Advances Order state to DELIVERED
+          // 7 = Delivered
+          const deliveredStatusIds = [7];
 
-        if (shippedStatusIds.includes(currentStatusId)) {
-          if (order.status === 'READY_FOR_PICKUP') {
-            nextStatus = OrderStatus.SHIPPED;
-          }
-        } else if (deliveredStatusIds.includes(currentStatusId)) {
-          if (order.status === 'SHIPPED') {
-            nextStatus = OrderStatus.DELIVERED;
+          if (shippedStatusIds.includes(currentStatusId)) {
+            if (order.status === 'READY_FOR_PICKUP' || order.status === 'PROCESSING') {
+              nextStatus = OrderStatus.SHIPPED;
+            } else if (order.status === 'SHIPPED') {
+              // Order is already SHIPPED; record intermediate transit progress in history
+              recordTransitHistory = true;
+            }
+          } else if (deliveredStatusIds.includes(currentStatusId)) {
+            if (order.status === 'SHIPPED' || order.status === 'READY_FOR_PICKUP') {
+              nextStatus = OrderStatus.DELIVERED;
+            }
           }
         }
 
-        // 9. Mutate state if valid transition occurred
+        // 9. Mutate state if valid transition occurred, or record interim transit history
+        const effectiveScanLocation = scanLocation || (payload.scans?.[0]?.location ?? '');
+        const statusDescription = `Carrier tracking update: status ${currentStatusId}${payload.current_status ? ` (${payload.current_status})` : ''}${effectiveScanLocation ? ` at ${effectiveScanLocation}` : ''}`;
+
         if (nextStatus) {
           await tx.order.update({
             where: { id: targetOrderId },
             data: { status: nextStatus }
+          });
+          await tx.orderStatusHistory.create({
+            data: {
+              order_id: targetOrderId,
+              previous_status: order.status,
+              new_status: nextStatus,
+              description: statusDescription,
+            }
           });
           logger.info(`[ShiprocketWebhook] Order ${targetOrderId} transitioned from ${order.status} to ${nextStatus} via status_id ${currentStatusId}`);
           
           // Mark for post-tx notification
           postTxOrderId = targetOrderId;
           postTxNextStatus = nextStatus;
+        } else if (recordTransitHistory) {
+          await tx.orderStatusHistory.create({
+            data: {
+              order_id: targetOrderId,
+              previous_status: order.status,
+              new_status: order.status,
+              description: statusDescription,
+            }
+          });
+          logger.info(`[ShiprocketWebhook] Recorded intermediate transit update for Order ${targetOrderId} (status_id ${currentStatusId})`);
         } else {
           logger.info(`[ShiprocketWebhook] Order ${targetOrderId} status ${order.status} unchanged by status_id ${currentStatusId}`);
         }

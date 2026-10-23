@@ -42,17 +42,17 @@ export function calculateDpi(
  * Classify an effective DPI value into a PrintQualityStatus tier.
  *
  * Tiers:
- *  - EXCELLENT: >= 300 DPI (museum-quality sharpness)
+ *  - EXCELLENT: >= 250 DPI (museum-quality sharpness)
  *  - GOOD:      >= 150 DPI (standard print quality)
  *  - ACCEPTABLE: >= 100 DPI (acceptable for most customers)
- *  - LOW_QUALITY: < 100 DPI (noticeably blurry, requires acknowledgment)
- *  - NOT_RECOMMENDED: < 72 DPI (poor output, strong warning + acknowledgment required)
+ *  - LOW_QUALITY: >= 70 DPI (noticeably blurry, requires acknowledgment)
+ *  - NOT_RECOMMENDED: < 70 DPI (poor output, strong warning + acknowledgment required)
  */
 export function classifyDpi(dpi: number): PrintQualityStatus {
-  if (dpi >= 300) return 'EXCELLENT';
+  if (dpi >= 250) return 'EXCELLENT';
   if (dpi >= 150) return 'GOOD';
   if (dpi >= 100) return 'ACCEPTABLE';
-  if (dpi >= 72) return 'LOW_QUALITY';
+  if (dpi >= 70) return 'LOW_QUALITY';
   return 'NOT_RECOMMENDED';
 }
 

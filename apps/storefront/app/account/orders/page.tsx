@@ -4,7 +4,16 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { orders as ordersApi } from '@/lib/api-client';
 import { CustomerOrderSummaryDTO } from '@repo/shared';
 import { OrderCard } from '@/components/orders/OrderCard';
-import { PackageOpen, AlertCircle, RefreshCw, LogIn } from 'lucide-react';
+import {
+  PackageOpen,
+  AlertCircle,
+  RefreshCw,
+  LogIn,
+  ChevronLeft,
+  ChevronRight,
+  ArrowRight,
+  Search,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/store/auth.context';
 
@@ -15,6 +24,7 @@ export default function OrdersPage() {
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -36,6 +46,9 @@ export default function OrdersPage() {
         // Normalize pagination
         const total = rawData?.pagination?.total ?? res.meta?.total;
         const limit = rawData?.pagination?.limit ?? res.meta?.limit ?? 10;
+        if (typeof total === 'number') {
+          setTotalCount(total);
+        }
         if (typeof total === 'number' && typeof limit === 'number' && limit > 0) {
           setTotalPages(Math.max(1, Math.ceil(total / limit)));
         } else if (res.meta?.totalPages) {
@@ -54,14 +67,36 @@ export default function OrdersPage() {
   }, [page]);
 
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    if (isAuthenticated) {
+      fetchOrders();
+    }
+  }, [fetchOrders, isAuthenticated]);
 
+  // Loading Skeletons State
   if (isLoading || isAuthLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 space-y-3">
-        <div className="w-8 h-8 border-3 border-zinc-200 border-t-brand rounded-full animate-spin" />
-        <p className="text-sm text-zinc-500 font-medium">Loading your orders...</p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between pb-4 border-b border-paper-border">
+          <div className="h-7 w-40 bg-paper-warm rounded animate-pulse" />
+          <div className="h-4 w-24 bg-paper-warm rounded animate-pulse" />
+        </div>
+        <div className="space-y-4">
+          {[1, 2, 3].map((n) => (
+            <div
+              key={n}
+              className="bg-white border border-paper-border rounded-2xl p-6 animate-pulse flex items-center justify-between"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-paper-warm" />
+                <div className="space-y-2">
+                  <div className="h-4 w-32 bg-paper-warm rounded" />
+                  <div className="h-3.5 w-48 bg-paper-warm rounded" />
+                </div>
+              </div>
+              <div className="h-6 w-24 bg-paper-warm rounded-full" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -69,17 +104,18 @@ export default function OrdersPage() {
   // Handle session expiration or unauthenticated state
   if (!isAuthenticated || error === 'Session expired') {
     return (
-      <div className="bg-white border border-zinc-200 rounded-2xl p-8 sm:p-12 flex flex-col items-center text-center max-w-lg mx-auto">
-        <div className="w-14 h-14 bg-zinc-50 rounded-full flex items-center justify-center text-zinc-400 mb-4">
+      <div className="bg-white border border-paper-border rounded-2xl p-8 sm:p-12 flex flex-col items-center text-center max-w-lg mx-auto shadow-xs">
+        <div className="w-14 h-14 bg-paper-warm rounded-2xl border border-paper-border flex items-center justify-center text-ink mb-4">
           <LogIn size={26} strokeWidth={1.75} />
         </div>
-        <h2 className="text-xl font-serif font-semibold text-ink mb-2">Sign in to view orders</h2>
-        <p className="text-zinc-500 text-sm mb-6">
-          Please sign in to access your order history, live tracking, and invoices.
+        <h2 className="text-xl font-serif font-medium text-ink mb-2">Sign in to view orders</h2>
+        <p className="text-zinc-500 text-xs sm:text-sm mb-6 max-w-sm leading-relaxed">
+          Please sign in to access your order history, live framing status, and invoices.
         </p>
         <button
+          type="button"
           onClick={login}
-          className="px-6 py-2.5 bg-ink text-white rounded-xl text-sm font-medium hover:bg-brand active:bg-brand-pressed transition-colors shadow-sm"
+          className="px-6 py-2.5 bg-ink text-white rounded-xl text-sm font-medium hover:bg-brand active:bg-brand-pressed transition-colors shadow-xs"
         >
           Sign In / Register
         </button>
@@ -87,50 +123,69 @@ export default function OrdersPage() {
     );
   }
 
+  // Error State
   if (error) {
     return (
-      <div className="bg-red-50 text-red-700 p-6 rounded-2xl border border-red-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-red-50/70 border border-red-200/80 p-6 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <AlertCircle size={20} className="text-red-500 shrink-0" />
-          <p className="text-sm font-medium">{error}</p>
+          <p className="text-sm font-medium text-red-800">{error}</p>
         </div>
         <button
+          type="button"
           onClick={() => fetchOrders()}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-red-200 rounded-lg text-xs font-semibold text-red-700 hover:bg-red-50 transition-colors shadow-xs"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-red-200 rounded-xl text-xs font-semibold text-red-700 hover:bg-red-50 transition-colors shadow-xs"
         >
           <RefreshCw size={14} />
-          Try Again
+          <span>Try Again</span>
         </button>
       </div>
     );
   }
 
+  // Empty State
   if (!orders || orders.length === 0) {
     return (
-      <div className="bg-white border border-zinc-200/80 rounded-2xl p-10 sm:p-14 flex flex-col items-center text-center">
-        <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center text-zinc-400 mb-4">
+      <div className="bg-white border border-paper-border rounded-2xl p-10 sm:p-16 flex flex-col items-center text-center shadow-xs">
+        <div className="w-16 h-16 bg-paper-warm border border-paper-border rounded-2xl flex items-center justify-center text-ink mb-4">
           <PackageOpen size={30} strokeWidth={1.5} />
         </div>
-        <h2 className="text-xl font-serif font-semibold text-ink mb-2">No orders placed yet</h2>
-        <p className="text-zinc-500 text-sm max-w-sm mb-6">
-          Your custom framed prints and photo memories will appear here once you complete an order.
+        <h2 className="text-xl font-serif font-medium text-ink mb-2">No orders placed yet</h2>
+        <p className="text-zinc-500 text-xs sm:text-sm max-w-md mb-6 leading-relaxed">
+          Your custom framed prints and photo memories will appear here once you complete checkout. If you checked out as a guest, you can also track by phone number.
         </p>
-        <Link
-          href="/products"
-          className="px-6 py-2.5 bg-ink text-white rounded-xl text-sm font-medium hover:bg-brand active:bg-brand-pressed transition-colors shadow-sm"
-        >
-          Start Creating
-        </Link>
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <Link
+            href="/products"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-ink text-white rounded-xl text-sm font-medium hover:bg-brand active:bg-brand-pressed transition-colors shadow-xs"
+          >
+            <span>Start Creating</span>
+            <ArrowRight size={15} />
+          </Link>
+          <Link
+            href="/track-order"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-paper-warm border border-paper-border rounded-xl text-sm font-medium text-ink hover:border-brand/40 transition-colors"
+          >
+            <Search size={15} className="text-zinc-500" />
+            <span>Track Guest Order</span>
+          </Link>
+        </div>
       </div>
     );
   }
 
+  // Populated Orders List
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-serif font-semibold text-ink">My Orders</h1>
-        <span className="text-xs text-zinc-500 font-medium">
-          {orders.length} {orders.length === 1 ? 'order' : 'orders'} shown
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-paper-border">
+        <div>
+          <h1 className="text-2xl font-serif font-medium text-ink">Order History</h1>
+          <p className="text-xs sm:text-sm text-zinc-500 mt-0.5">
+            Track and review all prints crafted by our studio
+          </p>
+        </div>
+        <span className="text-xs font-mono font-medium text-zinc-500 bg-paper-warm px-3 py-1 rounded-full border border-paper-border self-start sm:self-center">
+          {totalCount !== null ? `${totalCount} Total` : `${orders.length} Shown`}
         </span>
       </div>
 
@@ -141,26 +196,31 @@ export default function OrdersPage() {
       </div>
 
       {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-3 mt-10">
+        <div className="flex justify-center items-center gap-3 pt-6 border-t border-paper-border">
           <button
+            type="button"
             disabled={page === 1}
             onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="px-4 py-2 border border-zinc-200 rounded-lg text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-50 transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 border border-paper-border rounded-xl text-xs sm:text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-paper-warm transition-colors"
           >
-            Previous
+            <ChevronLeft size={16} />
+            <span>Previous</span>
           </button>
-          <span className="text-sm font-medium text-zinc-600">
+          <span className="text-xs sm:text-sm font-mono font-medium text-zinc-600 px-2">
             Page {page} of {totalPages}
           </span>
           <button
+            type="button"
             disabled={page === totalPages}
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            className="px-4 py-2 border border-zinc-200 rounded-lg text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-zinc-50 transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 border border-paper-border rounded-xl text-xs sm:text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-paper-warm transition-colors"
           >
-            Next
+            <span>Next</span>
+            <ChevronRight size={16} />
           </button>
         </div>
       )}
     </div>
   );
 }
+

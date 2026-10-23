@@ -27,7 +27,10 @@ export function ProductLivePreview({ baseImage, productSlug, productName, mockup
   
   // Data-driven fallback checking mockupMetadata directly
   let premiumMockup = null;
-  if (mockupMetadata?.mockups && mockupMetadata.mockups[printOrientation]) {
+  const orientationKey = (printOrientation || '').toLowerCase();
+  if (mockupMetadata?.mockups && mockupMetadata.mockups[orientationKey]) {
+    premiumMockup = mockupMetadata.mockups[orientationKey];
+  } else if (mockupMetadata?.mockups && mockupMetadata.mockups[printOrientation]) {
     premiumMockup = mockupMetadata.mockups[printOrientation];
   } else if (mockupMetadata?.mockups?.default) {
     premiumMockup = mockupMetadata.mockups.default;
@@ -44,6 +47,7 @@ export function ProductLivePreview({ baseImage, productSlug, productName, mockup
   if (!coords) {
     coords = getMockupCoordinates(productSlug, baseImage.sort_order);
   }
+  const safeCoords = coords || { top: '20%', left: '20%', width: '60%', height: '60%' };
 
   // Convert canonical unrotated crop back to visual crop on the rotated image
   const vCrop = canonicalCropToVisualCrop(cropData, rotation);
@@ -78,10 +82,10 @@ export function ProductLivePreview({ baseImage, productSlug, productName, mockup
           <div 
             className="absolute overflow-hidden"
             style={{
-              top: coords.top,
-              left: coords.left,
-              width: coords.width,
-              height: coords.height,
+              top: safeCoords.top,
+              left: safeCoords.left,
+              width: safeCoords.width,
+              height: safeCoords.height,
             }}
           >
             <div
@@ -113,7 +117,7 @@ export function ProductLivePreview({ baseImage, productSlug, productName, mockup
         )}
 
         {/* Layer 3: Overlay (Glass, Frame, Shadow) */}
-        {previewUrl && (
+        {previewUrl && premiumMockup.overlayAsset && (
           <Image 
             src={premiumMockup.overlayAsset} 
             alt="Frame Overlay" 
@@ -149,10 +153,10 @@ export function ProductLivePreview({ baseImage, productSlug, productName, mockup
         <div 
           className="absolute overflow-hidden"
           style={{
-            top: coords.top,
-            left: coords.left,
-            width: coords.width,
-            height: coords.height,
+            top: safeCoords.top,
+            left: safeCoords.left,
+            width: safeCoords.width,
+            height: safeCoords.height,
             boxShadow: 'inset 0 0 12px rgba(0,0,0,0.4)', // Fake physical frame lip shadow
           }}
         >
